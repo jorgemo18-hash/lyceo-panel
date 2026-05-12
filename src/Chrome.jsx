@@ -1,10 +1,10 @@
 // Sidebar y Topbar — chrome del panel
 // Desktop: sidebar izquierdo fijo. Móvil: topbar + bottom nav.
 
-function Sidebar({ activo = "diario", onNavigate }) {
+function Sidebar({ activo = "horario", onNavigate }) {
   const items = [
-    { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "horario", label: "Horario", icon: <Icon.grid /> },
+    { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
     { id: "informes", label: "Informes", icon: <Icon.doc /> },
     { id: "tarifas", label: "Tarifas", icon: <Icon.tag /> },
@@ -54,10 +54,10 @@ function Sidebar({ activo = "diario", onNavigate }) {
   );
 }
 
-function BottomNav({ activo = "diario", onNavigate }) {
+function BottomNav({ activo = "horario", onNavigate }) {
   const items = [
-    { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "horario", label: "Horario", icon: <Icon.grid /> },
+    { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
     { id: "tarifas", label: "Tarifas", icon: <Icon.tag /> },
     { id: "ajustes", label: "Más", icon: <Icon.settings /> },

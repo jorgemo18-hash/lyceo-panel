@@ -212,7 +212,7 @@ const PANTALLAS = {
 
 // ── App ──────────────────────────────────────────────────────────
 export default function App() {
-  const [pantalla, setPantalla] = React.useState('diario');
+  const [pantalla, setPantalla] = React.useState('horario');
   const mobile = useMobile();
 
   const Sidebar = window.Sidebar;
