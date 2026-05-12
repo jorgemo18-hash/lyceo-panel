@@ -1,16 +1,17 @@
 // Horario.jsx — vista semanal editable
-// Clic en el nombre de un chip para editarlo, en el punto para cambiar nivel, ✕ para eliminar.
-// Clic en + de cualquier franja para añadir un alumno nuevo.
+// Franjas de 1 hora (dos slots de 30 min fusionados). Sin scroll — se ajusta a la pantalla.
 
-const NIVEL_COLORS = {
-  primaria: { bg: "var(--niv-pri-bg)", fg: "var(--niv-pri-fg)" },
-  eso: { bg: "var(--niv-eso-bg)", fg: "var(--niv-eso-fg)" },
-  bachillerato: { bg: "var(--niv-bach-bg)", fg: "var(--niv-bach-fg)" },
-};
+const HORA_BLOQUES = [
+  { label: "15:30–16:30", slots: ["15:30", "16:00"] },
+  { label: "16:30–17:30", slots: ["16:30", "17:00"] },
+  { label: "17:30–18:30", slots: ["17:30", "18:00"] },
+  { label: "18:30–19:30", slots: ["18:30", "19:00"] },
+  { label: "19:30–20:30", slots: ["19:30", "20:00"] },
+];
+
 const NIVEL_LABEL = { primaria: "Prim.", eso: "ESO", bachillerato: "Bach." };
 const NIVELES = ["primaria", "eso", "bachillerato"];
 
-// Chip editable: nombre inline, punto para ciclar nivel, ✕ para eliminar
 function HorarioChip({ alumno, onUpdate, onRemove }) {
   const [editNombre, setEditNombre] = React.useState(false);
   const [hovered, setHovered] = React.useState(false);
@@ -86,7 +87,6 @@ function HorarioChip({ alumno, onUpdate, onRemove }) {
   );
 }
 
-// Formulario inline para añadir un alumno a una franja
 function AddChipForm({ onAdd, onCancel }) {
   const [nombre, setNombre] = React.useState("");
   const [nivel, setNivel] = React.useState("primaria");
@@ -134,9 +134,8 @@ function AddChipForm({ onAdd, onCancel }) {
 
 function Horario() {
   const [filtroNivel, setFiltroNivel] = React.useState("todos");
-  const [addingTo, setAddingTo] = React.useState(null); // { hora, dia }
+  const [addingTo, setAddingTo] = React.useState(null); // { bloque, dia }
 
-  // Copia local editable de HORARIO_SEMANAL
   const [horario, setHorario] = React.useState(() => {
     const h = {};
     FRANJAS.forEach((hora) => {
@@ -187,6 +186,18 @@ function Horario() {
 
   const visible = (al) => filtroNivel === "todos" || al.nivel === filtroNivel;
 
+  // For a given bloque+dia, collect non-continuation alumnos from both slots
+  const getEntradas = (bloque, dia) => {
+    const result = [];
+    bloque.slots.forEach((hora) => {
+      const arr = horario[hora]?.[dia] || [];
+      arr.forEach((a, idx) => {
+        if (!a.continuation) result.push({ ...a, _hora: hora, _idx: idx });
+      });
+    });
+    return result;
+  };
+
   return (
     <>
       <div className="hor-header">
@@ -225,8 +236,8 @@ function Horario() {
         </div>
       </div>
 
-      <div className="hor-grid">
-        <div className="hor-grid__head">
+      <div className="hor-grid" style={{ display: "flex", flexDirection: "column", height: "calc(100vh - 250px)", minHeight: 300 }}>
+        <div className="hor-grid__head" style={{ flexShrink: 0 }}>
           <div className="hor-cell hor-cell--corner">Hora</div>
           {DIAS.map((d) => (
             <div key={d} className="hor-cell hor-cell--day">
@@ -236,67 +247,53 @@ function Horario() {
           ))}
         </div>
 
-        {FRANJAS.map((hora) => {
-          const esHora = hora.endsWith(":00");
-          return (
-            <div key={hora} className={`hor-grid__row ${esHora ? "hor-grid__row--major" : ""}`}>
-              <div className="hor-cell hor-cell--time">
-                <span className={esHora ? "hor-time__major" : "hor-time__minor"}>
-                  {hora}
-                </span>
-              </div>
-              {DIAS.map((d) => {
-                const arr = horario[hora]?.[d] || [];
-                // Indexar antes de filtrar para conservar posición real en el array
-                const indexedVisible = arr
-                  .map((a, idx) => ({ ...a, _idx: idx }))
-                  .filter(visible);
-                const nuevos = indexedVisible.filter((a) => !a.continuation);
-                const continua = indexedVisible.filter((a) => a.continuation);
-                const isAdding = addingTo?.hora === hora && addingTo?.dia === d;
-
-                return (
-                  <div key={d} className="hor-cell hor-cell--slot">
-                    {continua.map((a, i) => (
-                      <div
-                        key={`cont-${i}`}
-                        className={`hor-cont hor-cont--${a.nivel}`}
-                        title={`${a.nombre} (continúa)`}
-                      />
-                    ))}
-                    {nuevos.map((a) => (
-                      <HorarioChip
-                        key={a._idx}
-                        alumno={a}
-                        onUpdate={(patch) => updateAlumno(hora, d, a._idx, patch)}
-                        onRemove={() => removeAlumno(hora, d, a._idx)}
-                      />
-                    ))}
-                    {isAdding ? (
-                      <AddChipForm
-                        onAdd={(nombre, nivel) => addAlumno(hora, d, nombre, nivel)}
-                        onCancel={() => setAddingTo(null)}
-                      />
-                    ) : (
-                      <button
-                        onClick={() => setAddingTo({ hora, dia: d })}
-                        title="Añadir alumno a esta franja"
-                        style={{
-                          background: "none", border: "none", cursor: "pointer",
-                          color: "var(--ink-4)", fontSize: "13px", padding: "1px 3px",
-                          borderRadius: "4px", lineHeight: 1, fontFamily: "inherit",
-                          opacity: 0.6,
-                        }}
-                      >
-                        +
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+        {HORA_BLOQUES.map((bloque) => (
+          <div key={bloque.label} className="hor-grid__row" style={{ flex: 1, minHeight: 0 }}>
+            <div className="hor-cell hor-cell--time">
+              <span className="hor-time__major" style={{ fontSize: "11px", whiteSpace: "nowrap" }}>
+                {bloque.label}
+              </span>
             </div>
-          );
-        })}
+            {DIAS.map((dia) => {
+              const entradas = getEntradas(bloque, dia).filter(visible);
+              const isAdding = addingTo?.bloque === bloque.label && addingTo?.dia === dia;
+              // Default add slot: first slot of the bloque
+              const addSlot = bloque.slots[0];
+
+              return (
+                <div key={dia} className="hor-cell hor-cell--slot">
+                  {entradas.map((a, i) => (
+                    <HorarioChip
+                      key={`${a._hora}-${a._idx}-${i}`}
+                      alumno={a}
+                      onUpdate={(patch) => updateAlumno(a._hora, dia, a._idx, patch)}
+                      onRemove={() => removeAlumno(a._hora, dia, a._idx)}
+                    />
+                  ))}
+                  {isAdding ? (
+                    <AddChipForm
+                      onAdd={(nombre, nivel) => addAlumno(addSlot, dia, nombre, nivel)}
+                      onCancel={() => setAddingTo(null)}
+                    />
+                  ) : (
+                    <button
+                      onClick={() => setAddingTo({ bloque: bloque.label, dia })}
+                      title="Añadir alumno a esta franja"
+                      style={{
+                        background: "none", border: "none", cursor: "pointer",
+                        color: "var(--ink-4)", fontSize: "13px", padding: "1px 3px",
+                        borderRadius: "4px", lineHeight: 1, fontFamily: "inherit",
+                        opacity: 0.6,
+                      }}
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
       <div className="hor-legend">

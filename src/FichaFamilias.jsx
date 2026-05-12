@@ -78,6 +78,7 @@ function FichaCellEditor({ cell, onChange }) {
   return (
     <div
       className={`ff-cell ${isFull ? "ff-cell--full" : ""}`}
+      onClick={() => nivelRef.current?.focus()}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget) && isEmpty) setEditing(false);
       }}

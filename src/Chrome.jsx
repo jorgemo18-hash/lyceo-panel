@@ -3,7 +3,6 @@
 
 function Sidebar({ activo = "diario", onNavigate }) {
   const items = [
-    { id: "inicio", label: "Inicio", icon: <Icon.home /> },
     { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "horario", label: "Horario", icon: <Icon.grid /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
