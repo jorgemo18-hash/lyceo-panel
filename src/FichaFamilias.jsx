@@ -199,7 +199,7 @@ function FichaTarifas({ tarifas, setTarifas }) {
           ))}
         </tbody>
       </table>
-      <div className="ff-tarifas-foot">Hermanos: descuento sobre la cuota total.</div>
+      <div className="ff-tarifas-foot">Hermanos: 10% descuento sobre la cuota total.</div>
     </div>
   );
 }
