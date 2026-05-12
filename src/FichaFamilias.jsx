@@ -11,76 +11,83 @@ const FF_DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
 // Estado inicial: cada celda { nivel, num, tope }. num=0 → vacía.
 function buildHorarioInicial() {
-  const blank = { nivel: "", num: 0, tope: 4 };
+  const blank = { nivel: "", num: 0, tope: 6 };
   const grid = {};
   FF_FRANJAS.forEach((h) => {
     grid[h] = {};
     FF_DIAS.forEach((d) => { grid[h][d] = { ...blank }; });
   });
   // Sembrar datos plausibles
-  const seed = (h, d, nivel, num, tope = 4) => { grid[h][d] = { nivel, num, tope }; };
-  seed("16:00", "Lunes", "PRIM/ESO", 4, 4);
-  seed("16:30", "Lunes", "PRIM/ESO", 4, 4);
-  seed("16:00", "Miércoles", "PRIM/ESO", 4, 4);
-  seed("16:30", "Miércoles", "PRIM/ESO", 4, 4);
-  seed("16:00", "Martes", "PRIM", 2, 4);
-  seed("16:30", "Martes", "PRIM", 2, 4);
-  seed("16:00", "Jueves", "PRIM", 2, 4);
-  seed("16:30", "Jueves", "PRIM", 2, 4);
-  seed("17:00", "Lunes", "ESO/BACH", 3, 4);
-  seed("17:30", "Lunes", "ESO/BACH", 3, 4);
-  seed("17:00", "Miércoles", "ESO/BACH", 3, 4);
-  seed("17:30", "Miércoles", "ESO/BACH", 3, 4);
-  seed("17:00", "Martes", "ESO", 2, 4);
-  seed("17:30", "Martes", "ESO", 2, 4);
-  seed("17:00", "Jueves", "ESO", 2, 4);
-  seed("17:30", "Jueves", "ESO", 2, 4);
-  seed("18:00", "Lunes", "ESO", 2, 4);
-  seed("18:30", "Lunes", "ESO", 2, 4);
-  seed("19:00", "Lunes", "ESO/BACH", 3, 4);
-  seed("19:30", "Lunes", "ESO/BACH", 3, 4);
-  seed("18:00", "Martes", "BACH", 1, 4);
-  seed("18:30", "Martes", "BACH", 1, 4);
-  seed("19:00", "Martes", "BACH", 1, 4);
-  seed("19:30", "Martes", "BACH", 1, 4);
-  seed("18:00", "Miércoles", "ESO", 2, 4);
-  seed("18:30", "Miércoles", "ESO", 2, 4);
-  seed("19:00", "Miércoles", "BACH", 1, 4);
-  seed("19:30", "Miércoles", "BACH", 1, 4);
-  seed("18:00", "Jueves", "ESO/BACH", 3, 4);
-  seed("18:30", "Jueves", "ESO/BACH", 3, 4);
-  seed("19:00", "Jueves", "BACH", 1, 4);
-  seed("19:30", "Jueves", "BACH", 1, 4);
-  seed("18:00", "Viernes", "ESO", 2, 4);
-  seed("18:30", "Viernes", "ESO", 2, 4);
+  const seed = (h, d, nivel, num, tope = 6) => { grid[h][d] = { nivel, num, tope }; };
+  seed("16:00", "Lunes", "PRIM/ESO", 4, 6);
+  seed("16:30", "Lunes", "PRIM/ESO", 4, 6);
+  seed("16:00", "Miércoles", "PRIM/ESO", 4, 6);
+  seed("16:30", "Miércoles", "PRIM/ESO", 4, 6);
+  seed("16:00", "Martes", "PRIM", 2, 6);
+  seed("16:30", "Martes", "PRIM", 2, 6);
+  seed("16:00", "Jueves", "PRIM", 2, 6);
+  seed("16:30", "Jueves", "PRIM", 2, 6);
+  seed("17:00", "Lunes", "ESO/BACH", 3, 6);
+  seed("17:30", "Lunes", "ESO/BACH", 3, 6);
+  seed("17:00", "Miércoles", "ESO/BACH", 3, 6);
+  seed("17:30", "Miércoles", "ESO/BACH", 3, 6);
+  seed("17:00", "Martes", "ESO", 2, 6);
+  seed("17:30", "Martes", "ESO", 2, 6);
+  seed("17:00", "Jueves", "ESO", 2, 6);
+  seed("17:30", "Jueves", "ESO", 2, 6);
+  seed("18:00", "Lunes", "ESO", 2, 6);
+  seed("18:30", "Lunes", "ESO", 2, 6);
+  seed("19:00", "Lunes", "ESO/BACH", 3, 6);
+  seed("19:30", "Lunes", "ESO/BACH", 3, 6);
+  seed("18:00", "Martes", "BACH", 1, 6);
+  seed("18:30", "Martes", "BACH", 1, 6);
+  seed("19:00", "Martes", "BACH", 1, 6);
+  seed("19:30", "Martes", "BACH", 1, 6);
+  seed("18:00", "Miércoles", "ESO", 2, 6);
+  seed("18:30", "Miércoles", "ESO", 2, 6);
+  seed("19:00", "Miércoles", "BACH", 1, 6);
+  seed("19:30", "Miércoles", "BACH", 1, 6);
+  seed("18:00", "Jueves", "ESO/BACH", 3, 6);
+  seed("18:30", "Jueves", "ESO/BACH", 3, 6);
+  seed("19:00", "Jueves", "BACH", 1, 6);
+  seed("19:30", "Jueves", "BACH", 1, 6);
+  seed("18:00", "Viernes", "ESO", 2, 6);
+  seed("18:30", "Viernes", "ESO", 2, 6);
   return grid;
 }
 
 // Edición inline genérica para celdas de la tabla de horario
 function FichaCellEditor({ cell, onChange }) {
-  const [field, setField] = React.useState(null); // 'nivel' | 'num' | 'tope' | null
+  const [editing, setEditing] = React.useState(false);
+  const nivelRef = React.useRef(null);
   const isFull = cell.num > 0 && cell.num >= cell.tope;
   const isEmpty = cell.num === 0 && !cell.nivel;
-
   const update = (k, v) => onChange({ ...cell, [k]: v });
 
-  if (isEmpty && field === null) {
+  if (isEmpty && !editing) {
     return (
-      <button className="ff-cell ff-cell--empty" onClick={() => setField("nivel")}>
+      <button
+        className="ff-cell ff-cell--empty"
+        onClick={() => { setEditing(true); setTimeout(() => nivelRef.current?.focus(), 0); }}
+      >
         +
       </button>
     );
   }
 
   return (
-    <div className={`ff-cell ${isFull ? "ff-cell--full" : ""}`}>
+    <div
+      className={`ff-cell ${isFull ? "ff-cell--full" : ""}`}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget) && isEmpty) setEditing(false);
+      }}
+    >
       <input
+        ref={nivelRef}
         className="ff-cell__nivel"
         value={cell.nivel}
         placeholder="—"
         onChange={(e) => update("nivel", e.target.value.toUpperCase())}
-        onFocus={() => setField("nivel")}
-        onBlur={() => setField(null)}
       />
       <div className="ff-cell__nums">
         <input
@@ -191,7 +198,7 @@ function FichaTarifas({ tarifas, setTarifas }) {
           ))}
         </tbody>
       </table>
-      <div className="ff-tarifas-foot">Hermanos: 10% de descuento sobre la cuota mayor.</div>
+      <div className="ff-tarifas-foot">Hermanos: descuento sobre la cuota total.</div>
     </div>
   );
 }

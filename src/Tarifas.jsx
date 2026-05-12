@@ -118,7 +118,7 @@ function Tarifas() {
         <div className="tar-foot">
           <Icon.note />
           <span>
-            Hermanos: <b>10% descuento</b> sobre la cuota mayor.
+            Hermanos: descuento sobre la cuota total.
           </span>
         </div>
       </div>

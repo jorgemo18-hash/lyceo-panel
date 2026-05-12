@@ -92,6 +92,20 @@ function HojaInscripcion() {
         </div>
       </section>
 
+      <section className="doc-pago">
+        <h2 className="doc-h2">Preferencia de cobro</h2>
+        <div className="doc-pago__opts">
+          <label className="doc-opt">
+            <span className="doc-check" />
+            <span className="doc-opt__lbl">Principio de mes</span>
+          </label>
+          <label className="doc-opt">
+            <span className="doc-check" />
+            <span className="doc-opt__lbl">Final de mes</span>
+          </label>
+        </div>
+      </section>
+
       <section className="doc-firma">
         <p className="doc-firma__lugar">
           En <span className="doc-line doc-line--inline doc-line--mid" />,
