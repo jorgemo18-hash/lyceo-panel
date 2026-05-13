@@ -25,12 +25,6 @@ function horaFin(h) {
   return `${String(hh + 1).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
 }
 
-function nivelFromCurso(curso) {
-  const c = curso.toUpperCase()
-  if (c.includes('BACH')) return 'bachillerato'
-  if (c.includes('ESO') || c.includes('SEC')) return 'eso'
-  return 'primaria'
-}
 
 function slugify(nombre, curso) {
   return (nombre + '_' + curso).toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '')
