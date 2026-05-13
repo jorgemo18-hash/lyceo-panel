@@ -154,7 +154,6 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
           familia_id,
           precio_bruto: Number(form.precio_bruto),
           descuento_pct: Number(form.descuento),
-          precio_neto: precioNeto,
           fecha_inicio: today(),
         })
         if (e4) throw e4
