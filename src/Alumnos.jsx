@@ -14,7 +14,12 @@ const CURSOS = [
   '1º ESO','2º ESO','3º ESO','4º ESO',
   '1º BACH','2º BACH',
 ]
-const METODOS_PAGO = ['bizum', 'efectivo', 'transferencia', 'recibo']
+const METODOS_PAGO = [
+  { value: 'bizum',         label: 'Bizum' },
+  { value: 'transferencia', label: 'Transferencia' },
+  { value: 'efectivo',      label: 'Efectivo' },
+  { value: 'sepa',          label: 'Recibo domiciliado' },
+]
 
 function today() {
   return new Date().toISOString().slice(0, 10)
@@ -37,7 +42,7 @@ const FORM_INICIAL = {
   sin_familia: true,
   familia_id: '', familia_nueva: false,
   fam_nombre: '', fam_email: '', fam_telefono: '',
-  fam_metodo_pago: 'bizum', fam_notas: '',
+  fam_metodo_pago: 'bizum', fam_codigo_sepa: '', fam_notas: '',
   slots: [], // [{ dia, hora_inicio }]
   precio_bruto: '', descuento: 0,
 }
@@ -73,10 +78,19 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
     try {
       let familia_id = form.familia_id
 
+      const sepa = (mp) => mp === 'transferencia' || mp === 'sepa'
+
       if (form.sin_familia) {
         const { data, error: e } = await supabase
           .from('familias')
-          .insert({ nombre: form.nombre.trim() })
+          .insert({
+            nombre: form.nombre.trim(),
+            email: form.fam_email.trim() || null,
+            telefono: form.fam_telefono.trim() || null,
+            metodo_pago: form.fam_metodo_pago,
+            codigo_sepa: sepa(form.fam_metodo_pago) ? form.fam_codigo_sepa.trim() || null : null,
+            notas: form.fam_notas.trim() || null,
+          })
           .select('id')
           .single()
         if (e) throw e
@@ -89,6 +103,7 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
             email: form.fam_email.trim() || null,
             telefono: form.fam_telefono.trim() || null,
             metodo_pago: form.fam_metodo_pago,
+            codigo_sepa: sepa(form.fam_metodo_pago) ? form.fam_codigo_sepa.trim() || null : null,
             notas: form.fam_notas.trim() || null,
           })
           .select('id')
@@ -198,6 +213,7 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
                 Sin familia
               </button>
             </div>
+            {/* Selector familia existente / nueva (solo cuando sin_familia OFF) */}
             {!form.sin_familia && (
               !form.familia_nueva ? (
                 <>
@@ -226,42 +242,56 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
                       onChange={e => set('fam_nombre', e.target.value)}
                       placeholder="Apellidos o nombre" />
                   </label>
-                  <label className="panel__field">
-                    <span className="panel__lbl">Email</span>
-                    <input className="panel__input" type="email" value={form.fam_email}
-                      onChange={e => set('fam_email', e.target.value)}
-                      placeholder="correo@ejemplo.com" />
-                  </label>
-                  <label className="panel__field">
-                    <span className="panel__lbl">Teléfono</span>
-                    <input className="panel__input" type="tel" value={form.fam_telefono}
-                      onChange={e => set('fam_telefono', e.target.value)}
-                      placeholder="600 000 000" />
-                  </label>
-                  <label className="panel__field">
-                    <span className="panel__lbl">Método de pago</span>
-                    <select className="panel__input panel__select"
-                      value={form.fam_metodo_pago}
-                      onChange={e => set('fam_metodo_pago', e.target.value)}
-                    >
-                      {METODOS_PAGO.map(m => (
-                        <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="panel__field">
-                    <span className="panel__lbl">Notas</span>
-                    <textarea className="panel__input panel__textarea" rows={2}
-                      value={form.fam_notas}
-                      onChange={e => set('fam_notas', e.target.value)}
-                      placeholder="Opcional…" />
-                  </label>
                   <button className="panel__link" type="button"
                     onClick={() => { set('familia_nueva', false); set('fam_nombre', '') }}>
                     ← Elegir familia existente
                   </button>
                 </>
               )
+            )}
+
+            {/* Contacto y pago: siempre visible en sin_familia o al crear familia nueva */}
+            {(form.sin_familia || form.familia_nueva) && (
+              <>
+                <label className="panel__field">
+                  <span className="panel__lbl">Email</span>
+                  <input className="panel__input" type="email" value={form.fam_email}
+                    onChange={e => set('fam_email', e.target.value)}
+                    placeholder="correo@ejemplo.com" />
+                </label>
+                <label className="panel__field">
+                  <span className="panel__lbl">Teléfono</span>
+                  <input className="panel__input" type="tel" value={form.fam_telefono}
+                    onChange={e => set('fam_telefono', e.target.value)}
+                    placeholder="600 000 000" />
+                </label>
+                <label className="panel__field">
+                  <span className="panel__lbl">Método de pago</span>
+                  <select className="panel__input panel__select"
+                    value={form.fam_metodo_pago}
+                    onChange={e => set('fam_metodo_pago', e.target.value)}
+                  >
+                    {METODOS_PAGO.map(({ value, label }) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
+                  </select>
+                </label>
+                {(form.fam_metodo_pago === 'transferencia' || form.fam_metodo_pago === 'sepa') && (
+                  <label className="panel__field">
+                    <span className="panel__lbl">IBAN</span>
+                    <input className="panel__input" value={form.fam_codigo_sepa}
+                      onChange={e => set('fam_codigo_sepa', e.target.value)}
+                      placeholder="ES00 0000 0000 0000 0000 0000" />
+                  </label>
+                )}
+                <label className="panel__field">
+                  <span className="panel__lbl">Notas</span>
+                  <textarea className="panel__input panel__textarea" rows={2}
+                    value={form.fam_notas}
+                    onChange={e => set('fam_notas', e.target.value)}
+                    placeholder="Opcional…" />
+                </label>
+              </>
             )}
           </section>
 
