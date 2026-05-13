@@ -179,7 +179,7 @@ function FichaScreen({ mobile }) {
   const FichaFamilias = window.FichaFamilias;
   return (
     <>
-      <Topbar eyebrow="Documentos" title="Ficha para familias" showSearch={false} mobile={mobile} />
+      <Topbar eyebrow="Gestión" title="Tarifas" showSearch={false} mobile={mobile} />
       <div className="content content--ficha">
         <FichaFamilias />
       </div>

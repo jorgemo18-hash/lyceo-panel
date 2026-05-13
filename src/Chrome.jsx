@@ -7,8 +7,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
     { id: "informes", label: "Informes", icon: <Icon.doc /> },
-    { id: "tarifas", label: "Tarifas", icon: <Icon.tag /> },
-    { id: "ficha", label: "Ficha familias", icon: <Icon.printer /> },
+    { id: "ficha", label: "Tarifas", icon: <Icon.tag /> },
     { id: "documentos", label: "Documentos", icon: <Icon.doc /> },
     { id: "pagos", label: "Pagos", icon: <Icon.euro /> },
   ];
@@ -59,7 +58,7 @@ function BottomNav({ activo = "horario", onNavigate }) {
     { id: "horario", label: "Horario", icon: <Icon.grid /> },
     { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
-    { id: "tarifas", label: "Tarifas", icon: <Icon.tag /> },
+    { id: "ficha", label: "Tarifas", icon: <Icon.tag /> },
     { id: "ajustes", label: "Más", icon: <Icon.settings /> },
   ];
   return (
