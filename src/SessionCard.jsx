@@ -111,6 +111,17 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
 // SubjectPicker — chips con asignaturas según el nivel del alumno
 function SubjectPicker({ nivel, value, onChange }) {
   const lista = ASIGNATURAS_POR_NIVEL[nivel] || ASIGNATURAS_POR_NIVEL.eso;
+  const [otraMode, setOtraMode] = React.useState(() => value !== "" && !lista.includes(value));
+  const otraRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (otraMode) otraRef.current?.focus();
+  }, [otraMode]);
+
+  const elegirOtra = () => {
+    if (!otraMode) { setOtraMode(true); onChange(""); }
+  };
+
   return (
     <div className="field">
       <label className="field__label">Asignatura</label>
@@ -118,13 +129,27 @@ function SubjectPicker({ nivel, value, onChange }) {
         {lista.map((a) => (
           <button
             key={a}
-            className={`chip ${value === a ? "chip--on" : ""}`}
-            onClick={() => onChange(a)}
+            className={`chip ${!otraMode && value === a ? "chip--on" : ""}`}
+            onClick={() => { setOtraMode(false); onChange(a); }}
           >
             {a}
           </button>
         ))}
+        <button className={`chip ${otraMode ? "chip--on" : ""}`} onClick={elegirOtra}>
+          Otra
+        </button>
       </div>
+      {otraMode && (
+        <input
+          ref={otraRef}
+          className="topic__input"
+          type="text"
+          value={value}
+          placeholder="Nombre de la asignatura…"
+          onChange={(e) => onChange(e.target.value)}
+          style={{ marginTop: 8 }}
+        />
+      )}
     </div>
   );
 }
