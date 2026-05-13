@@ -100,7 +100,6 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
         .insert({
           nombre: form.nombre.trim(),
           curso: form.curso,
-          nivel: nivelFromCurso(form.curso),
           slug: slugify(form.nombre.trim(), form.curso),
           familia_id,
           activo: true,
