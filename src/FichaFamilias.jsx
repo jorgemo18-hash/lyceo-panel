@@ -64,30 +64,47 @@ function FichaCellEditor({ cell, onChange }) {
   const isEmpty = cell.num === 0 && !cell.nivel;
   const update = (k, v) => onChange({ ...cell, [k]: v });
 
-  if (isEmpty && !editing) {
+  const startEdit = () => {
+    setEditing(true);
+    setTimeout(() => nivelRef.current?.focus(), 0);
+  };
+
+  const stopEdit = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) setEditing(false);
+  };
+
+  // ── Modo lectura ──────────────────────────────────────────────
+  if (!editing) {
+    if (isEmpty) {
+      return (
+        <button className="ff-cell ff-cell--empty" onClick={startEdit}>+</button>
+      );
+    }
     return (
-      <button
-        className="ff-cell ff-cell--empty"
-        onClick={() => { setEditing(true); setTimeout(() => nivelRef.current?.focus(), 0); }}
+      <div
+        className={`ff-cell ff-cell--read ${isFull ? "ff-cell--full" : ""}`}
+        onClick={startEdit}
+        title="Editar"
       >
-        +
-      </button>
+        <span className="ff-cell__nivel-lbl">{cell.nivel}</span>
+        <span className="ff-cell__nums-lbl">{cell.num}/{cell.tope}</span>
+        <span className="ff-cell__pencil">✏</span>
+      </div>
     );
   }
 
+  // ── Modo edición ──────────────────────────────────────────────
   return (
     <div
-      className={`ff-cell ${isFull ? "ff-cell--full" : ""}`}
-      onClick={() => nivelRef.current?.focus()}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget) && isEmpty) setEditing(false);
-      }}
+      className={`ff-cell ff-cell--editing ${isFull ? "ff-cell--full" : ""}`}
+      onBlur={stopEdit}
+      onKeyDown={(e) => { if (e.key === "Enter") setEditing(false); }}
     >
       <input
         ref={nivelRef}
         className="ff-cell__nivel"
         value={cell.nivel}
-        placeholder="—"
+        placeholder="Nivel"
         onChange={(e) => update("nivel", e.target.value.toUpperCase())}
       />
       <div className="ff-cell__nums">

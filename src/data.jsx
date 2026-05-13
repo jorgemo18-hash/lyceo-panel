@@ -11,10 +11,11 @@ const ASIGNATURAS_POR_NIVEL = {
 };
 
 // Sesiones del día — orden cronológico
+// Clases de 1 hora: 15:30, 16:30, 17:30, 18:30, 19:30 (última termina a las 20:30)
 const SESIONES_HOY = [
   {
     id: "s01",
-    hora: "16:00",
+    hora: "15:30",
     duracion: 60,
     alumno: {
       id: "a-martina",
@@ -29,7 +30,7 @@ const SESIONES_HOY = [
   },
   {
     id: "s02",
-    hora: "16:00",
+    hora: "15:30",
     duracion: 60,
     alumno: {
       id: "a-pablo",
@@ -44,7 +45,7 @@ const SESIONES_HOY = [
   },
   {
     id: "s03",
-    hora: "17:00",
+    hora: "16:30",
     duracion: 60,
     alumno: {
       id: "a-lucia",
@@ -60,7 +61,7 @@ const SESIONES_HOY = [
   },
   {
     id: "s04",
-    hora: "17:00",
+    hora: "16:30",
     duracion: 60,
     alumno: {
       id: "a-diego",
@@ -75,8 +76,8 @@ const SESIONES_HOY = [
   },
   {
     id: "s05",
-    hora: "18:00",
-    duracion: 90,
+    hora: "17:30",
+    duracion: 60,
     alumno: {
       id: "a-claudia",
       nombre: "Claudia Sáez",
@@ -90,8 +91,8 @@ const SESIONES_HOY = [
   },
   {
     id: "s06",
-    hora: "18:00",
-    duracion: 90,
+    hora: "17:30",
+    duracion: 60,
     alumno: {
       id: "a-mateo",
       nombre: "Mateo Galván",
@@ -105,7 +106,7 @@ const SESIONES_HOY = [
   },
   {
     id: "s07",
-    hora: "19:00",
+    hora: "18:30",
     duracion: 60,
     alumno: {
       id: "a-elena",
