@@ -331,6 +331,25 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
   )
 }
 
+// ── ConfirmEliminar ───────────────────────────────────────────────
+
+function ConfirmEliminar({ alumno, onConfirm, onCancel }) {
+  return (
+    <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onCancel()}>
+      <div className="confirm-box">
+        <div className="confirm-box__title">¿Eliminar a {alumno.nombre}?</div>
+        <p className="confirm-box__body">
+          Esto borrará al alumno y todos sus datos permanentemente. No se puede deshacer.
+        </p>
+        <div className="confirm-box__actions">
+          <button className="btn btn--ghost" onClick={onCancel}>Cancelar</button>
+          <button className="btn btn--danger" onClick={onConfirm}>Eliminar definitivamente</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── ConfirmArchive ────────────────────────────────────────────────
 
 function ConfirmArchive({ alumno, onConfirm, onCancel }) {
@@ -360,6 +379,7 @@ export function Alumnos() {
   const [filtro, setFiltro] = React.useState('activos')
   const [showPanel, setShowPanel] = React.useState(false)
   const [archivando, setArchivando] = React.useState(null)
+  const [eliminando, setEliminando] = React.useState(null)
 
   const cargar = React.useCallback(() => {
     setLoading(true)
@@ -367,7 +387,7 @@ export function Alumnos() {
     Promise.all([
       supabase
         .from('alumnos')
-        .select('id, nombre, curso, nivel, activo, fecha_alta, familias(nombre, email)')
+        .select('id, nombre, curso, nivel, activo, fecha_alta, familia_id, familias(nombre, email)')
         .eq('activo', activo)
         .order('nombre'),
       supabase
@@ -392,6 +412,40 @@ export function Alumnos() {
     setArchivando(null)
     if (e) alert(e.message)
     else cargar()
+  }
+
+  const eliminar = async (alumno) => {
+    setEliminando(null)
+    try {
+      // 1. Borrar horario del alumno
+      const { error: e1 } = await supabase.from('horario').delete().eq('alumno_id', alumno.id)
+      if (e1) throw e1
+
+      // 2. Borrar tarifas de la familia
+      if (alumno.familia_id) {
+        const { error: e2 } = await supabase.from('tarifas').delete().eq('familia_id', alumno.familia_id)
+        if (e2) throw e2
+      }
+
+      // 3. Borrar el alumno
+      const { error: e3 } = await supabase.from('alumnos').delete().eq('id', alumno.id)
+      if (e3) throw e3
+
+      // 4. Borrar la familia solo si no tiene otros alumnos
+      if (alumno.familia_id) {
+        const { count } = await supabase
+          .from('alumnos')
+          .select('id', { count: 'exact', head: true })
+          .eq('familia_id', alumno.familia_id)
+        if (count === 0) {
+          await supabase.from('familias').delete().eq('id', alumno.familia_id)
+        }
+      }
+
+      cargar()
+    } catch (err) {
+      alert('Error al eliminar: ' + (err.message ?? err))
+    }
   }
 
   const reactivar = async (alumno) => {
@@ -457,9 +511,14 @@ export function Alumnos() {
                     <Icon.archive />
                   </button>
                 ) : (
-                  <button className="btn btn--ghost btn--sm" onClick={() => reactivar(a)}>
-                    Reactivar
-                  </button>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn--ghost btn--sm" onClick={() => reactivar(a)}>
+                      Reactivar
+                    </button>
+                    <button className="btn btn--danger btn--sm" onClick={() => setEliminando(a)}>
+                      Eliminar
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -480,6 +539,14 @@ export function Alumnos() {
           alumno={archivando}
           onConfirm={() => archivar(archivando)}
           onCancel={() => setArchivando(null)}
+        />
+      )}
+
+      {eliminando && (
+        <ConfirmEliminar
+          alumno={eliminando}
+          onConfirm={() => eliminar(eliminando)}
+          onCancel={() => setEliminando(null)}
         />
       )}
     </>
