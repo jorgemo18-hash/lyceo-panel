@@ -9,6 +9,7 @@ import './Horario.jsx';
 import './Tarifas.jsx';
 import './FichaFamilias.jsx';
 import './Documentos.jsx';
+import { Alumnos } from './Alumnos.jsx';
 
 const PRIMARY = '#8B0000';
 
@@ -184,14 +185,17 @@ const PANTALLAS = {
   tarifas: TarifasScreen,
   ficha: FichaScreen,
   documentos: DocumentosScreen,
-  alumnos: (p) => (
-    <PlaceholderScreen
-      eyebrow="Gestión"
-      title="Alumnos"
-      desc="Listado completo de alumnos, historial y seguimiento individual."
-      {...p}
-    />
-  ),
+  alumnos: ({ mobile }) => {
+    const Topbar = window.Topbar
+    return (
+      <>
+        <Topbar eyebrow="Gestión" title="Alumnos" showSearch={false} mobile={mobile} />
+        <div className="content">
+          <Alumnos />
+        </div>
+      </>
+    )
+  },
   informes: (p) => (
     <PlaceholderScreen
       eyebrow="Gestión"

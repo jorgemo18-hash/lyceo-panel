@@ -1336,6 +1336,93 @@ button { font-family: inherit; }
   background: #999;
 }
 
+/* ───────────── Alumnos ───────────── */
+.alumnos-estado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 40px 0;
+  color: var(--ink-3);
+  font-size: 15px;
+}
+.alumnos-estado--error { color: #b91c1c; }
+.alumnos-estado__spinner {
+  width: 18px; height: 18px;
+  border: 2px solid var(--line);
+  border-top-color: var(--lyceo);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.alumnos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.alumno-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-left-width: 3px;
+}
+.alumno-card--primaria  { border-left-color: var(--niv-pri-fg); }
+.alumno-card--eso       { border-left-color: var(--niv-eso-fg); }
+.alumno-card--bachillerato { border-left-color: var(--niv-bach-fg); }
+
+.alumno-card__main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.alumno-card__nombre {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.alumno-card__curso {
+  font-size: 13px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.alumno-card__nivel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.alumno-card__nivel--primaria    { background: var(--niv-pri-bg); color: var(--niv-pri-fg); }
+.alumno-card__nivel--eso         { background: var(--niv-eso-bg); color: var(--niv-eso-fg); }
+.alumno-card__nivel--bachillerato { background: var(--niv-bach-bg); color: var(--niv-bach-fg); }
+
+.alumno-card__familia {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.alumno-card__familia-nombre {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.alumno-card__email {
+  font-size: 12px;
+  color: var(--lyceo);
+  text-decoration: none;
+}
+.alumno-card__email:hover { text-decoration: underline; }
+
 /* ───────────── Print ───────────── */
 @media print {
   @page {
