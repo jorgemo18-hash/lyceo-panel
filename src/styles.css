@@ -456,6 +456,11 @@ button { font-family: inherit; }
   padding: 6px 8px;
   gap: 4px;
 }
+.hor-cell--full {
+  background: oklch(0.97 0.015 25);
+  outline: 1.5px solid #c00;
+  outline-offset: -1.5px;
+}
 
 .hor-chip {
   display: flex;
