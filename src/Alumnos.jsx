@@ -554,12 +554,12 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
               <h3 className="panel__sh">Datos del alumno</h3>
               <label className="panel__field">
                 <span className="panel__lbl">Nombre *</span>
-                <input className="panel__input" value={form.nombre}
+                <input className="panel__input" value={form?.nombre ?? ''}
                   onChange={e => set('nombre', e.target.value)} />
               </label>
               <label className="panel__field">
                 <span className="panel__lbl">Curso *</span>
-                <select className="panel__input panel__select" value={form.curso}
+                <select className="panel__input panel__select" value={form?.curso ?? ''}
                   onChange={e => set('curso', e.target.value)}>
                   <option value="">— Seleccionar —</option>
                   {CURSOS.map(c => <option key={c} value={c}>{c}</option>)}
@@ -567,7 +567,7 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
               </label>
               <label className="panel__field">
                 <span className="panel__lbl">Fecha de alta</span>
-                <input className="panel__input" type="date" value={form.fecha_alta}
+                <input className="panel__input" type="date" value={form?.fecha_alta ?? ''}
                   onChange={e => set('fecha_alta', e.target.value)} />
               </label>
             </section>
@@ -576,27 +576,27 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
               <h3 className="panel__sh">Familia</h3>
               <label className="panel__field">
                 <span className="panel__lbl">Email</span>
-                <input className="panel__input" type="email" value={form.fam_email}
+                <input className="panel__input" type="email" value={form?.fam_email ?? ''}
                   onChange={e => set('fam_email', e.target.value)} />
               </label>
               <label className="panel__field">
                 <span className="panel__lbl">Teléfono</span>
-                <input className="panel__input" type="tel" value={form.fam_telefono}
+                <input className="panel__input" type="tel" value={form?.fam_telefono ?? ''}
                   onChange={e => set('fam_telefono', e.target.value)} />
               </label>
               <label className="panel__field">
                 <span className="panel__lbl">Método de pago</span>
-                <select className="panel__input panel__select" value={form.fam_metodo_pago}
+                <select className="panel__input panel__select" value={form?.fam_metodo_pago ?? 'bizum'}
                   onChange={e => set('fam_metodo_pago', e.target.value)}>
                   {METODOS_PAGO.map(({ value, label }) => (
                     <option key={value} value={value}>{label}</option>
                   ))}
                 </select>
               </label>
-              {(form.fam_metodo_pago === 'transferencia' || form.fam_metodo_pago === 'sepa') && (
+              {((form?.fam_metodo_pago === 'transferencia') || (form?.fam_metodo_pago === 'sepa')) && (
                 <label className="panel__field">
                   <span className="panel__lbl">IBAN</span>
-                  <input className="panel__input" value={form.fam_codigo_sepa}
+                  <input className="panel__input" value={form?.fam_codigo_sepa ?? ''}
                     onChange={e => set('fam_codigo_sepa', e.target.value)}
                     placeholder="ES00 0000 0000 0000 0000 0000" />
                 </label>
@@ -604,7 +604,7 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
               <label className="panel__field">
                 <span className="panel__lbl">Notas</span>
                 <textarea className="panel__input panel__textarea" rows={2}
-                  value={form.fam_notas} onChange={e => set('fam_notas', e.target.value)} />
+                  value={form?.fam_notas ?? ''} onChange={e => set('fam_notas', e.target.value)} />
               </label>
             </section>
 
@@ -637,12 +637,12 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
                 <label className="panel__field">
                   <span className="panel__lbl">Precio bruto (€)</span>
                   <input className="panel__input" type="number" min="0" step="1"
-                    value={form.precio_bruto} onChange={e => set('precio_bruto', e.target.value)} />
+                    value={form?.precio_bruto ?? ''} onChange={e => set('precio_bruto', e.target.value)} />
                 </label>
                 <label className="panel__field">
                   <span className="panel__lbl">Descuento (%)</span>
                   <input className="panel__input" type="number" min="0" max="100" step="1"
-                    value={form.descuento} onChange={e => set('descuento', e.target.value)} />
+                    value={form?.descuento ?? 0} onChange={e => set('descuento', e.target.value)} />
                 </label>
                 <label className="panel__field">
                   <span className="panel__lbl">Precio neto (€)</span>
@@ -658,11 +658,11 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
               <h3 className="panel__sh">Datos del alumno</h3>
               <div className="panel__field">
                 <span className="panel__lbl">Nombre</span>
-                <span className="panel__val">{data.nombre}</span>
+                <span className="panel__val">{data?.nombre ?? '—'}</span>
               </div>
               <div className="panel__field">
                 <span className="panel__lbl">Curso</span>
-                <span className="panel__val">{data.curso}</span>
+                <span className="panel__val">{data?.curso ?? '—'}</span>
               </div>
               <div className="panel__field">
                 <span className="panel__lbl">Fecha de alta</span>
@@ -720,27 +720,27 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
                   </React.Fragment>
                 ))}
               </div>
-              {form.slots.length === 0 && (
+              {(form?.slots?.length ?? 0) === 0 && (
                 <p className="panel__lbl" style={{ marginTop: 6 }}>Sin horario asignado</p>
               )}
             </section>
 
-            {data.tarifas?.length > 0 && (
+            {(data.tarifas?.length ?? 0) > 0 && (
               <section className="panel__section">
                 <h3 className="panel__sh">Tarifa mensual</h3>
                 <div className="panel__field">
                   <span className="panel__lbl">Precio bruto</span>
-                  <span className="panel__val">{data.tarifas[0].precio_bruto} €</span>
+                  <span className="panel__val">{data.tarifas?.[0]?.precio_bruto ?? 0} €</span>
                 </div>
-                {data.tarifas[0].descuento_pct > 0 && (
+                {(data.tarifas?.[0]?.descuento_pct ?? 0) > 0 && (
                   <div className="panel__field">
                     <span className="panel__lbl">Descuento</span>
-                    <span className="panel__val">{data.tarifas[0].descuento_pct}%</span>
+                    <span className="panel__val">{data.tarifas?.[0]?.descuento_pct ?? 0}%</span>
                   </div>
                 )}
                 <div className="panel__field">
                   <span className="panel__lbl">Precio neto</span>
-                  <span className="panel__val panel__val--strong">{data.tarifas[0].precio_neto} €</span>
+                  <span className="panel__val panel__val--strong">{data.tarifas?.[0]?.precio_neto ?? 0} €</span>
                 </div>
               </section>
             )}
