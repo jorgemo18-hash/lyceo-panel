@@ -14,8 +14,42 @@ const MESES = [
   { label: 'Jun', mes: 6,  anio: 2026 },
 ]
 
+const METODOS = {
+  bizum:         { label: 'Bizum',         cls: 'pag-badge--bizum' },
+  efectivo:      { label: 'Efectivo',      cls: 'pag-badge--efectivo' },
+  transferencia: { label: 'Transferencia', cls: 'pag-badge--transferencia' },
+  sepa:          { label: 'Domiciliado',   cls: 'pag-badge--sepa' },
+}
+
+const ORDEN_METODO = { sepa: 0, transferencia: 1, bizum: 2, efectivo: 3 }
+
+function agrupar(alumnos) {
+  const map = new Map()
+  alumnos.forEach(a => {
+    const key = a.familia_id ?? `solo-${a.id}`
+    if (!map.has(key)) {
+      map.set(key, {
+        key,
+        familia_id: a.familia_id,
+        nombres: [a.nombre],
+        precio_total: a.precio_neto ?? 0,
+        metodo_pago: a.familias?.metodo_pago ?? null,
+      })
+    } else {
+      const g = map.get(key)
+      g.nombres.push(a.nombre)
+      g.precio_total += a.precio_neto ?? 0
+    }
+  })
+  return [...map.values()].sort((a, b) => {
+    const oa = ORDEN_METODO[a.metodo_pago] ?? 99
+    const ob = ORDEN_METODO[b.metodo_pago] ?? 99
+    return oa !== ob ? oa - ob : a.nombres[0].localeCompare(b.nombres[0])
+  })
+}
+
 export function Pagos() {
-  const [alumnos, setAlumnos] = React.useState([])
+  const [grupos, setGrupos] = React.useState([])
   const [pagos, setPagos] = React.useState([])
   const [cargando, setCargando] = React.useState(true)
 
@@ -35,12 +69,12 @@ export function Pagos() {
         supabase.from('pagos').select('*').gte('anio', 2025),
       ])
 
-      setAlumnos(
-        (a ?? []).map(x => ({
-          ...x,
-          precio_neto: t?.find(tar => tar.familia_id === x.familia_id)?.precio_neto ?? null,
-        }))
-      )
+      const alumnosConTarifa = (a ?? []).map(x => ({
+        ...x,
+        precio_neto: t?.find(tar => tar.familia_id === x.familia_id)?.precio_neto ?? 0,
+      }))
+
+      setGrupos(agrupar(alumnosConTarifa))
       setPagos(p ?? [])
       setCargando(false)
     }
@@ -50,22 +84,20 @@ export function Pagos() {
   const getPago = (familia_id, mes, anio) =>
     pagos.find(p => p.familia_id === familia_id && p.mes === mes && p.anio === anio)
 
-  const getPrecio = (a) => a.precio_neto ?? null
-
-  const toggle = async (alumno, mes, anio) => {
-    if (!alumno.familia_id) return
-    const existing = getPago(alumno.familia_id, mes, anio)
+  const toggle = async (grupo, mes, anio) => {
+    if (!grupo.familia_id) return
+    const existing = getPago(grupo.familia_id, mes, anio)
     const pagado = !(existing?.pagado ?? false)
-    const importe = getPrecio(alumno)
     const fecha_pago = pagado ? new Date().toISOString().split('T')[0] : null
+    const importe = grupo.precio_total
 
     setPagos(prev => [
-      ...prev.filter(p => !(p.familia_id === alumno.familia_id && p.mes === mes && p.anio === anio)),
-      { familia_id: alumno.familia_id, anio, mes, importe, pagado, fecha_pago },
+      ...prev.filter(p => !(p.familia_id === grupo.familia_id && p.mes === mes && p.anio === anio)),
+      { familia_id: grupo.familia_id, anio, mes, importe, pagado, fecha_pago },
     ])
 
     await supabase.from('pagos').upsert(
-      { familia_id: alumno.familia_id, anio, mes, importe, pagado, fecha_pago },
+      { familia_id: grupo.familia_id, anio, mes, importe, pagado, fecha_pago },
       { onConflict: 'familia_id,anio,mes' }
     )
   }
@@ -99,21 +131,21 @@ export function Pagos() {
           </tr>
         </thead>
         <tbody>
-          {alumnos.map(a => {
-            const precio = getPrecio(a)
+          {grupos.map(g => {
+            const metodo = g.metodo_pago ? METODOS[g.metodo_pago] : null
             return (
-              <tr key={a.id} className="pag-row">
+              <tr key={g.key} className="pag-row">
                 <td className="pag-td pag-td--name">
-                  <span className="pag-nombre">{a.nombre}</span>
-                  {a.familias?.nombre && (
-                    <span className="pag-familia">{a.familias.nombre}</span>
+                  <span className="pag-nombre">{g.nombres.join(' + ')}</span>
+                  {metodo && (
+                    <span className={`pag-badge ${metodo.cls}`}>{metodo.label}</span>
                   )}
                 </td>
                 <td className="pag-td pag-td--importe">
-                  {precio != null ? `${precio} €` : '—'}
+                  {g.precio_total > 0 ? `${g.precio_total} €` : '—'}
                 </td>
                 {MESES.map(m => {
-                  const pago = getPago(a.familia_id, m.mes, m.anio)
+                  const pago = getPago(g.familia_id, m.mes, m.anio)
                   const checked = pago?.pagado ?? false
                   return (
                     <td
@@ -124,8 +156,8 @@ export function Pagos() {
                         type="checkbox"
                         className="pag-check"
                         checked={checked}
-                        disabled={!a.familia_id}
-                        onChange={() => toggle(a, m.mes, m.anio)}
+                        disabled={!g.familia_id}
+                        onChange={() => toggle(g, m.mes, m.anio)}
                       />
                     </td>
                   )

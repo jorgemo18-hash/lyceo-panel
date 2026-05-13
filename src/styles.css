@@ -829,6 +829,20 @@ button { font-family: inherit; }
 .pag-nombre { font-weight: 500; display: block; }
 .pag-familia { font-size: 11.5px; color: var(--ink-3); display: block; margin-top: 1px; }
 
+.pag-badge {
+  display: inline-block;
+  margin-top: 3px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.pag-badge--bizum         { background: #dbeafe; color: #1d4ed8; }
+.pag-badge--efectivo      { background: #dcfce7; color: #15803d; }
+.pag-badge--transferencia { background: #ffedd5; color: #c2410c; }
+.pag-badge--sepa          { background: #ede9fe; color: #6d28d9; }
+
 .pag-check {
   width: 17px;
   height: 17px;
