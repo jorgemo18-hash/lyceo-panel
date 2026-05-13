@@ -112,15 +112,25 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
       if (e2) throw e2
 
       if (form.slots.length > 0) {
-        const { error: e3 } = await supabase.from('horario').insert(
-          form.slots.map(s => ({
-            alumno_id: alumno.id,
-            dia: s.dia,
-            hora_inicio: s.hora_inicio,
-            hora_fin: horaFin(s.hora_inicio),
-            fecha_inicio: today(),
-          }))
-        )
+        // Agrupar por hora y construir una fila por franja con booleanos por día
+        const porHora = {}
+        form.slots.forEach(({ dia, hora_inicio }) => {
+          if (!porHora[hora_inicio]) porHora[hora_inicio] = new Set()
+          porHora[hora_inicio].add(dia)
+        })
+        const filas = Object.entries(porHora).map(([hora, dias]) => ({
+          alumno_id: alumno.id,
+          hora_inicio: hora,
+          hora_fin: horaFin(hora),
+          fecha_inicio: today(),
+          fecha_fin: null,
+          lunes:     dias.has('lunes'),
+          martes:    dias.has('martes'),
+          miercoles: dias.has('miércoles'),
+          jueves:    dias.has('jueves'),
+          viernes:   dias.has('viernes'),
+        }))
+        const { error: e3 } = await supabase.from('horario').insert(filas)
         if (e3) throw e3
       }
 
