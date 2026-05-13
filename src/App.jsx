@@ -2,7 +2,7 @@ import React from 'react';
 window.React = React;
 
 import './icons.jsx';
-import './data.jsx';
+import { cargarSesionesHoy, groupByHora } from './data.jsx';
 import './Chrome.jsx';
 import './SessionCard.jsx';
 import './Horario.jsx';
@@ -31,18 +31,31 @@ function DiarioScreen({ mobile }) {
   const Topbar = window.Topbar;
   const ProgressBar = window.ProgressBar;
   const SessionCard = window.SessionCard;
-  const { SESIONES_HOY, HOY, groupByHora } = window;
 
-  const [registros, setRegistros] = React.useState(() =>
-    Object.fromEntries(
-      SESIONES_HOY.map((s) => [
-        s.id,
-        { asignatura: '', tema: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
-      ])
-    )
-  );
+  const [sesiones, setSesiones] = React.useState([]);
+  const [hoy, setHoy] = React.useState('');
+  const [cargando, setCargando] = React.useState(true);
+  const [registros, setRegistros] = React.useState({});
   const [expandido, setExpandido] = React.useState(null);
   const timers = React.useRef({});
+
+  React.useEffect(() => {
+    cargarSesionesHoy()
+      .then(({ sesiones: s, hoy: h }) => {
+        setSesiones(s);
+        setHoy(h);
+        setRegistros(
+          Object.fromEntries(
+            s.map((ses) => [
+              ses.id,
+              { asignatura: '', tema: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
+            ])
+          )
+        );
+        setCargando(false);
+      })
+      .catch(() => setCargando(false));
+  }, []);
 
   const onChange = (id, patch) => {
     setRegistros((prev) => {
@@ -60,16 +73,29 @@ function DiarioScreen({ mobile }) {
   const done = vals.filter((r) => r.asignatura && r.tema?.trim()).length;
   const absent = vals.filter((r) => r.estado === 'absent').length;
   const lastSaved = vals.map((r) => r.lastSavedAt).filter(Boolean).sort().at(-1) ?? null;
-  const groups = groupByHora(SESIONES_HOY);
-  const todoCompleto = vals.every((r) => (r.asignatura && r.tema?.trim()) || r.estado === 'absent');
+  const groups = groupByHora(sesiones);
+  const todoCompleto = sesiones.length > 0 && vals.every((r) => (r.asignatura && r.tema?.trim()) || r.estado === 'absent');
+
+  if (cargando) {
+    return (
+      <>
+        <Topbar eyebrow="Hoy" title="Cargando…" showSearch={false} mobile={mobile} />
+        <div className="content">
+          <div className="alumnos-estado">
+            <div className="alumnos-estado__spinner" /> Cargando sesiones…
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
-      <Topbar eyebrow="Hoy" title={HOY} allSavedAt={lastSaved} mobile={mobile} />
+      <Topbar eyebrow="Hoy" title={hoy} allSavedAt={lastSaved} mobile={mobile} />
       <div className="content">
         <ProgressBar
           done={done}
-          total={SESIONES_HOY.length}
+          total={sesiones.length}
           absent={absent}
           primaryColor={PRIMARY}
         />
@@ -95,6 +121,12 @@ function DiarioScreen({ mobile }) {
             ))}
           </div>
         ))}
+        {sesiones.length === 0 && (
+          <div className="placeholder">
+            <div className="placeholder__title">Sin sesiones hoy</div>
+            <p>No hay alumnos con clase este día.</p>
+          </div>
+        )}
         {todoCompleto && (
           <div className="endcard">
             <div className="endcard__title">Todo registrado</div>
