@@ -828,88 +828,92 @@ button { font-family: inherit; }
 }
 .btn--primary:hover { background: oklch(0.30 0.16 25); border-color: oklch(0.30 0.16 25); color: #fff; }
 
-/* Hoja A4 — 210 × 297mm. En pantalla la mostramos a escala visual cómoda. */
+/* Cuartilla A6 — 105×148mm. Al imprimir en A4 caben 4 (2×2). */
 .ff-sheet {
-  width: 210mm;
-  min-height: 297mm;
+  width: 105mm;
+  height: 148mm;
   margin: 0 auto;
   background: #fff;
   color: #1a1a1a;
-  padding: 9mm 12mm 8mm;
+  padding: 4mm 5mm;
   box-shadow: 0 8px 32px -8px rgba(0,0,0,0.18), 0 0 0 1px var(--line);
   font-family: var(--sans);
-  font-size: 9pt;
-  line-height: 1.3;
+  font-size: 7pt;
+  line-height: 1.2;
   display: flex;
   flex-direction: column;
-  gap: 3.5mm;
+  gap: 2mm;
+  overflow: hidden;
 }
+
+.ff-screen-sheet { /* wrapper pantalla — sin estilos propios */ }
+.ff-print-grid { display: none; }
 
 .ff-head {
   display: grid;
   grid-template-columns: auto auto 1fr auto;
   align-items: center;
-  gap: 10px;
-  padding-bottom: 2.5mm;
-  border-bottom: 1.5pt solid var(--lyceo);
+  gap: 6px;
+  padding-bottom: 2mm;
+  border-bottom: 1pt solid var(--lyceo);
 }
 .ff-head__logo {
-  width: 12mm;
-  height: 12mm;
+  width: 7mm;
+  height: 7mm;
   object-fit: contain;
 }
 .ff-head__brand {
   font-family: var(--serif);
-  font-size: 18pt;
+  font-size: 12pt;
   font-weight: 600;
   color: var(--lyceo);
   letter-spacing: -0.02em;
   line-height: 1;
 }
 .ff-head__sub {
-  font-size: 8.5pt;
+  font-size: 6pt;
   color: #555;
   margin-top: 1px;
 }
 .ff-head__tag {
   font-family: var(--mono);
-  font-size: 7.5pt;
+  font-size: 5.5pt;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   color: var(--lyceo);
-  border: 1px solid var(--lyceo);
-  padding: 3px 8px;
+  border: 0.7px solid var(--lyceo);
+  padding: 2px 5px;
   border-radius: 999px;
   white-space: nowrap;
 }
 
-.ff-block { display: flex; flex-direction: column; gap: 1.5mm; }
+.ff-block { display: flex; flex-direction: column; gap: 1mm; }
 .ff-h2 {
   font-family: var(--serif);
-  font-size: 11pt;
+  font-size: 8pt;
   font-weight: 600;
   color: var(--lyceo);
   margin: 0;
   letter-spacing: -0.01em;
 }
 
-.ff-tab { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 8pt; }
+.ff-tab { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6pt; }
 .ff-th {
   background: oklch(0.96 0.018 25);
   color: var(--lyceo);
   font-family: var(--serif);
   font-weight: 600;
-  font-size: 8.5pt;
-  padding: 2.5px 4px;
+  font-size: 6.5pt;
+  padding: 1.5px 2px;
   border: 0.5pt solid #c9c9c9;
   text-align: center;
 }
 .ff-th--time, .ff-th--rowhead {
-  width: 16%;
+  width: 24%;
   font-family: var(--mono);
-  font-size: 7pt;
+  font-size: 5pt;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   font-weight: 500;
   color: #444;
 }
@@ -917,22 +921,23 @@ button { font-family: inherit; }
 .ff-tab--horario .ff-time {
   background: #f5f3ee;
   border: 0.5pt solid #c9c9c9;
-  font-family: var(--serif);
-  font-size: 8.5pt;
+  font-family: var(--mono);
+  font-size: 5.5pt;
   font-weight: 500;
   color: #1a1a1a;
   text-align: center;
   font-variant-numeric: tabular-nums;
-  padding: 1px 3px;
+  padding: 1px 2px;
+  white-space: nowrap;
+  line-height: 1.15;
 }
 .ff-td {
   border: 0.5pt solid #c9c9c9;
   padding: 0;
-  height: 9.5mm;
-  vertical-align: top;
+  height: 7mm;
+  vertical-align: middle;
   position: relative;
 }
-.ff-td--empty { background: #2a2a2a; }
 .ff-cell {
   width: 100%; height: 100%;
   display: flex; flex-direction: column;
@@ -940,9 +945,7 @@ button { font-family: inherit; }
   gap: 1px; padding: 1px;
   border: 0; background: transparent; cursor: text;
 }
-.ff-cell--empty { color: #555; font-size: 11pt; cursor: pointer; }
-.ff-cell--empty:hover { background: rgba(255,255,255,0.06); color: #ddd; }
-.ff-cell--full { background: oklch(0.92 0.10 25); outline: 1.5pt solid var(--lyceo); outline-offset: -1.5pt; }
+.ff-cell--full { background: oklch(0.92 0.10 25); outline: 1pt solid var(--lyceo); outline-offset: -1pt; }
 .ff-cell--full .ff-cell__nivel,
 .ff-cell--full .ff-cell__num,
 .ff-cell--full .ff-cell__sep,
@@ -951,20 +954,20 @@ button { font-family: inherit; }
 .ff-cell__nivel {
   border: 0; background: transparent;
   font-family: var(--sans);
-  font-size: 7.5pt; font-weight: 600;
+  font-size: 6pt; font-weight: 600;
   text-align: center; color: var(--lyceo);
   text-transform: uppercase; letter-spacing: 0.03em;
   width: 100%; outline: none; padding: 0; line-height: 1.05;
 }
-.ff-cell__nivel::placeholder { color: #aaa; font-weight: 400; }
+.ff-cell__nivel::placeholder { color: #bbb; font-weight: 400; }
 .ff-cell__nums {
   display: inline-flex; align-items: baseline; gap: 1px;
-  font-family: var(--mono); font-size: 7.5pt;
+  font-family: var(--mono); font-size: 6pt;
   color: #333; font-variant-numeric: tabular-nums;
 }
 .ff-cell__num, .ff-cell__tope {
   border: 0; background: transparent; font: inherit;
-  text-align: center; width: 12px; outline: none; padding: 0; color: inherit;
+  text-align: center; width: 10px; outline: none; padding: 0; color: inherit;
 }
 .ff-cell__sep { color: #999; }
 
@@ -972,44 +975,44 @@ button { font-family: inherit; }
   background: #f5f3ee;
   border: 0.5pt solid #c9c9c9;
   font-family: var(--serif);
-  font-size: 10pt; font-weight: 600;
-  color: #1a1a1a; text-align: center; padding: 3px;
+  font-size: 7pt; font-weight: 600;
+  color: #1a1a1a; text-align: center; padding: 2px;
 }
 .ff-tab--tarifas .ff-td--price {
-  text-align: center; height: 8mm; cursor: pointer;
+  text-align: center; height: 6mm; cursor: pointer;
   transition: background 0.12s;
 }
 .ff-tab--tarifas .ff-td--price:hover { background: oklch(0.96 0.018 25); }
 .ff-price { display: inline-flex; align-items: baseline; gap: 1px; }
 .ff-price__amt {
-  font-family: var(--serif); font-size: 12.5pt; font-weight: 600;
+  font-family: var(--serif); font-size: 9pt; font-weight: 600;
   color: #1a1a1a; letter-spacing: -0.01em;
 }
-.ff-price__cur { font-family: var(--serif); font-size: 9pt; color: #555; }
+.ff-price__cur { font-family: var(--serif); font-size: 6.5pt; color: #555; }
 .ff-price__edit {
-  font-family: var(--serif); font-size: 12.5pt; font-weight: 600;
+  font-family: var(--serif); font-size: 9pt; font-weight: 600;
   color: var(--lyceo); background: oklch(0.96 0.018 25);
   border: 1pt solid var(--lyceo); border-radius: 3px;
-  width: 46px; text-align: center; outline: none; padding: 1px 2px;
+  width: 36px; text-align: center; outline: none; padding: 1px 2px;
 }
-.ff-tarifas-foot { font-size: 7.5pt; color: #555; font-style: italic; margin-top: 1mm; }
+.ff-tarifas-foot { font-size: 5.5pt; color: #555; font-style: italic; margin-top: 0.5mm; }
 
 .ff-pie {
   display: flex; align-items: center; justify-content: center;
-  gap: 12px; padding: 2.5mm 0 0; margin-top: auto;
+  gap: 8px; padding: 1.5mm 0 0; margin-top: auto;
   border-top: 0.5pt solid #c9c9c9;
-  font-family: var(--serif); font-size: 10pt; color: #1a1a1a;
+  font-family: var(--serif); font-size: 8pt; color: #1a1a1a;
 }
-.ff-pie__item { display: inline-flex; align-items: baseline; gap: 6px; }
+.ff-pie__item { display: inline-flex; align-items: baseline; gap: 4px; }
 .ff-pie__lbl { color: var(--lyceo); font-weight: 600; }
 .ff-pie__input {
   border: 0; border-bottom: 0.5pt dashed transparent;
   background: transparent; font: inherit; color: inherit;
-  outline: none; padding: 1px 4px; min-width: 100px; text-align: center;
+  outline: none; padding: 1px 2px; min-width: 70px; text-align: center;
 }
 .ff-pie__input:hover, .ff-pie__input:focus { border-bottom-color: var(--lyceo); }
-.ff-pie__input--email { min-width: 160px; }
-.ff-pie__sep { width: 1px; height: 14px; background: #c9c9c9; }
+.ff-pie__input--email { min-width: 110px; }
+.ff-pie__sep { width: 1px; height: 11px; background: #c9c9c9; }
 
 /* ───────────── Documentos (pack de bienvenida) ───────────── */
 .content--docs {
@@ -1326,7 +1329,7 @@ button { font-family: inherit; }
 /* ───────────── Print ───────────── */
 @media print {
   @page {
-    size: A4;
+    size: A4 portrait;
     margin: 0;
   }
   html, body { background: #fff !important; }
@@ -1336,7 +1339,29 @@ button { font-family: inherit; }
   .main { background: #fff !important; }
   .content, .content--ficha, .content--docs { padding: 0 !important; max-width: none !important; }
   .doc-stack { gap: 0 !important; }
-  .ff-sheet, .doc-sheet {
+
+  /* FichaFamilias: 4 cuartillas A6 en rejilla 2×2 sobre A4 */
+  .ff-screen-sheet { display: none !important; }
+  .ff-print-grid {
+    display: grid !important;
+    grid-template-columns: 105mm 105mm;
+    grid-template-rows: 148mm 148mm;
+    width: 210mm;
+    height: 296mm;
+    gap: 0;
+  }
+  .ff-sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    width: 105mm !important;
+    height: 148mm !important;
+    overflow: hidden;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Documentos: hoja A4 completa */
+  .doc-sheet {
     box-shadow: none !important;
     margin: 0 !important;
     width: 210mm !important;
@@ -1344,7 +1369,7 @@ button { font-family: inherit; }
     page-break-inside: avoid;
   }
   .doc-sheet + .doc-sheet { page-break-before: always !important; }
-  .ff-cell--empty { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
   .ff-td, .ff-th, .ff-time, .ff-rowhead, .ff-cell--full,
   .doc-rgpd__resp {
     -webkit-print-color-adjust: exact;

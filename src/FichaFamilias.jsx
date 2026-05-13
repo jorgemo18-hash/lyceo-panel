@@ -1,66 +1,53 @@
-// FichaFamilias.jsx — hoja A4 editable e imprimible
-// Bloque 1: horario semanal con celdas editables (nivel + nº alumnos + tope)
-// Bloque 2: tabla de tarifas (idéntica a Tarifas) editable inline, sin nota de matrícula
-// Bloque 3: pie de página con teléfono y email editables
+// FichaFamilias.jsx — cuartilla A6 (105×148mm) imprimible
+// Al imprimir en A4 caben 4 cuartillas por hoja (2×2).
+// Bloque 1: horario semanal por horas completas (5 franjas)
+// Bloque 2: tabla de tarifas editable
+// Bloque 3: pie con teléfono y email
 
-const FF_FRANJAS = [
-  "15:30", "16:00", "16:30", "17:00", "17:30",
-  "18:00", "18:30", "19:00", "19:30", "20:00", "20:30",
+const FF_BLOQUES = [
+  "15:30 – 16:30",
+  "16:30 – 17:30",
+  "17:30 – 18:30",
+  "18:30 – 19:30",
+  "19:30 – 20:30",
 ];
 const FF_DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
-// Estado inicial: cada celda { nivel, num, tope }. num=0 → vacía.
 function buildHorarioInicial() {
   const blank = { nivel: "", num: 0, tope: 6 };
   const grid = {};
-  FF_FRANJAS.forEach((h) => {
-    grid[h] = {};
-    FF_DIAS.forEach((d) => { grid[h][d] = { ...blank }; });
+  FF_BLOQUES.forEach((b) => {
+    grid[b] = {};
+    FF_DIAS.forEach((d) => { grid[b][d] = { ...blank }; });
   });
-  // Sembrar datos plausibles
-  const seed = (h, d, nivel, num, tope = 6) => { grid[h][d] = { nivel, num, tope }; };
-  seed("16:00", "Lunes", "PRIM/ESO", 4, 6);
-  seed("16:30", "Lunes", "PRIM/ESO", 4, 6);
-  seed("16:00", "Miércoles", "PRIM/ESO", 4, 6);
-  seed("16:30", "Miércoles", "PRIM/ESO", 4, 6);
-  seed("16:00", "Martes", "PRIM", 2, 6);
-  seed("16:30", "Martes", "PRIM", 2, 6);
-  seed("16:00", "Jueves", "PRIM", 2, 6);
-  seed("16:30", "Jueves", "PRIM", 2, 6);
-  seed("17:00", "Lunes", "ESO/BACH", 3, 6);
-  seed("17:30", "Lunes", "ESO/BACH", 3, 6);
-  seed("17:00", "Miércoles", "ESO/BACH", 3, 6);
-  seed("17:30", "Miércoles", "ESO/BACH", 3, 6);
-  seed("17:00", "Martes", "ESO", 2, 6);
-  seed("17:30", "Martes", "ESO", 2, 6);
-  seed("17:00", "Jueves", "ESO", 2, 6);
-  seed("17:30", "Jueves", "ESO", 2, 6);
-  seed("18:00", "Lunes", "ESO", 2, 6);
-  seed("18:30", "Lunes", "ESO", 2, 6);
-  seed("19:00", "Lunes", "ESO/BACH", 3, 6);
-  seed("19:30", "Lunes", "ESO/BACH", 3, 6);
-  seed("18:00", "Martes", "BACH", 1, 6);
-  seed("18:30", "Martes", "BACH", 1, 6);
-  seed("19:00", "Martes", "BACH", 1, 6);
-  seed("19:30", "Martes", "BACH", 1, 6);
-  seed("18:00", "Miércoles", "ESO", 2, 6);
-  seed("18:30", "Miércoles", "ESO", 2, 6);
-  seed("19:00", "Miércoles", "BACH", 1, 6);
-  seed("19:30", "Miércoles", "BACH", 1, 6);
-  seed("18:00", "Jueves", "ESO/BACH", 3, 6);
-  seed("18:30", "Jueves", "ESO/BACH", 3, 6);
-  seed("19:00", "Jueves", "BACH", 1, 6);
-  seed("19:30", "Jueves", "BACH", 1, 6);
-  seed("18:00", "Viernes", "ESO", 2, 6);
-  seed("18:30", "Viernes", "ESO", 2, 6);
+  const seed = (b, d, nivel, num, tope = 6) => { grid[b][d] = { nivel, num, tope }; };
+  seed("15:30 – 16:30", "Lunes",     "PRIM/ESO", 4);
+  seed("15:30 – 16:30", "Martes",    "PRIM",     2);
+  seed("15:30 – 16:30", "Miércoles", "PRIM/ESO", 4);
+  seed("15:30 – 16:30", "Jueves",    "PRIM",     2);
+  seed("16:30 – 17:30", "Lunes",     "ESO",      3);
+  seed("16:30 – 17:30", "Martes",    "ESO",      2);
+  seed("16:30 – 17:30", "Miércoles", "ESO",      3);
+  seed("16:30 – 17:30", "Jueves",    "ESO",      2);
+  seed("17:30 – 18:30", "Lunes",     "ESO/BACH", 3);
+  seed("17:30 – 18:30", "Martes",    "BACH",     1);
+  seed("17:30 – 18:30", "Miércoles", "ESO/BACH", 3);
+  seed("17:30 – 18:30", "Jueves",    "ESO/BACH", 3);
+  seed("17:30 – 18:30", "Viernes",   "ESO",      2);
+  seed("18:30 – 19:30", "Lunes",     "ESO",      2);
+  seed("18:30 – 19:30", "Martes",    "BACH",     1);
+  seed("18:30 – 19:30", "Miércoles", "ESO",      2);
+  seed("18:30 – 19:30", "Jueves",    "BACH",     1);
+  seed("19:30 – 20:30", "Lunes",     "ESO/BACH", 3);
+  seed("19:30 – 20:30", "Martes",    "BACH",     1);
+  seed("19:30 – 20:30", "Miércoles", "BACH",     1);
+  seed("19:30 – 20:30", "Jueves",    "BACH",     1);
   return grid;
 }
 
-// Celda siempre editable: tres inputs visibles en todo momento
 function FichaCellEditor({ cell, onChange }) {
   const isFull = cell.num > 0 && cell.num >= cell.tope;
   const update = (k, v) => onChange({ ...cell, [k]: v });
-
   return (
     <div className={`ff-cell ${isFull ? "ff-cell--full" : ""}`}>
       <input
@@ -74,7 +61,7 @@ function FichaCellEditor({ cell, onChange }) {
           type="text"
           inputMode="numeric"
           className="ff-cell__num"
-          style={isFull ? { color: "var(--red, #c00)" } : {}}
+          style={isFull ? { color: "#c00" } : {}}
           value={cell.num || ""}
           placeholder="0"
           onChange={(e) => update("num", parseInt(e.target.value || "0", 10) || 0)}
@@ -93,28 +80,28 @@ function FichaCellEditor({ cell, onChange }) {
 }
 
 function FichaHorario({ grid, setGrid }) {
-  const setCell = (h, d, val) => {
-    setGrid((p) => ({ ...p, [h]: { ...p[h], [d]: val } }));
+  const setCell = (b, d, val) => {
+    setGrid((p) => ({ ...p, [b]: { ...p[b], [d]: val } }));
   };
   return (
     <div className="ff-block">
-      <h2 className="ff-h2">Horario semanal</h2>
+      <h2 className="ff-h2">Horario</h2>
       <table className="ff-tab ff-tab--horario">
         <thead>
           <tr>
             <th className="ff-th ff-th--time">Hora</th>
             {FF_DIAS.map((d) => (
-              <th key={d} className="ff-th">{d}</th>
+              <th key={d} className="ff-th">{d.slice(0, 3)}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {FF_FRANJAS.map((h) => (
-            <tr key={h}>
-              <th className="ff-time">{h}</th>
+          {FF_BLOQUES.map((b) => (
+            <tr key={b}>
+              <th className="ff-time">{b}</th>
               {FF_DIAS.map((d) => (
                 <td key={d} className="ff-td">
-                  <FichaCellEditor cell={grid[h][d]} onChange={(v) => setCell(h, d, v)} />
+                  <FichaCellEditor cell={grid[b][d]} onChange={(v) => setCell(b, d, v)} />
                 </td>
               ))}
             </tr>
@@ -122,6 +109,27 @@ function FichaHorario({ grid, setGrid }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+function FichaPriceEditor({ initial, onCommit, onCancel }) {
+  const [v, setV] = React.useState(String(initial));
+  const ref = React.useRef(null);
+  React.useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
+  return (
+    <input
+      ref={ref}
+      className="ff-price__edit"
+      type="text"
+      inputMode="numeric"
+      value={v}
+      onChange={(e) => setV(e.target.value)}
+      onBlur={() => onCommit(v)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onCommit(v);
+        else if (e.key === "Escape") onCancel();
+      }}
+    />
   );
 }
 
@@ -134,14 +142,13 @@ function FichaTarifas({ tarifas, setTarifas }) {
     }
     setEditing(null);
   };
-
   return (
     <div className="ff-block">
       <h2 className="ff-h2">Tarifas mensuales</h2>
       <table className="ff-tab ff-tab--tarifas">
         <thead>
           <tr>
-            <th className="ff-th ff-th--rowhead">Horas/sem.</th>
+            <th className="ff-th ff-th--rowhead">h/sem.</th>
             {TARIFA_NIVELES.map((n) => (
               <th key={n.id} className="ff-th">{n.label}</th>
             ))}
@@ -180,46 +187,36 @@ function FichaTarifas({ tarifas, setTarifas }) {
   );
 }
 
-function FichaPriceEditor({ initial, onCommit, onCancel }) {
-  const [v, setV] = React.useState(String(initial));
-  const ref = React.useRef(null);
-  React.useEffect(() => { ref.current?.focus(); ref.current?.select(); }, []);
-  return (
-    <input
-      ref={ref}
-      className="ff-price__edit"
-      type="text"
-      inputMode="numeric"
-      value={v}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => onCommit(v)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") onCommit(v);
-        else if (e.key === "Escape") onCancel();
-      }}
-    />
-  );
-}
-
 function FichaPie({ tel, setTel, email, setEmail }) {
   return (
     <div className="ff-pie">
       <div className="ff-pie__item">
         <span className="ff-pie__lbl">Jorge —</span>
-        <input
-          className="ff-pie__input"
-          value={tel}
-          onChange={(e) => setTel(e.target.value)}
-        />
+        <input className="ff-pie__input" value={tel} onChange={(e) => setTel(e.target.value)} />
       </div>
       <div className="ff-pie__sep" />
       <div className="ff-pie__item">
-        <input
-          className="ff-pie__input ff-pie__input--email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <input className="ff-pie__input ff-pie__input--email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
+    </div>
+  );
+}
+
+function FichaSheet({ grid, setGrid, tarifas, setTarifas, tel, setTel, email, setEmail }) {
+  return (
+    <div className="ff-sheet">
+      <header className="ff-head">
+        <img src="logo.png" alt="" className="ff-head__logo" />
+        <div className="ff-head__title">
+          <div className="ff-head__brand">Lyceo</div>
+          <div className="ff-head__sub">Academia de estudios</div>
+        </div>
+        <div className="ff-head__line" />
+        <div className="ff-head__tag">Información para familias</div>
+      </header>
+      <FichaHorario grid={grid} setGrid={setGrid} />
+      <FichaTarifas tarifas={tarifas} setTarifas={setTarifas} />
+      <FichaPie tel={tel} setTel={setTel} email={email} setEmail={setEmail} />
     </div>
   );
 }
@@ -227,8 +224,10 @@ function FichaPie({ tel, setTel, email, setEmail }) {
 function FichaFamilias() {
   const [grid, setGrid] = React.useState(buildHorarioInicial);
   const [tarifas, setTarifas] = React.useState(() => JSON.parse(JSON.stringify(TARIFAS_INICIALES)));
-  const [tel, setTel] = React.useState("656 12 34 56");
+  const [tel, setTel] = React.useState("675 32 41 28");
   const [email, setEmail] = React.useState("info@lyceoacademia.es");
+
+  const sheetProps = { grid, setGrid, tarifas, setTarifas, tel, setTel, email, setEmail };
 
   const onPrint = () => {
     document.body.classList.add("printing");
@@ -248,28 +247,25 @@ function FichaFamilias() {
     <>
       <div className="ff-toolbar no-print">
         <p className="ff-toolbar__hint">
-          Hoja informativa para familias. Edita cualquier campo haciendo clic.
-          Las celdas que llegan al tope se marcan en rojo.
+          Cuartilla A6 — al imprimir caben 4 por folio A4.
+          Edita cualquier campo haciendo clic.
         </p>
         <button className="btn btn--primary" onClick={onPrint}>
           <Icon.printer /> Imprimir
         </button>
       </div>
 
-      <div className="ff-sheet" id="ff-sheet">
-        <header className="ff-head">
-          <img src="logo.png" alt="" className="ff-head__logo" />
-          <div className="ff-head__title">
-            <div className="ff-head__brand">Lyceo</div>
-            <div className="ff-head__sub">Academia de estudios</div>
-          </div>
-          <div className="ff-head__line" />
-          <div className="ff-head__tag">Información para familias</div>
-        </header>
+      {/* Pantalla: una cuartilla */}
+      <div className="ff-screen-sheet">
+        <FichaSheet {...sheetProps} />
+      </div>
 
-        <FichaHorario grid={grid} setGrid={setGrid} />
-        <FichaTarifas tarifas={tarifas} setTarifas={setTarifas} />
-        <FichaPie tel={tel} setTel={setTel} email={email} setEmail={setEmail} />
+      {/* Impresión: cuatro cuartillas en rejilla 2×2 sobre A4 */}
+      <div className="ff-print-grid">
+        <FichaSheet {...sheetProps} />
+        <FichaSheet {...sheetProps} />
+        <FichaSheet {...sheetProps} />
+        <FichaSheet {...sheetProps} />
       </div>
     </>
   );
