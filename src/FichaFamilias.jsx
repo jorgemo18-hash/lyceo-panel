@@ -56,52 +56,14 @@ function buildHorarioInicial() {
   return grid;
 }
 
-// Edición inline genérica para celdas de la tabla de horario
+// Celda siempre editable: tres inputs visibles en todo momento
 function FichaCellEditor({ cell, onChange }) {
-  const [editing, setEditing] = React.useState(false);
-  const nivelRef = React.useRef(null);
   const isFull = cell.num > 0 && cell.num >= cell.tope;
-  const isEmpty = cell.num === 0 && !cell.nivel;
   const update = (k, v) => onChange({ ...cell, [k]: v });
 
-  const startEdit = () => {
-    setEditing(true);
-    setTimeout(() => nivelRef.current?.focus(), 0);
-  };
-
-  const stopEdit = (e) => {
-    if (!e.currentTarget.contains(e.relatedTarget)) setEditing(false);
-  };
-
-  // ── Modo lectura ──────────────────────────────────────────────
-  if (!editing) {
-    if (isEmpty) {
-      return (
-        <button className="ff-cell ff-cell--empty" onClick={startEdit}>+</button>
-      );
-    }
-    return (
-      <div
-        className={`ff-cell ff-cell--read ${isFull ? "ff-cell--full" : ""}`}
-        onClick={startEdit}
-        title="Editar"
-      >
-        <span className="ff-cell__nivel-lbl">{cell.nivel}</span>
-        <span className="ff-cell__nums-lbl">{cell.num}/{cell.tope}</span>
-        <span className="ff-cell__pencil">✏</span>
-      </div>
-    );
-  }
-
-  // ── Modo edición ──────────────────────────────────────────────
   return (
-    <div
-      className={`ff-cell ff-cell--editing ${isFull ? "ff-cell--full" : ""}`}
-      onBlur={stopEdit}
-      onKeyDown={(e) => { if (e.key === "Enter") setEditing(false); }}
-    >
+    <div className={`ff-cell ${isFull ? "ff-cell--full" : ""}`}>
       <input
-        ref={nivelRef}
         className="ff-cell__nivel"
         value={cell.nivel}
         placeholder="Nivel"
@@ -112,6 +74,7 @@ function FichaCellEditor({ cell, onChange }) {
           type="text"
           inputMode="numeric"
           className="ff-cell__num"
+          style={isFull ? { color: "var(--red, #c00)" } : {}}
           value={cell.num || ""}
           placeholder="0"
           onChange={(e) => update("num", parseInt(e.target.value || "0", 10) || 0)}
@@ -149,15 +112,11 @@ function FichaHorario({ grid, setGrid }) {
           {FF_FRANJAS.map((h) => (
             <tr key={h}>
               <th className="ff-time">{h}</th>
-              {FF_DIAS.map((d) => {
-                const cell = grid[h][d];
-                const isEmpty = cell.num === 0 && !cell.nivel;
-                return (
-                  <td key={d} className={`ff-td ${isEmpty ? "ff-td--empty" : ""}`}>
-                    <FichaCellEditor cell={cell} onChange={(v) => setCell(h, d, v)} />
-                  </td>
-                );
-              })}
+              {FF_DIAS.map((d) => (
+                <td key={d} className="ff-td">
+                  <FichaCellEditor cell={grid[h][d]} onChange={(v) => setCell(h, d, v)} />
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>
