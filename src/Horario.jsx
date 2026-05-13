@@ -41,7 +41,8 @@ function Horario() {
   React.useEffect(() => {
     supabase
       .from('horario')
-      .select('*, alumnos(nombre, curso, nivel)')
+      .select('*, alumnos!inner(nombre, curso, nivel, activo)')
+      .eq('alumnos.activo', true)
       .order('hora_inicio')
       .then(({ data, error: e }) => {
         if (e) setError(e.message)

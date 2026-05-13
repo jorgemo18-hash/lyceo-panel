@@ -60,8 +60,9 @@ export async function cargarSesionesHoy() {
 
   const { data, error } = await supabase
     .from('horario')
-    .select('*, alumnos(nombre, curso, nivel)')
+    .select('*, alumnos!inner(nombre, curso, nivel, activo)')
     .eq(diaCol, true)
+    .eq('alumnos.activo', true)
     .order('hora_inicio')
 
   if (error) throw error
