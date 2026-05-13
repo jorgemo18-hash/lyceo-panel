@@ -1801,6 +1801,8 @@ button { font-family: inherit; }
   }
 
   /* Documentos: hoja A4 completa */
+  .doc-rgpd { padding-top: 12mm; }
+  .doc-norma--break { page-break-before: always; break-before: page; padding-top: 12mm; }
   .doc-sheet {
     box-shadow: none !important;
     margin: 0 !important;

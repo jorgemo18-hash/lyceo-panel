@@ -296,7 +296,7 @@ function HojaNormas() {
         </p>
       </section>
 
-      <section className="doc-norma">
+      <section className="doc-norma doc-norma--break">
         <h2 className="doc-h2"><span className="doc-num">4.</span> Normas de aula</h2>
         <p>
           La convivencia en clase es fundamental para que todos puedan trabajar en un ambiente
