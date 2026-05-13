@@ -20,31 +20,37 @@ export function Pagos() {
   const [cargando, setCargando] = React.useState(true)
 
   React.useEffect(() => {
-    Promise.all([
-      supabase
+    const cargar = async () => {
+      const { data: a } = await supabase
         .from('alumnos')
-        .select('id, nombre, familia_id, familias(nombre), tarifas(precio_neto)')
+        .select('id, nombre, familia_id, familias(nombre, metodo_pago)')
         .eq('activo', true)
-        .order('nombre'),
-      supabase
-        .from('pagos')
-        .select('*')
-        .gte('anio', 2025),
-    ]).then(([{ data: a }, { data: p }]) => {
-      setAlumnos(a ?? [])
+        .order('nombre')
+
+      const familiaIds = (a ?? []).map(x => x.familia_id).filter(Boolean)
+      const [{ data: t }, { data: p }] = await Promise.all([
+        familiaIds.length > 0
+          ? supabase.from('tarifas').select('familia_id, precio_neto').in('familia_id', familiaIds)
+          : Promise.resolve({ data: [] }),
+        supabase.from('pagos').select('*').gte('anio', 2025),
+      ])
+
+      setAlumnos(
+        (a ?? []).map(x => ({
+          ...x,
+          precio_neto: t?.find(tar => tar.familia_id === x.familia_id)?.precio_neto ?? null,
+        }))
+      )
       setPagos(p ?? [])
       setCargando(false)
-    }).catch(() => setCargando(false))
+    }
+    cargar().catch(() => setCargando(false))
   }, [])
 
   const getPago = (familia_id, mes, anio) =>
     pagos.find(p => p.familia_id === familia_id && p.mes === mes && p.anio === anio)
 
-  const getPrecio = (a) => {
-    const t = a.tarifas
-    if (!t) return null
-    return Array.isArray(t) ? (t[0]?.precio_neto ?? null) : (t.precio_neto ?? null)
-  }
+  const getPrecio = (a) => a.precio_neto ?? null
 
   const toggle = async (alumno, mes, anio) => {
     if (!alumno.familia_id) return
