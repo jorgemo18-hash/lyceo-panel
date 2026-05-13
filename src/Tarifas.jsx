@@ -33,6 +33,21 @@ function Tarifas() {
     return tarifas[nivel][fila] - prev;
   };
 
+  const onPrint = () => {
+    const style = document.createElement('style');
+    style.id = 'tar-print-override';
+    style.textContent = '@page { size: A4 landscape; margin: 12mm; }';
+    document.head.appendChild(style);
+    document.body.classList.add('printing-tar');
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => {
+        document.head.removeChild(style);
+        document.body.classList.remove('printing-tar');
+      }, 300);
+    }, 30);
+  };
+
   return (
     <>
       <div className="tar-intro">
@@ -42,6 +57,7 @@ function Tarifas() {
         </p>
         <div className="tar-actions">
           <button className="btn btn--ghost" onClick={reset}>Restaurar valores originales</button>
+          <button className="btn btn--primary" onClick={onPrint}><Icon.printer /> Imprimir</button>
         </div>
       </div>
 

@@ -1775,6 +1775,28 @@ button { font-family: inherit; }
   html, body { background: #fff !important; }
   .sidebar, .bottomnav, .topbar, .ff-toolbar, .doc-toolbar,
   .twk-panel, .no-print { display: none !important; }
+
+  /* ── Tarifas landscape ── */
+  body.printing-tar .tar-intro { display: none !important; }
+  body.printing-tar .content { padding: 0 !important; max-width: none !important; }
+  body.printing-tar .tar-card { border: none !important; border-radius: 0 !important; box-shadow: none !important; }
+  body.printing-tar .tar-card__head { padding: 6mm 8mm 4mm; border-bottom: 1.5pt solid #222; }
+  body.printing-tar .tar-card__title { font-size: 14pt; }
+  body.printing-tar .gsave { display: none !important; }
+  body.printing-tar .tar-table { width: 100%; border-collapse: collapse; }
+  body.printing-tar .tar-th { padding: 6mm 8mm; font-size: 13pt; }
+  body.printing-tar .tar-th__label { font-size: 15pt; font-weight: 700; }
+  body.printing-tar .tar-th__sub { font-size: 10pt; }
+  body.printing-tar .tar-rowhead { padding: 7mm 8mm; }
+  body.printing-tar .tar-rowhead__num { font-size: 24pt; }
+  body.printing-tar .tar-rowhead__sub { font-size: 9pt; }
+  body.printing-tar .tar-cell { padding: 7mm 8mm; }
+  body.printing-tar .tar-price__amt { font-size: 38pt; }
+  body.printing-tar .tar-price__cur { font-size: 20pt; }
+  body.printing-tar .tar-price__per { font-size: 11pt; }
+  body.printing-tar .tar-inc { font-size: 9pt; }
+  body.printing-tar .tar-edit-hint { display: none !important; }
+  body.printing-tar .tar-foot { padding: 4mm 8mm; font-size: 11pt; border-top: 1pt solid #ccc; }
   .app { display: block !important; grid-template-columns: 1fr !important; }
   .main { background: #fff !important; }
   .content, .content--ficha, .content--docs { padding: 0 !important; max-width: none !important; }
