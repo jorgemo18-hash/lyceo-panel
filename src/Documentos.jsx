@@ -132,7 +132,7 @@ function HojaInscripcion() {
 
 function ClausulaRGPD() {
   return (
-    <section className="doc-rgpd" style={{ pageBreakBefore: "always", breakBefore: "page" }}>
+    <section className="doc-rgpd">
       <h3 className="doc-rgpd__h">Información sobre protección de datos</h3>
       <p className="doc-rgpd__intro">
         De acuerdo con lo dispuesto en el Reglamento General de Protección de Datos (UE) 2016/679
