@@ -95,6 +95,13 @@ const Icon = {
       <path d="M8 1.5v2M8 12.5v2M14.5 8h-2M3.5 8h-2M12.6 3.4l-1.4 1.4M4.8 11.2l-1.4 1.4M12.6 12.6l-1.4-1.4M4.8 4.8L3.4 3.4" />
     </svg>
   ),
+  archive: (p) => (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <rect x="2" y="2.5" width="12" height="3.5" rx="1" />
+      <path d="M3.5 6v7h9V6" />
+      <path d="M6.5 9.5l1.5 1.5 1.5-1.5M8 11V8" />
+    </svg>
+  ),
   search: (p) => (
     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
       <circle cx="7" cy="7" r="4.5" />
