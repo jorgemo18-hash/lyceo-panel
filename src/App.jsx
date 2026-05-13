@@ -10,6 +10,7 @@ import './Tarifas.jsx';
 import './FichaFamilias.jsx';
 import './Documentos.jsx';
 import { Alumnos } from './Alumnos.jsx';
+import { Pagos } from './Pagos.jsx';
 
 const PRIMARY = '#8B0000';
 
@@ -243,14 +244,17 @@ const PANTALLAS = {
       {...p}
     />
   ),
-  pagos: (p) => (
-    <PlaceholderScreen
-      eyebrow="Gestión"
-      title="Pagos"
-      desc="Control de cuotas mensuales, recibos y domiciliaciones."
-      {...p}
-    />
-  ),
+  pagos: ({ mobile }) => {
+    const Topbar = window.Topbar;
+    return (
+      <>
+        <Topbar eyebrow="Gestión" title="Pagos" showSearch={false} mobile={mobile} />
+        <div className="content content--wide">
+          <Pagos />
+        </div>
+      </>
+    );
+  },
 };
 
 // ── App ──────────────────────────────────────────────────────────
