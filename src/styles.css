@@ -1545,25 +1545,25 @@ button { font-family: inherit; }
 
 .hor-grid-mini {
   display: grid;
-  grid-template-columns: 28px repeat(5, 1fr);
+  grid-template-columns: 38px repeat(5, 1fr);
   gap: 3px;
 }
 .hor-grid-mini__corner { }
-.hor-grid-mini__hora {
-  font-size: 10px;
-  font-family: var(--mono);
-  color: var(--ink-3);
-  text-align: center;
-  padding: 2px 0;
-  line-height: 1.2;
-}
 .hor-grid-mini__dia {
   font-size: 11px;
   font-weight: 700;
   color: var(--ink-3);
+  text-align: center;
+  letter-spacing: 0.03em;
+  padding: 2px 0;
+}
+.hor-grid-mini__hora {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--ink-3);
   display: flex;
   align-items: center;
-  letter-spacing: 0.03em;
+  line-height: 1.2;
 }
 .hor-grid-mini__cell {
   height: 28px;

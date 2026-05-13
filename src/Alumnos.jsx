@@ -298,19 +298,17 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
           <section className="panel__section">
             <h3 className="panel__sh">Horario</h3>
             <div className="hor-grid-mini">
-              {/* cabecera horas */}
               <div className="hor-grid-mini__corner" />
-              {HORAS.map(h => (
-                <div key={h} className="hor-grid-mini__hora">{h}</div>
+              {DIAS.map(({ label }) => (
+                <div key={label} className="hor-grid-mini__dia">{label}</div>
               ))}
-              {/* filas por día */}
-              {DIAS.map(({ id: dia, label }) => (
-                <React.Fragment key={dia}>
-                  <div className="hor-grid-mini__dia">{label}</div>
-                  {HORAS.map(hora => {
+              {HORAS.map(hora => (
+                <React.Fragment key={hora}>
+                  <div className="hor-grid-mini__hora">{hora}</div>
+                  {DIAS.map(({ id: dia }) => {
                     const on = slotActivo(dia, hora)
                     return (
-                      <label key={hora}
+                      <label key={dia}
                         className={`hor-grid-mini__cell ${on ? 'hor-grid-mini__cell--on' : ''}`}>
                         <input type="checkbox" hidden checked={on}
                           onChange={() => toggleSlot(dia, hora)} />
@@ -637,14 +635,16 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
               <h3 className="panel__sh">Horario</h3>
               <div className="hor-grid-mini">
                 <div className="hor-grid-mini__corner" />
-                {HORAS.map(h => <div key={h} className="hor-grid-mini__hora">{h}</div>)}
-                {DIAS.map(({ id: dia, label }) => (
-                  <React.Fragment key={dia}>
-                    <div className="hor-grid-mini__dia">{label}</div>
-                    {HORAS.map(hora => {
+                {DIAS.map(({ label }) => (
+                  <div key={label} className="hor-grid-mini__dia">{label}</div>
+                ))}
+                {HORAS.map(hora => (
+                  <React.Fragment key={hora}>
+                    <div className="hor-grid-mini__hora">{hora}</div>
+                    {DIAS.map(({ id: dia }) => {
                       const on = slotActivo(dia, hora)
                       return (
-                        <label key={hora}
+                        <label key={dia}
                           className={`hor-grid-mini__cell ${on ? 'hor-grid-mini__cell--on' : ''}`}>
                           <input type="checkbox" hidden checked={on}
                             onChange={() => toggleSlot(dia, hora)} />
@@ -733,12 +733,14 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
               <h3 className="panel__sh">Horario</h3>
               <div className="hor-grid-mini">
                 <div className="hor-grid-mini__corner" />
-                {HORAS.map(h => <div key={h} className="hor-grid-mini__hora">{h}</div>)}
-                {DIAS.map(({ id: dia, label }) => (
-                  <React.Fragment key={dia}>
-                    <div className="hor-grid-mini__dia">{label}</div>
-                    {HORAS.map(hora => (
-                      <div key={hora}
+                {DIAS.map(({ label }) => (
+                  <div key={label} className="hor-grid-mini__dia">{label}</div>
+                ))}
+                {HORAS.map(hora => (
+                  <React.Fragment key={hora}>
+                    <div className="hor-grid-mini__hora">{hora}</div>
+                    {DIAS.map(({ id: dia }) => (
+                      <div key={dia}
                         className={`hor-grid-mini__cell ${slotActivo(dia, hora) ? 'hor-grid-mini__cell--on' : ''}`}
                         style={{ cursor: 'default', pointerEvents: 'none' }} />
                     ))}
