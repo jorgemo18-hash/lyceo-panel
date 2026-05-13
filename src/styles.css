@@ -1778,7 +1778,7 @@ button { font-family: inherit; }
   .app { display: block !important; grid-template-columns: 1fr !important; }
   .main { background: #fff !important; }
   .content, .content--ficha, .content--docs { padding: 0 !important; max-width: none !important; }
-  .doc-stack { gap: 0 !important; }
+  .doc-stack { display: block !important; gap: 0 !important; }
 
   /* FichaFamilias: 4 cuartillas A6 en rejilla 2×2 sobre A4 */
   .ff-screen-sheet { display: none !important; }
