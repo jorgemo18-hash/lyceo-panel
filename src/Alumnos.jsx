@@ -383,6 +383,12 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
   const [savedAt, setSavedAt] = React.useState(null)
 
   const dataToForm = (d) => {
+    if (!d) return {
+      nombre: '', curso: '', fecha_alta: '',
+      fam_email: '', fam_telefono: '', fam_metodo_pago: 'bizum',
+      fam_codigo_sepa: '', fam_notas: '',
+      slots: [], precio_bruto: '', descuento: 0,
+    }
     const slots = []
     ;(d.horario ?? []).forEach(row => {
       const hora = row.hora_inicio?.substring(0, 5)
