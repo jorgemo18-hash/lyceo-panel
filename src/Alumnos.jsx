@@ -442,8 +442,8 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
   const slotActivo = (dia, hora_inicio) =>
     form?.slots.some(s => s.dia === dia && s.hora_inicio === hora_inicio) ?? false
 
-  const precioNeto = form?.precio_bruto !== ''
-    ? Math.round(Number(form.precio_bruto) * (1 - Number(form.descuento) / 100) * 100) / 100
+  const precioNeto = (form?.precio_bruto ?? '') !== ''
+    ? Math.round(Number(form?.precio_bruto) * (1 - Number(form?.descuento ?? 0) / 100) * 100) / 100
     : ''
 
   const handleSave = async () => {
@@ -498,18 +498,18 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
       }
 
       const tarifa = data.tarifas?.[0]
-      if (form.precio_bruto !== '') {
+      if ((form?.precio_bruto ?? '') !== '') {
         if (tarifa) {
           const { error: e5 } = await supabase
             .from('tarifas')
-            .update({ precio_bruto: Number(form.precio_bruto), descuento_pct: Number(form.descuento) })
+            .update({ precio_bruto: Number(form?.precio_bruto), descuento_pct: Number(form?.descuento ?? 0) })
             .eq('id', tarifa.id)
           if (e5) throw e5
         } else {
           const { error: e5 } = await supabase.from('tarifas').insert({
             familia_id: data.familia_id,
-            precio_bruto: Number(form.precio_bruto),
-            descuento_pct: Number(form.descuento),
+            precio_bruto: Number(form?.precio_bruto),
+            descuento_pct: Number(form?.descuento ?? 0),
             fecha_inicio: today(),
           })
           if (e5) throw e5
