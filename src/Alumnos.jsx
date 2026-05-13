@@ -138,7 +138,7 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
         const { error: e4 } = await supabase.from('tarifas').insert({
           familia_id,
           precio_bruto: Number(form.precio_bruto),
-          descuento: Number(form.descuento),
+          descuento_pct: Number(form.descuento),
           precio_neto: precioNeto,
           fecha_inicio: today(),
         })
