@@ -855,6 +855,7 @@ button { font-family: inherit; }
 .ff-screen-sheet .ff-sheet {
   transform: scale(2);
   transform-origin: top left;
+  margin: 0;
 }
 .ff-print-grid { display: none; }
 
