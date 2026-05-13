@@ -71,9 +71,17 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
     setSaving(true)
     setError(null)
     try {
-      let familia_id = form.sin_familia ? null : form.familia_id
+      let familia_id = form.familia_id
 
-      if (!form.sin_familia && form.familia_nueva) {
+      if (form.sin_familia) {
+        const { data, error: e } = await supabase
+          .from('familias')
+          .insert({ nombre: form.nombre.trim() })
+          .select('id')
+          .single()
+        if (e) throw e
+        familia_id = data.id
+      } else if (form.familia_nueva) {
         const { data, error: e } = await supabase
           .from('familias')
           .insert({
