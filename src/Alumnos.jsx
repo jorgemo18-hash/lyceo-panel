@@ -370,6 +370,407 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
   )
 }
 
+// ── DetalleAlumnoPanel ────────────────────────────────────────────
+
+function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
+  const [data, setData] = React.useState(null)
+  const [loading, setLoading] = React.useState(true)
+  const [error, setError] = React.useState(null)
+  const [editMode, setEditMode] = React.useState(false)
+  const [form, setForm] = React.useState(null)
+  const [saving, setSaving] = React.useState(false)
+  const [saveError, setSaveError] = React.useState(null)
+  const [savedAt, setSavedAt] = React.useState(null)
+
+  const dataToForm = (d) => {
+    const slots = []
+    ;(d.horario ?? []).forEach(row => {
+      const hora = row.hora_inicio?.substring(0, 5)
+      if (!hora) return
+      DIAS.forEach(({ id: dia }) => {
+        const col = dia === 'miércoles' ? 'miercoles' : dia
+        if (row[col]) slots.push({ dia, hora_inicio: hora })
+      })
+    })
+    const tarifa = d.tarifas?.[0] ?? {}
+    return {
+      nombre: d.nombre ?? '',
+      curso: d.curso ?? '',
+      fecha_alta: d.fecha_alta ?? '',
+      fam_email: d.familias?.email ?? '',
+      fam_telefono: d.familias?.telefono ?? '',
+      fam_metodo_pago: d.familias?.metodo_pago ?? 'bizum',
+      fam_codigo_sepa: d.familias?.codigo_sepa ?? '',
+      fam_notas: d.familias?.notas ?? '',
+      slots,
+      precio_bruto: tarifa.precio_bruto ?? '',
+      descuento: tarifa.descuento_pct ?? 0,
+    }
+  }
+
+  const cargarDetalle = () => {
+    setLoading(true)
+    supabase
+      .from('alumnos')
+      .select('*, familias(*), horario(*), tarifas(*)')
+      .eq('id', alumnoId)
+      .single()
+      .then(({ data: d, error: e }) => {
+        if (e) setError(e.message)
+        else { setData(d); setForm(dataToForm(d)) }
+        setLoading(false)
+      })
+  }
+
+  React.useEffect(() => { cargarDetalle() }, [alumnoId])
+
+  const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  const toggleSlot = (dia, hora_inicio) => {
+    const existe = form.slots.some(s => s.dia === dia && s.hora_inicio === hora_inicio)
+    set('slots', existe
+      ? form.slots.filter(s => !(s.dia === dia && s.hora_inicio === hora_inicio))
+      : [...form.slots, { dia, hora_inicio }]
+    )
+  }
+  const slotActivo = (dia, hora_inicio) =>
+    form?.slots.some(s => s.dia === dia && s.hora_inicio === hora_inicio) ?? false
+
+  const precioNeto = form?.precio_bruto !== ''
+    ? Math.round(Number(form.precio_bruto) * (1 - Number(form.descuento) / 100) * 100) / 100
+    : ''
+
+  const handleSave = async () => {
+    setSaving(true)
+    setSaveError(null)
+    try {
+      const sepa = (mp) => mp === 'transferencia' || mp === 'sepa'
+
+      const { error: e1 } = await supabase
+        .from('alumnos')
+        .update({ nombre: form.nombre.trim(), curso: form.curso, fecha_alta: form.fecha_alta })
+        .eq('id', data.id)
+      if (e1) throw e1
+
+      if (data.familia_id) {
+        const { error: e2 } = await supabase
+          .from('familias')
+          .update({
+            email: form.fam_email.trim() || null,
+            telefono: form.fam_telefono.trim() || null,
+            metodo_pago: form.fam_metodo_pago,
+            codigo_sepa: sepa(form.fam_metodo_pago) ? form.fam_codigo_sepa.trim() || null : null,
+            notas: form.fam_notas.trim() || null,
+          })
+          .eq('id', data.familia_id)
+        if (e2) throw e2
+      }
+
+      const { error: e3 } = await supabase.from('horario').delete().eq('alumno_id', data.id)
+      if (e3) throw e3
+      if (form.slots.length > 0) {
+        const porHora = {}
+        form.slots.forEach(({ dia, hora_inicio }) => {
+          if (!porHora[hora_inicio]) porHora[hora_inicio] = new Set()
+          porHora[hora_inicio].add(dia)
+        })
+        const fechaInicio = data.horario?.[0]?.fecha_inicio ?? today()
+        const filas = Object.entries(porHora).map(([hora, dias]) => ({
+          alumno_id: data.id,
+          hora_inicio: hora,
+          hora_fin: horaFin(hora),
+          fecha_inicio: fechaInicio,
+          fecha_fin: null,
+          lunes:     dias.has('lunes'),
+          martes:    dias.has('martes'),
+          miercoles: dias.has('miércoles'),
+          jueves:    dias.has('jueves'),
+          viernes:   dias.has('viernes'),
+        }))
+        const { error: e4 } = await supabase.from('horario').insert(filas)
+        if (e4) throw e4
+      }
+
+      const tarifa = data.tarifas?.[0]
+      if (form.precio_bruto !== '') {
+        if (tarifa) {
+          const { error: e5 } = await supabase
+            .from('tarifas')
+            .update({ precio_bruto: Number(form.precio_bruto), descuento_pct: Number(form.descuento) })
+            .eq('id', tarifa.id)
+          if (e5) throw e5
+        } else {
+          const { error: e5 } = await supabase.from('tarifas').insert({
+            familia_id: data.familia_id,
+            precio_bruto: Number(form.precio_bruto),
+            descuento_pct: Number(form.descuento),
+            fecha_inicio: today(),
+          })
+          if (e5) throw e5
+        }
+      }
+
+      const now = new Date()
+      setSavedAt(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`)
+      setEditMode(false)
+      cargarDetalle()
+      onUpdated?.()
+    } catch (err) {
+      setSaveError(err.message ?? String(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const metodoLabel = (val) =>
+    METODOS_PAGO.find(m => m.value === val)?.label ?? val
+
+  return (
+    <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <aside className="panel">
+        <div className="panel__head">
+          <h2 className="panel__title">{loading ? 'Cargando…' : (data?.nombre ?? 'Detalle')}</h2>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {!loading && !error && !editMode && (
+              <button className="btn btn--ghost btn--sm" onClick={() => setEditMode(true)}>
+                Editar
+              </button>
+            )}
+            <button className="panel__close" onClick={onClose}>✕</button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="panel__body">
+            <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando…</div>
+          </div>
+        ) : error ? (
+          <div className="panel__body">
+            <div className="alumnos-estado alumnos-estado--error">Error: {error}</div>
+          </div>
+        ) : editMode ? (
+          <div className="panel__body">
+            <section className="panel__section">
+              <h3 className="panel__sh">Datos del alumno</h3>
+              <label className="panel__field">
+                <span className="panel__lbl">Nombre *</span>
+                <input className="panel__input" value={form.nombre}
+                  onChange={e => set('nombre', e.target.value)} />
+              </label>
+              <label className="panel__field">
+                <span className="panel__lbl">Curso *</span>
+                <select className="panel__input panel__select" value={form.curso}
+                  onChange={e => set('curso', e.target.value)}>
+                  <option value="">— Seleccionar —</option>
+                  {CURSOS.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </label>
+              <label className="panel__field">
+                <span className="panel__lbl">Fecha de alta</span>
+                <input className="panel__input" type="date" value={form.fecha_alta}
+                  onChange={e => set('fecha_alta', e.target.value)} />
+              </label>
+            </section>
+
+            <section className="panel__section">
+              <h3 className="panel__sh">Familia</h3>
+              <label className="panel__field">
+                <span className="panel__lbl">Email</span>
+                <input className="panel__input" type="email" value={form.fam_email}
+                  onChange={e => set('fam_email', e.target.value)} />
+              </label>
+              <label className="panel__field">
+                <span className="panel__lbl">Teléfono</span>
+                <input className="panel__input" type="tel" value={form.fam_telefono}
+                  onChange={e => set('fam_telefono', e.target.value)} />
+              </label>
+              <label className="panel__field">
+                <span className="panel__lbl">Método de pago</span>
+                <select className="panel__input panel__select" value={form.fam_metodo_pago}
+                  onChange={e => set('fam_metodo_pago', e.target.value)}>
+                  {METODOS_PAGO.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
+              {(form.fam_metodo_pago === 'transferencia' || form.fam_metodo_pago === 'sepa') && (
+                <label className="panel__field">
+                  <span className="panel__lbl">IBAN</span>
+                  <input className="panel__input" value={form.fam_codigo_sepa}
+                    onChange={e => set('fam_codigo_sepa', e.target.value)}
+                    placeholder="ES00 0000 0000 0000 0000 0000" />
+                </label>
+              )}
+              <label className="panel__field">
+                <span className="panel__lbl">Notas</span>
+                <textarea className="panel__input panel__textarea" rows={2}
+                  value={form.fam_notas} onChange={e => set('fam_notas', e.target.value)} />
+              </label>
+            </section>
+
+            <section className="panel__section">
+              <h3 className="panel__sh">Horario</h3>
+              <div className="hor-grid-mini">
+                <div className="hor-grid-mini__corner" />
+                {HORAS.map(h => <div key={h} className="hor-grid-mini__hora">{h}</div>)}
+                {DIAS.map(({ id: dia, label }) => (
+                  <React.Fragment key={dia}>
+                    <div className="hor-grid-mini__dia">{label}</div>
+                    {HORAS.map(hora => {
+                      const on = slotActivo(dia, hora)
+                      return (
+                        <label key={hora}
+                          className={`hor-grid-mini__cell ${on ? 'hor-grid-mini__cell--on' : ''}`}>
+                          <input type="checkbox" hidden checked={on}
+                            onChange={() => toggleSlot(dia, hora)} />
+                        </label>
+                      )
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel__section">
+              <h3 className="panel__sh">Tarifa mensual</h3>
+              <div className="panel__row">
+                <label className="panel__field">
+                  <span className="panel__lbl">Precio bruto (€)</span>
+                  <input className="panel__input" type="number" min="0" step="1"
+                    value={form.precio_bruto} onChange={e => set('precio_bruto', e.target.value)} />
+                </label>
+                <label className="panel__field">
+                  <span className="panel__lbl">Descuento (%)</span>
+                  <input className="panel__input" type="number" min="0" max="100" step="1"
+                    value={form.descuento} onChange={e => set('descuento', e.target.value)} />
+                </label>
+                <label className="panel__field">
+                  <span className="panel__lbl">Precio neto (€)</span>
+                  <input className="panel__input panel__input--calc"
+                    value={precioNeto !== '' ? precioNeto : '—'} readOnly />
+                </label>
+              </div>
+            </section>
+          </div>
+        ) : (
+          <div className="panel__body">
+            <section className="panel__section">
+              <h3 className="panel__sh">Datos del alumno</h3>
+              <div className="panel__field">
+                <span className="panel__lbl">Nombre</span>
+                <span className="panel__val">{data.nombre}</span>
+              </div>
+              <div className="panel__field">
+                <span className="panel__lbl">Curso</span>
+                <span className="panel__val">{data.curso}</span>
+              </div>
+              <div className="panel__field">
+                <span className="panel__lbl">Fecha de alta</span>
+                <span className="panel__val">{data.fecha_alta ?? '—'}</span>
+              </div>
+            </section>
+
+            <section className="panel__section">
+              <h3 className="panel__sh">Familia — {data.familias?.nombre ?? '—'}</h3>
+              {data.familias?.email && (
+                <div className="panel__field">
+                  <span className="panel__lbl">Email</span>
+                  <span className="panel__val">{data.familias.email}</span>
+                </div>
+              )}
+              {data.familias?.telefono && (
+                <div className="panel__field">
+                  <span className="panel__lbl">Teléfono</span>
+                  <span className="panel__val">{data.familias.telefono}</span>
+                </div>
+              )}
+              {data.familias?.metodo_pago && (
+                <div className="panel__field">
+                  <span className="panel__lbl">Método de pago</span>
+                  <span className="panel__val">{metodoLabel(data.familias.metodo_pago)}</span>
+                </div>
+              )}
+              {data.familias?.codigo_sepa && (
+                <div className="panel__field">
+                  <span className="panel__lbl">IBAN</span>
+                  <span className="panel__val">{data.familias.codigo_sepa}</span>
+                </div>
+              )}
+              {data.familias?.notas && (
+                <div className="panel__field">
+                  <span className="panel__lbl">Notas</span>
+                  <span className="panel__val">{data.familias.notas}</span>
+                </div>
+              )}
+            </section>
+
+            <section className="panel__section">
+              <h3 className="panel__sh">Horario</h3>
+              <div className="hor-grid-mini">
+                <div className="hor-grid-mini__corner" />
+                {HORAS.map(h => <div key={h} className="hor-grid-mini__hora">{h}</div>)}
+                {DIAS.map(({ id: dia, label }) => (
+                  <React.Fragment key={dia}>
+                    <div className="hor-grid-mini__dia">{label}</div>
+                    {HORAS.map(hora => (
+                      <div key={hora}
+                        className={`hor-grid-mini__cell ${slotActivo(dia, hora) ? 'hor-grid-mini__cell--on' : ''}`}
+                        style={{ cursor: 'default', pointerEvents: 'none' }} />
+                    ))}
+                  </React.Fragment>
+                ))}
+              </div>
+              {form.slots.length === 0 && (
+                <p className="panel__lbl" style={{ marginTop: 6 }}>Sin horario asignado</p>
+              )}
+            </section>
+
+            {data.tarifas?.length > 0 && (
+              <section className="panel__section">
+                <h3 className="panel__sh">Tarifa mensual</h3>
+                <div className="panel__field">
+                  <span className="panel__lbl">Precio bruto</span>
+                  <span className="panel__val">{data.tarifas[0].precio_bruto} €</span>
+                </div>
+                {data.tarifas[0].descuento_pct > 0 && (
+                  <div className="panel__field">
+                    <span className="panel__lbl">Descuento</span>
+                    <span className="panel__val">{data.tarifas[0].descuento_pct}%</span>
+                  </div>
+                )}
+                <div className="panel__field">
+                  <span className="panel__lbl">Precio neto</span>
+                  <span className="panel__val panel__val--strong">{data.tarifas[0].precio_neto} €</span>
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {saveError && <div className="panel__error">{saveError}</div>}
+
+        {editMode && (
+          <div className="panel__foot">
+            <button className="btn btn--ghost" onClick={() => { setEditMode(false); setForm(dataToForm(data)) }}
+              disabled={saving}>
+              Cancelar
+            </button>
+            {savedAt && <span className="panel__saved">Guardado a las {savedAt}</span>}
+            <button className="btn btn--primary" onClick={handleSave} disabled={saving}>
+              {saving ? 'Guardando…' : 'Guardar cambios'}
+            </button>
+          </div>
+        )}
+        {!editMode && savedAt && (
+          <div className="panel__foot" style={{ justifyContent: 'center' }}>
+            <span className="panel__saved">Cambios guardados a las {savedAt}</span>
+          </div>
+        )}
+      </aside>
+    </div>
+  )
+}
+
 // ── ConfirmEliminar ───────────────────────────────────────────────
 
 function ConfirmEliminar({ alumno, onConfirm, onCancel }) {
@@ -419,6 +820,7 @@ export function Alumnos() {
   const [showPanel, setShowPanel] = React.useState(false)
   const [archivando, setArchivando] = React.useState(null)
   const [eliminando, setEliminando] = React.useState(null)
+  const [detalleId, setDetalleId] = React.useState(null)
 
   const cargar = React.useCallback(() => {
     setLoading(true)
@@ -526,7 +928,8 @@ export function Alumnos() {
       ) : (
         <div className="alumnos-list">
           {alumnos.map(a => (
-            <div key={a.id} className={`alumno-card alumno-card--${a.nivel}`}>
+            <div key={a.id} className={`alumno-card alumno-card--${a.nivel}`}
+              onClick={() => setDetalleId(a.id)} style={{ cursor: 'pointer' }}>
               <div className="alumno-card__main">
                 <span className="alumno-card__nombre">{a.nombre}</span>
                 <span className="alumno-card__curso">{a.curso}</span>
@@ -538,7 +941,8 @@ export function Alumnos() {
                 <div className="alumno-card__familia">
                   <span className="alumno-card__familia-nombre">{a.familias?.nombre}</span>
                   {a.familias?.email && (
-                    <a className="alumno-card__email" href={`mailto:${a.familias.email}`}>
+                    <a className="alumno-card__email" href={`mailto:${a.familias.email}`}
+                      onClick={e => e.stopPropagation()}>
                       {a.familias.email}
                     </a>
                   )}
@@ -546,11 +950,11 @@ export function Alumnos() {
                 {filtro === 'activos' ? (
                   <button className="alumno-card__archive-btn"
                     title="Archivar alumno"
-                    onClick={() => setArchivando(a)}>
+                    onClick={e => { e.stopPropagation(); setArchivando(a) }}>
                     <Icon.archive />
                   </button>
                 ) : (
-                  <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                     <button className="btn btn--ghost btn--sm" onClick={() => reactivar(a)}>
                       Reactivar
                     </button>
@@ -563,6 +967,14 @@ export function Alumnos() {
             </div>
           ))}
         </div>
+      )}
+
+      {detalleId && (
+        <DetalleAlumnoPanel
+          alumnoId={detalleId}
+          onClose={() => setDetalleId(null)}
+          onUpdated={cargar}
+        />
       )}
 
       {showPanel && (
