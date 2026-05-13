@@ -414,18 +414,37 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
     }
   }
 
-  const cargarDetalle = () => {
+  const cargarDetalle = async () => {
     setLoading(true)
-    supabase
-      .from('alumnos')
-      .select('*, familias(*), horario(*), tarifas(*)')
-      .eq('id', alumnoId)
-      .single()
-      .then(({ data: d, error: e }) => {
-        if (e) setError(e.message)
-        else { setData(d); setForm(dataToForm(d)) }
-        setLoading(false)
-      })
+    setError(null)
+    try {
+      const { data: alumno, error: e1 } = await supabase
+        .from('alumnos')
+        .select('*, familias(*), horario(*)')
+        .eq('id', alumnoId)
+        .single()
+      if (e1) throw e1
+
+      let tarifa = null
+      if (alumno.familia_id) {
+        const { data: t } = await supabase
+          .from('tarifas')
+          .select('*')
+          .eq('familia_id', alumno.familia_id)
+          .order('fecha_inicio', { ascending: false })
+          .limit(1)
+          .single()
+        tarifa = t ?? null
+      }
+
+      const d = { ...alumno, tarifas: tarifa ? [tarifa] : [] }
+      setData(d)
+      setForm(dataToForm(d))
+    } catch (err) {
+      setError(err.message ?? String(err))
+    } finally {
+      setLoading(false)
+    }
   }
 
   React.useEffect(() => { cargarDetalle() }, [alumnoId])
