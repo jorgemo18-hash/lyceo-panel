@@ -2,7 +2,18 @@ import { supabase } from './supabase.js'
 
 const NIVEL_LABEL = { primaria: 'Primaria', eso: 'ESO', bachillerato: 'Bachillerato' }
 const HORAS = ['15:30', '16:30', '17:30', '18:30', '19:30']
-const DIAS = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes']
+const DIAS = [
+  { id: 'lunes',     label: 'LU' },
+  { id: 'martes',    label: 'MA' },
+  { id: 'miércoles', label: 'MI' },
+  { id: 'jueves',    label: 'JU' },
+  { id: 'viernes',   label: 'VI' },
+]
+const CURSOS = [
+  '1º PRIM','2º PRIM','3º PRIM','4º PRIM','5º PRIM','6º PRIM',
+  '1º ESO','2º ESO','3º ESO','4º ESO',
+  '1º BACH','2º BACH',
+]
 const METODOS_PAGO = ['bizum', 'efectivo', 'transferencia', 'recibo']
 
 function today() {
@@ -29,10 +40,11 @@ function slugify(nombre, curso) {
 
 const FORM_INICIAL = {
   nombre: '', curso: '', fecha_alta: today(),
+  sin_familia: true,
   familia_id: '', familia_nueva: false,
   fam_nombre: '', fam_email: '', fam_telefono: '',
   fam_metodo_pago: 'bizum', fam_notas: '',
-  dias: [], hora_inicio: '16:30',
+  slots: [], // [{ dia, hora_inicio }]
   precio_bruto: '', descuento: 0,
 }
 
@@ -42,25 +54,32 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
   const [error, setError] = React.useState(null)
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
-  const toggleDia = dia => set('dias',
-    form.dias.includes(dia) ? form.dias.filter(d => d !== dia) : [...form.dias, dia]
-  )
+
+  const toggleSlot = (dia, hora_inicio) => {
+    const existe = form.slots.some(s => s.dia === dia && s.hora_inicio === hora_inicio)
+    set('slots', existe
+      ? form.slots.filter(s => !(s.dia === dia && s.hora_inicio === hora_inicio))
+      : [...form.slots, { dia, hora_inicio }]
+    )
+  }
+  const slotActivo = (dia, hora_inicio) =>
+    form.slots.some(s => s.dia === dia && s.hora_inicio === hora_inicio)
 
   const precioNeto = form.precio_bruto !== ''
     ? Math.round(Number(form.precio_bruto) * (1 - Number(form.descuento) / 100) * 100) / 100
     : ''
 
-  const valid = form.nombre.trim() && form.curso.trim() &&
-    (form.familia_nueva ? form.fam_nombre.trim() : form.familia_id)
+  const valid = form.nombre.trim() && form.curso &&
+    (form.sin_familia || (form.familia_nueva ? form.fam_nombre.trim() : form.familia_id))
 
   const handleSave = async () => {
     if (!valid) return
     setSaving(true)
     setError(null)
     try {
-      let familia_id = form.familia_id
+      let familia_id = form.sin_familia ? null : form.familia_id
 
-      if (form.familia_nueva) {
+      if (!form.sin_familia && form.familia_nueva) {
         const { data, error: e } = await supabase
           .from('familias')
           .insert({
@@ -80,9 +99,9 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
         .from('alumnos')
         .insert({
           nombre: form.nombre.trim(),
-          curso: form.curso.trim(),
+          curso: form.curso,
           nivel: nivelFromCurso(form.curso),
-          slug: slugify(form.nombre.trim(), form.curso.trim()),
+          slug: slugify(form.nombre.trim(), form.curso),
           familia_id,
           activo: true,
           fecha_alta: form.fecha_alta,
@@ -91,13 +110,13 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
         .single()
       if (e2) throw e2
 
-      if (form.dias.length > 0) {
+      if (form.slots.length > 0) {
         const { error: e3 } = await supabase.from('horario').insert(
-          form.dias.map(dia => ({
+          form.slots.map(s => ({
             alumno_id: alumno.id,
-            dia,
-            hora_inicio: form.hora_inicio,
-            hora_fin: horaFin(form.hora_inicio),
+            dia: s.dia,
+            hora_inicio: s.hora_inicio,
+            hora_fin: horaFin(s.hora_inicio),
             fecha_inicio: today(),
           }))
         )
@@ -143,9 +162,11 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
             </label>
             <label className="panel__field">
               <span className="panel__lbl">Curso *</span>
-              <input className="panel__input" value={form.curso}
-                onChange={e => set('curso', e.target.value)}
-                placeholder="4 ESO · 2 BACH · 5 PRIM…" />
+              <select className="panel__input panel__select" value={form.curso}
+                onChange={e => set('curso', e.target.value)}>
+                <option value="">— Seleccionar —</option>
+                {CURSOS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </label>
             <label className="panel__field">
               <span className="panel__lbl">Fecha de alta</span>
@@ -156,104 +177,114 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
 
           {/* ── Familia ── */}
           <section className="panel__section">
-            <h3 className="panel__sh">Familia *</h3>
-            {!form.familia_nueva ? (
-              <>
-                <label className="panel__field">
-                  <span className="panel__lbl">Familia existente</span>
-                  <select className="panel__input panel__select"
-                    value={form.familia_id}
-                    onChange={e => set('familia_id', e.target.value)}
-                  >
-                    <option value="">— Seleccionar —</option>
-                    {familias.map(f => (
-                      <option key={f.id} value={f.id}>{f.nombre}</option>
-                    ))}
-                  </select>
-                </label>
-                <button className="panel__link" type="button"
-                  onClick={() => set('familia_nueva', true)}>
-                  + Crear familia nueva
-                </button>
-              </>
-            ) : (
-              <>
-                <label className="panel__field">
-                  <span className="panel__lbl">Nombre familia *</span>
-                  <input className="panel__input" value={form.fam_nombre}
-                    onChange={e => set('fam_nombre', e.target.value)}
-                    placeholder="Apellidos o nombre" />
-                </label>
-                <label className="panel__field">
-                  <span className="panel__lbl">Email</span>
-                  <input className="panel__input" type="email" value={form.fam_email}
-                    onChange={e => set('fam_email', e.target.value)}
-                    placeholder="correo@ejemplo.com" />
-                </label>
-                <label className="panel__field">
-                  <span className="panel__lbl">Teléfono</span>
-                  <input className="panel__input" type="tel" value={form.fam_telefono}
-                    onChange={e => set('fam_telefono', e.target.value)}
-                    placeholder="600 000 000" />
-                </label>
-                <label className="panel__field">
-                  <span className="panel__lbl">Método de pago</span>
-                  <select className="panel__input panel__select"
-                    value={form.fam_metodo_pago}
-                    onChange={e => set('fam_metodo_pago', e.target.value)}
-                  >
-                    {METODOS_PAGO.map(m => (
-                      <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="panel__field">
-                  <span className="panel__lbl">Notas</span>
-                  <textarea className="panel__input panel__textarea" rows={2}
-                    value={form.fam_notas}
-                    onChange={e => set('fam_notas', e.target.value)}
-                    placeholder="Opcional…" />
-                </label>
-                <button className="panel__link" type="button"
-                  onClick={() => { set('familia_nueva', false); set('fam_nombre', '') }}>
-                  ← Elegir familia existente
-                </button>
-              </>
+            <div className="panel__sh-row">
+              <h3 className="panel__sh">Familia</h3>
+              <button
+                type="button"
+                className={`panel__toggle ${form.sin_familia ? 'panel__toggle--on' : ''}`}
+                onClick={() => set('sin_familia', !form.sin_familia)}
+              >
+                Sin familia
+              </button>
+            </div>
+            {!form.sin_familia && (
+              !form.familia_nueva ? (
+                <>
+                  <label className="panel__field">
+                    <span className="panel__lbl">Familia existente</span>
+                    <select className="panel__input panel__select"
+                      value={form.familia_id}
+                      onChange={e => set('familia_id', e.target.value)}
+                    >
+                      <option value="">— Seleccionar —</option>
+                      {familias.map(f => (
+                        <option key={f.id} value={f.id}>{f.nombre}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <button className="panel__link" type="button"
+                    onClick={() => set('familia_nueva', true)}>
+                    + Crear familia nueva
+                  </button>
+                </>
+              ) : (
+                <>
+                  <label className="panel__field">
+                    <span className="panel__lbl">Nombre familia *</span>
+                    <input className="panel__input" value={form.fam_nombre}
+                      onChange={e => set('fam_nombre', e.target.value)}
+                      placeholder="Apellidos o nombre" />
+                  </label>
+                  <label className="panel__field">
+                    <span className="panel__lbl">Email</span>
+                    <input className="panel__input" type="email" value={form.fam_email}
+                      onChange={e => set('fam_email', e.target.value)}
+                      placeholder="correo@ejemplo.com" />
+                  </label>
+                  <label className="panel__field">
+                    <span className="panel__lbl">Teléfono</span>
+                    <input className="panel__input" type="tel" value={form.fam_telefono}
+                      onChange={e => set('fam_telefono', e.target.value)}
+                      placeholder="600 000 000" />
+                  </label>
+                  <label className="panel__field">
+                    <span className="panel__lbl">Método de pago</span>
+                    <select className="panel__input panel__select"
+                      value={form.fam_metodo_pago}
+                      onChange={e => set('fam_metodo_pago', e.target.value)}
+                    >
+                      {METODOS_PAGO.map(m => (
+                        <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="panel__field">
+                    <span className="panel__lbl">Notas</span>
+                    <textarea className="panel__input panel__textarea" rows={2}
+                      value={form.fam_notas}
+                      onChange={e => set('fam_notas', e.target.value)}
+                      placeholder="Opcional…" />
+                  </label>
+                  <button className="panel__link" type="button"
+                    onClick={() => { set('familia_nueva', false); set('fam_nombre', '') }}>
+                    ← Elegir familia existente
+                  </button>
+                </>
+              )
             )}
           </section>
 
           {/* ── Horario ── */}
           <section className="panel__section">
             <h3 className="panel__sh">Horario</h3>
-            <div className="panel__field">
-              <span className="panel__lbl">Días</span>
-              <div className="panel__dias">
-                {DIAS.map(dia => (
-                  <label key={dia}
-                    className={`panel__dia ${form.dias.includes(dia) ? 'panel__dia--on' : ''}`}>
-                    <input type="checkbox" hidden checked={form.dias.includes(dia)}
-                      onChange={() => toggleDia(dia)} />
-                    {dia.slice(0, 2).toUpperCase()}
-                  </label>
-                ))}
+            <div className="hor-grid-mini">
+              {/* cabecera horas */}
+              <div className="hor-grid-mini__corner" />
+              {HORAS.map(h => (
+                <div key={h} className="hor-grid-mini__hora">{h}</div>
+              ))}
+              {/* filas por día */}
+              {DIAS.map(({ id: dia, label }) => (
+                <React.Fragment key={dia}>
+                  <div className="hor-grid-mini__dia">{label}</div>
+                  {HORAS.map(hora => {
+                    const on = slotActivo(dia, hora)
+                    return (
+                      <label key={hora}
+                        className={`hor-grid-mini__cell ${on ? 'hor-grid-mini__cell--on' : ''}`}>
+                        <input type="checkbox" hidden checked={on}
+                          onChange={() => toggleSlot(dia, hora)} />
+                      </label>
+                    )
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+            {form.slots.length > 0 && (
+              <div className="panel__lbl" style={{ marginTop: 6 }}>
+                {form.slots.length} {form.slots.length === 1 ? 'sesión seleccionada' : 'sesiones seleccionadas'}
               </div>
-            </div>
-            <div className="panel__row">
-              <label className="panel__field">
-                <span className="panel__lbl">Hora inicio</span>
-                <select className="panel__input panel__select"
-                  value={form.hora_inicio}
-                  onChange={e => set('hora_inicio', e.target.value)}
-                >
-                  {HORAS.map(h => <option key={h} value={h}>{h}</option>)}
-                </select>
-              </label>
-              <label className="panel__field">
-                <span className="panel__lbl">Hora fin</span>
-                <input className="panel__input panel__input--calc"
-                  value={horaFin(form.hora_inicio)} readOnly />
-              </label>
-            </div>
+            )}
           </section>
 
           {/* ── Tarifa ── */}
