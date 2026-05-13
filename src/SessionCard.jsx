@@ -80,6 +80,11 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
             onChange={(v) => onChange({ tema: v })}
           />
 
+          <ComentarioInput
+            value={registro.comentario || ""}
+            onChange={(v) => onChange({ comentario: v })}
+          />
+
           <NotaPrivada
             value={registro.nota || ""}
             onChange={(v) => onChange({ nota: v })}
@@ -208,6 +213,23 @@ function TopicInput({ value, historial, onChange }) {
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+function ComentarioInput({ value, onChange }) {
+  return (
+    <div className="field">
+      <label className="field__label">
+        Comentario <span className="field__hint">— opcional, se guarda con la sesión</span>
+      </label>
+      <textarea
+        className="nota__area"
+        rows="2"
+        value={value}
+        placeholder="Observaciones del día, actitud, próxima sesión…"
+        onChange={(e) => onChange(e.target.value)}
+      />
     </div>
   );
 }

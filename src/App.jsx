@@ -2,7 +2,7 @@ import React from 'react';
 window.React = React;
 
 import './icons.jsx';
-import { cargarSesionesHoy, groupByHora } from './data.jsx';
+import { cargarSesionesHoy, groupByHora, guardarSesion } from './data.jsx';
 import './Chrome.jsx';
 import './SessionCard.jsx';
 import './Horario.jsx';
@@ -41,17 +41,15 @@ function DiarioScreen({ mobile }) {
 
   React.useEffect(() => {
     cargarSesionesHoy()
-      .then(({ sesiones: s, hoy: h }) => {
+      .then(({ sesiones: s, hoy: h, registrosIniciales }) => {
         setSesiones(s);
         setHoy(h);
-        setRegistros(
-          Object.fromEntries(
-            s.map((ses) => [
-              ses.id,
-              { asignatura: '', tema: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
-            ])
-          )
-        );
+        setRegistros(registrosIniciales ?? Object.fromEntries(
+          s.map((ses) => [
+            ses.id,
+            { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
+          ])
+        ));
         setCargando(false);
       })
       .catch(() => setCargando(false));
@@ -61,9 +59,18 @@ function DiarioScreen({ mobile }) {
     setRegistros((prev) => {
       clearTimeout(timers.current[id]);
       timers.current[id] = setTimeout(() => {
-        const now = new Date();
-        const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        setRegistros((p) => ({ ...p, [id]: { ...p[id], lastSavedAt: ts, _dirty: false } }));
+        setRegistros((p) => {
+          const registro = p[id];
+          const sesion = sesiones.find(s => s.id === id);
+          const debeGuardar = sesion && (
+            (registro.asignatura && registro.tema?.trim()) ||
+            registro.estado === 'absent'
+          );
+          if (debeGuardar) guardarSesion(sesion, registro);
+          const now = new Date();
+          const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+          return { ...p, [id]: { ...p[id], lastSavedAt: ts, _dirty: false } };
+        });
       }, 1200);
       return { ...prev, [id]: { ...prev[id], ...patch, _dirty: true } };
     });

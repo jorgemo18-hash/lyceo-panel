@@ -55,8 +55,9 @@ export function groupByHora(sesiones) {
 export async function cargarSesionesHoy() {
   const diaCol = DIA_COLUMNA[new Date().getDay()]
   const hoy = formatHoy()
+  const fechaHoy = new Date().toISOString().split('T')[0]
 
-  if (!diaCol) return { sesiones: [], hoy }
+  if (!diaCol) return { sesiones: [], hoy, registrosIniciales: {} }
 
   const { data, error } = await supabase
     .from('horario')
@@ -85,7 +86,48 @@ export async function cargarSesionesHoy() {
       racha: 0,
     }))
 
-  return { sesiones, hoy }
+  // Precargar sesiones ya guardadas hoy
+  const alumnoIds = sesiones.map(s => s.alumno.id)
+  let guardadas = []
+  if (alumnoIds.length > 0) {
+    const { data: sg } = await supabase
+      .from('sesiones')
+      .select('alumno_id, tipo, asignatura, tema, comentario')
+      .eq('fecha', fechaHoy)
+      .in('alumno_id', alumnoIds)
+    guardadas = sg ?? []
+  }
+
+  const registrosIniciales = Object.fromEntries(
+    sesiones.map(s => {
+      const g = guardadas.find(r => r.alumno_id === s.alumno.id)
+      return [s.id, {
+        asignatura: g?.asignatura ?? '',
+        tema: g?.tema ?? '',
+        comentario: g?.comentario ?? '',
+        nota: '',
+        estado: g?.tipo === 'ausencia' ? 'absent' : null,
+        lastSavedAt: null,
+        _dirty: false,
+      }]
+    })
+  )
+
+  return { sesiones, hoy, registrosIniciales }
+}
+
+// ── Guardar sesión en Supabase ────────────────────────────────────
+export async function guardarSesion(sesion, registro) {
+  const esAusente = registro.estado === 'absent'
+  const { error } = await supabase.from('sesiones').upsert({
+    alumno_id: sesion.alumno.id,
+    fecha: new Date().toISOString().split('T')[0],
+    tipo: esAusente ? 'ausencia' : 'sesion',
+    asignatura: esAusente ? null : (registro.asignatura || null),
+    tema: esAusente ? null : (registro.tema?.trim() || null),
+    comentario: esAusente ? null : (registro.comentario?.trim() || null),
+  }, { onConflict: 'alumno_id,fecha' })
+  if (error) console.error('Error guardando sesión:', error.message)
 }
 
 // ── Globales para componentes que usan window.X ───────────────────
