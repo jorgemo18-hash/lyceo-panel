@@ -1804,11 +1804,11 @@ button { font-family: inherit; }
   .doc-rgpd { padding-top: 12mm; }
   .doc-norma--break { page-break-before: always; break-before: page; padding-top: 12mm; }
   .doc-sheet {
+    display: block !important;
     box-shadow: none !important;
     margin: 0 !important;
     width: 210mm !important;
     min-height: 297mm !important;
-    page-break-inside: avoid;
   }
   .doc-sheet + .doc-sheet { page-break-before: always !important; }
 
