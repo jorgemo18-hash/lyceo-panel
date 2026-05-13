@@ -846,7 +846,16 @@ button { font-family: inherit; }
   overflow: hidden;
 }
 
-.ff-screen-sheet { /* wrapper pantalla — sin estilos propios */ }
+/* Pantalla: escala 1.5× → ~600px ancho, ~11pt eficaz */
+.ff-screen-sheet {
+  width: calc(105mm * 1.5);
+  min-height: calc(148mm * 1.5);
+  margin: 0 auto;
+}
+.ff-screen-sheet .ff-sheet {
+  transform: scale(1.5);
+  transform-origin: top left;
+}
 .ff-print-grid { display: none; }
 
 .ff-head {
