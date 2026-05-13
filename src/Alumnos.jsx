@@ -78,7 +78,7 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
     try {
       let familia_id = form.familia_id
 
-      const sepa = (mp) => mp === 'transferencia' || mp === 'sepa'
+      const sepa = (mp) => mp === 'sepa'
 
       if (form.sin_familia) {
         const { data, error: e } = await supabase
@@ -275,7 +275,7 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
                     ))}
                   </select>
                 </label>
-                {(form.fam_metodo_pago === 'transferencia' || form.fam_metodo_pago === 'sepa') && (
+                {form.fam_metodo_pago === 'sepa' && (
                   <label className="panel__field">
                     <span className="panel__lbl">IBAN</span>
                     <input className="panel__input" value={form.fam_codigo_sepa}
@@ -467,7 +467,7 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
     setSaving(true)
     setSaveError(null)
     try {
-      const sepa = (mp) => mp === 'transferencia' || mp === 'sepa'
+      const sepa = (mp) => mp === 'sepa'
 
       const { error: e1 } = await supabase
         .from('alumnos')
@@ -616,7 +616,7 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
                   ))}
                 </select>
               </label>
-              {((form?.fam_metodo_pago === 'transferencia') || (form?.fam_metodo_pago === 'sepa')) && (
+              {form?.fam_metodo_pago === 'sepa' && (
                 <label className="panel__field">
                   <span className="panel__lbl">IBAN</span>
                   <input className="panel__input" value={form?.fam_codigo_sepa ?? ''}
