@@ -45,14 +45,14 @@ function Horario() {
       .order('hora_inicio')
       .then(({ data, error: e }) => {
         if (e) setError(e.message)
-        else setRows(data ?? [])
+        else setRows((data ?? []).filter(r => r.hora_inicio))
         setLoading(false)
       })
   }, [])
 
   const getAlumnos = (hora_inicio, dia_id) =>
     rows
-      .filter(r => r.hora_inicio.substring(0, 5) === hora_inicio && r[dia_id] === true && r.alumnos)
+      .filter(r => r.hora_inicio?.substring(0, 5) === hora_inicio && r[dia_id] === true && r.alumnos)
       .map(r => r.alumnos)
       .filter(a => filtroNivel === 'todos' || a.nivel === filtroNivel)
 
