@@ -2093,7 +2093,8 @@ button { font-family: inherit; }
   .ff-sheet {
     box-shadow: none !important;
     margin: 0 !important;
-    padding-top: 4mm !important;
+    padding: 3mm !important;
+    font-size: 6.5pt !important;
     width: 105mm !important;
     height: 148mm !important;
     overflow: hidden;
