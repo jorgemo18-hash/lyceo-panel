@@ -64,6 +64,30 @@ function InformeSheet({ alumno, mes, anio, informe }) {
   const { sesiones, festivos, comentario } = informe
   const dias = generarDias(mes, anio, sesiones, festivos)
 
+  const tabla = (
+    <table className="inf-table">
+      <thead>
+        <tr>
+          <th className="inf-th inf-th--dia">Día</th>
+          <th className="inf-th inf-th--asig">Asignatura</th>
+          <th className="inf-th inf-th--tema">Tema</th>
+        </tr>
+      </thead>
+      <tbody>
+        {dias.map(item => {
+          const { cls, asig, tema } = filaInfo(item)
+          return (
+            <tr key={item.d} className={`inf-tr ${cls}`}>
+              <td className="inf-td inf-td--dia">{item.d}</td>
+              <td className="inf-td">{asig}</td>
+              <td className="inf-td">{tema}</td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+
   return (
     <div className="inf-sheet">
       <div className="inf-sheet__head">
@@ -74,35 +98,18 @@ function InformeSheet({ alumno, mes, anio, informe }) {
         </p>
       </div>
 
-      <div className="inf-table-wrap">
-        <table className="inf-table">
-          <thead>
-            <tr>
-              <th className="inf-th inf-th--dia">Día</th>
-              <th className="inf-th inf-th--asig">Asignatura</th>
-              <th className="inf-th inf-th--tema">Tema</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dias.map(item => {
-              const { cls, asig, tema } = filaInfo(item)
-              return (
-                <tr key={item.d} className={`inf-tr ${cls}`}>
-                  <td className="inf-td inf-td--dia">{item.d}</td>
-                  <td className="inf-td">{asig}</td>
-                  <td className="inf-td">{tema}</td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {comentario && (
-        <div className="inf-coment">
-          <div className="inf-coment__label">Resumen del mes</div>
-          <div className="inf-coment__body">{comentario}</div>
+      {comentario ? (
+        <div className="inf-cols">
+          <div className="inf-col-tabla">{tabla}</div>
+          <div className="inf-col-coment">
+            <div className="inf-coment">
+              <div className="inf-coment__label">Resumen del mes</div>
+              <div className="inf-coment__body">{comentario}</div>
+            </div>
+          </div>
         </div>
+      ) : (
+        <div className="inf-table-solo">{tabla}</div>
       )}
     </div>
   )
@@ -193,8 +200,18 @@ export function Informes() {
   }, [])
 
   const onPrint = () => {
+    const style = document.createElement('style')
+    style.id = 'inf-print-override'
+    style.textContent = '@page { size: A4 portrait; margin: 12mm; }'
+    document.head.appendChild(style)
     document.body.classList.add('printing-inf')
-    setTimeout(() => { window.print() }, 30)
+    setTimeout(() => {
+      window.print()
+      setTimeout(() => {
+        document.head.removeChild(style)
+        document.body.classList.remove('printing-inf')
+      }, 300)
+    }, 30)
   }
 
   const cambiarMes = (idx) => {
