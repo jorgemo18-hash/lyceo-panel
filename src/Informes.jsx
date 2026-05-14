@@ -117,15 +117,66 @@ function InformeSheet({ alumno, mes, anio, informe }) {
 
 // ── Pantalla principal ─────────────────────────────────────────────
 export function Informes() {
-  const [mesIdx, setMesIdx]         = React.useState(defaultMesIdx)
-  const [alumnos, setAlumnos]       = React.useState([])
+  const [mesIdx, setMesIdx]           = React.useState(defaultMesIdx)
+  const [alumnos, setAlumnos]         = React.useState([])
   const [conSesiones, setConSesiones] = React.useState(new Set())
-  const [alumnoSel, setAlumnoSel]   = React.useState(null)
-  const [informe, setInforme]       = React.useState(null)
-  const [cargando, setCargando]     = React.useState(true)
-  const [generando, setGenerando]   = React.useState(false)
+  const [alumnoSel, setAlumnoSel]     = React.useState(null)
+  const [informe, setInforme]         = React.useState(null)
+  const [cargando, setCargando]       = React.useState(true)
+  const [generando, setGenerando]     = React.useState(false)
+  const [generandoTodos, setGenerandoTodos] = React.useState(false)
+  const [progreso, setProgreso]       = React.useState(null)  // { actual, total }
+  const [resumen, setResumen]         = React.useState(null)  // { generados, sinSesiones }
+
+  const informesCache = React.useRef({})
+  const festivosCache = React.useRef({})
 
   const { mes, anio } = MESES_CURSO[mesIdx]
+
+  // Festivos con caché por mes/año (son iguales para todos los alumnos)
+  const cargarFestivos = React.useCallback(async (m, a) => {
+    const key = `${m}-${a}`
+    if (festivosCache.current[key]) return festivosCache.current[key]
+    const { primero, ultimo } = rango(m, a)
+    const { data } = await supabase.from('festivos').select('*')
+      .gte('fecha', primero).lte('fecha', ultimo)
+    festivosCache.current[key] = data ?? []
+    return festivosCache.current[key]
+  }, [])
+
+  // Informe de un alumno con caché
+  const cargarInforme = React.useCallback(async (alumno, m, a) => {
+    const key = `${alumno.id}-${m}-${a}`
+    if (informesCache.current[key]) return informesCache.current[key]
+
+    const { primero, ultimo } = rango(m, a)
+    const [{ data: sesiones }, festivos] = await Promise.all([
+      supabase.from('sesiones').select('*')
+        .eq('alumno_id', alumno.id)
+        .gte('fecha', primero).lte('fecha', ultimo)
+        .order('fecha'),
+      cargarFestivos(m, a),
+    ])
+
+    let comentario = ''
+    if ((sesiones ?? []).filter(s => s.tipo !== 'ausencia').length > 0) {
+      try {
+        const res = await fetch(
+          'https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/generar-comentario',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ alumno: alumno.nombre, curso: alumno.curso, sesiones }),
+          }
+        )
+        if (res.ok) comentario = (await res.json()).comentario ?? ''
+      } catch { /* sin comentario si falla la Edge Function */ }
+    }
+
+    const result = { sesiones: sesiones ?? [], festivos, comentario }
+    informesCache.current[key] = result
+    return result
+  }, [cargarFestivos])
 
   // Alumnos activos — una sola vez
   React.useEffect(() => {
@@ -148,49 +199,21 @@ export function Informes() {
       .then(({ data }) => setConSesiones(new Set((data ?? []).map(s => s.alumno_id))))
   }, [mes, anio])
 
-  // Informe completo al seleccionar alumno o cambiar mes
+  // Informe individual al seleccionar alumno o cambiar mes
   React.useEffect(() => {
     if (!alumnoSel) return
     let aborted = false
     setInforme(null)
     setGenerando(true)
 
-    const { primero, ultimo } = rango(mes, anio)
+    cargarInforme(alumnoSel, mes, anio)
+      .then(result => {
+        if (!aborted) { setInforme(result); setGenerando(false) }
+      })
+      .catch(() => { if (!aborted) setGenerando(false) })
 
-    const cargar = async () => {
-      const [{ data: sesiones }, { data: festivos }] = await Promise.all([
-        supabase.from('sesiones').select('*')
-          .eq('alumno_id', alumnoSel.id)
-          .gte('fecha', primero).lte('fecha', ultimo)
-          .order('fecha'),
-        supabase.from('festivos').select('*')
-          .gte('fecha', primero).lte('fecha', ultimo),
-      ])
-
-      let comentario = ''
-      if ((sesiones ?? []).filter(s => s.tipo !== 'ausencia').length > 0) {
-        try {
-          const res = await fetch(
-            'https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/generar-comentario',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ alumno: alumnoSel.nombre, curso: alumnoSel.curso, sesiones }),
-            }
-          )
-          if (res.ok) comentario = (await res.json()).comentario ?? ''
-        } catch { /* sin comentario si falla la función */ }
-      }
-
-      if (!aborted) {
-        setInforme({ sesiones: sesiones ?? [], festivos: festivos ?? [], comentario })
-        setGenerando(false)
-      }
-    }
-
-    cargar().catch(() => { if (!aborted) setGenerando(false) })
     return () => { aborted = true }
-  }, [alumnoSel, mes, anio])
+  }, [alumnoSel, mes, anio, cargarInforme])
 
   // Limpiar clase printing-inf al cerrar el diálogo
   React.useEffect(() => {
@@ -198,6 +221,31 @@ export function Informes() {
     window.addEventListener('afterprint', after)
     return () => window.removeEventListener('afterprint', after)
   }, [])
+
+  // ── Generar todos ──────────────────────────────────────────────
+  const generarTodos = async () => {
+    const conSes    = alumnos.filter(a => conSesiones.has(a.id))
+    const sinSesiones = alumnos.length - conSes.length
+
+    if (conSes.length === 0) {
+      setResumen({ generados: 0, sinSesiones })
+      return
+    }
+
+    setGenerandoTodos(true)
+    setResumen(null)
+    setProgreso({ actual: 0, total: conSes.length })
+
+    let generados = 0
+    for (let i = 0; i < conSes.length; i++) {
+      setProgreso({ actual: i + 1, total: conSes.length })
+      try { await cargarInforme(conSes[i], mes, anio); generados++ } catch {}
+    }
+
+    setGenerandoTodos(false)
+    setProgreso(null)
+    setResumen({ generados, sinSesiones })
+  }
 
   const onPrint = () => {
     const style = document.createElement('style')
@@ -218,21 +266,62 @@ export function Informes() {
     setMesIdx(idx)
     setAlumnoSel(null)
     setInforme(null)
+    setResumen(null)
+    setProgreso(null)
   }
 
   return (
     <div className="inf-layout">
-      {/* Panel izquierdo — selector + lista */}
+      {/* Panel izquierdo — selector + controles + lista */}
       <aside className="inf-aside">
         <select
           className="inf-mes-sel"
           value={mesIdx}
           onChange={e => cambiarMes(Number(e.target.value))}
+          disabled={generandoTodos}
         >
           {MESES_CURSO.map((m, i) => (
             <option key={i} value={i}>{m.label}</option>
           ))}
         </select>
+
+        <button
+          className="btn btn--primary"
+          style={{ width: '100%' }}
+          onClick={generarTodos}
+          disabled={generandoTodos || cargando}
+        >
+          {generandoTodos ? 'Generando…' : 'Generar todos'}
+        </button>
+
+        {/* Progreso */}
+        {progreso && (
+          <div className="inf-progreso">
+            <div className="inf-progreso__label">
+              Generando {progreso.actual} de {progreso.total}…
+            </div>
+            <div className="inf-progreso__track">
+              <div
+                className="inf-progreso__fill"
+                style={{ width: `${Math.round(progreso.actual / progreso.total * 100)}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Resumen final */}
+        {resumen && !generandoTodos && (
+          <div className="inf-resumen">
+            <div className="inf-resumen__row">
+              <strong>{resumen.generados}</strong> informe{resumen.generados !== 1 ? 's' : ''} generado{resumen.generados !== 1 ? 's' : ''}
+            </div>
+            {resumen.sinSesiones > 0 && (
+              <div className="inf-resumen__row inf-resumen__row--dim">
+                {resumen.sinSesiones} alumno{resumen.sinSesiones !== 1 ? 's' : ''} sin sesiones
+              </div>
+            )}
+          </div>
+        )}
 
         {cargando ? (
           <div className="alumnos-estado">
@@ -245,6 +334,7 @@ export function Informes() {
                 <button
                   className={`inf-alumno${alumnoSel?.id === a.id ? ' inf-alumno--active' : ''}`}
                   onClick={() => setAlumnoSel(a)}
+                  disabled={generandoTodos}
                 >
                   <span className={`inf-dot${conSesiones.has(a.id) ? ' inf-dot--on' : ''}`} />
                   <span className="inf-alumno__nombre">{a.nombre}</span>
@@ -261,7 +351,7 @@ export function Informes() {
         {!alumnoSel && (
           <div className="placeholder">
             <div className="placeholder__title">Selecciona un alumno</div>
-            <p>Elige un alumno de la lista para generar su informe mensual.</p>
+            <p>Elige un alumno de la lista para ver su informe mensual.</p>
           </div>
         )}
 
