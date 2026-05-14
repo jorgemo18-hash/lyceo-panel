@@ -2018,7 +2018,7 @@ button { font-family: inherit; }
 @media print {
   @page {
     size: A4 portrait;
-    margin: 0;
+    margin: 5mm;
   }
   html, body { background: #fff !important; }
   .sidebar, .bottomnav, .topbar, .ff-toolbar, .doc-toolbar,
@@ -2087,10 +2087,13 @@ button { font-family: inherit; }
     width: 210mm;
     height: 296mm;
     gap: 0;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
   }
   .ff-sheet {
     box-shadow: none !important;
     margin: 0 !important;
+    padding-top: 0 !important;
     width: 105mm !important;
     height: 148mm !important;
     overflow: hidden;
