@@ -4,6 +4,8 @@
 // Bloque 2: tabla de tarifas editable
 // Bloque 3: pie con teléfono y email
 
+import { supabase } from './supabase.js'
+
 const FF_BLOQUES = [
   "15:30 – 16:30",
   "16:30 – 17:30",
@@ -13,36 +15,43 @@ const FF_BLOQUES = [
 ];
 const FF_DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
-function buildHorarioInicial() {
-  const blank = { nivel: "", num: 0, tope: 6 };
-  const grid = {};
+const NIVEL_LABEL = { primaria: 'PRIM', eso: 'ESO', bachiller: 'BACH', otro: '' }
+const DIA_COLS = [
+  { key: 'lunes',     label: 'Lunes'     },
+  { key: 'martes',    label: 'Martes'    },
+  { key: 'miercoles', label: 'Miércoles' },
+  { key: 'jueves',    label: 'Jueves'    },
+  { key: 'viernes',   label: 'Viernes'   },
+]
+
+function buildHorarioVacio() {
+  const grid = {}
   FF_BLOQUES.forEach((b) => {
-    grid[b] = {};
-    FF_DIAS.forEach((d) => { grid[b][d] = { ...blank }; });
-  });
-  const seed = (b, d, nivel, num, tope = 6) => { grid[b][d] = { nivel, num, tope }; };
-  seed("15:30 – 16:30", "Lunes",     "PRIM/ESO", 4);
-  seed("15:30 – 16:30", "Martes",    "PRIM",     2);
-  seed("15:30 – 16:30", "Miércoles", "PRIM/ESO", 4);
-  seed("15:30 – 16:30", "Jueves",    "PRIM",     2);
-  seed("16:30 – 17:30", "Lunes",     "ESO",      3);
-  seed("16:30 – 17:30", "Martes",    "ESO",      2);
-  seed("16:30 – 17:30", "Miércoles", "ESO",      3);
-  seed("16:30 – 17:30", "Jueves",    "ESO",      2);
-  seed("17:30 – 18:30", "Lunes",     "ESO/BACH", 3);
-  seed("17:30 – 18:30", "Martes",    "BACH",     1);
-  seed("17:30 – 18:30", "Miércoles", "ESO/BACH", 3);
-  seed("17:30 – 18:30", "Jueves",    "ESO/BACH", 3);
-  seed("17:30 – 18:30", "Viernes",   "ESO",      2);
-  seed("18:30 – 19:30", "Lunes",     "ESO",      2);
-  seed("18:30 – 19:30", "Martes",    "BACH",     1);
-  seed("18:30 – 19:30", "Miércoles", "ESO",      2);
-  seed("18:30 – 19:30", "Jueves",    "BACH",     1);
-  seed("19:30 – 20:30", "Lunes",     "ESO/BACH", 3);
-  seed("19:30 – 20:30", "Martes",    "BACH",     1);
-  seed("19:30 – 20:30", "Miércoles", "BACH",     1);
-  seed("19:30 – 20:30", "Jueves",    "BACH",     1);
-  return grid;
+    grid[b] = {}
+    FF_DIAS.forEach((d) => { grid[b][d] = { nivel: '', num: 0, tope: 6 } })
+  })
+  return grid
+}
+
+function buildGridFromRows(rows) {
+  const grid = buildHorarioVacio()
+  rows.forEach((row) => {
+    const alumno = row.alumnos
+    if (!alumno) return
+    const hhmm = (row.hora_inicio ?? '').slice(0, 5)
+    const bloque = FF_BLOQUES.find((b) => b.startsWith(hhmm))
+    if (!bloque) return
+    const nivelLabel = NIVEL_LABEL[alumno.nivel] ?? ''
+    DIA_COLS.forEach(({ key, label }) => {
+      if (!row[key]) return
+      const cell = grid[bloque][label]
+      cell.num += 1
+      if (nivelLabel && !cell.nivel.split('/').includes(nivelLabel)) {
+        cell.nivel = cell.nivel ? `${cell.nivel}/${nivelLabel}` : nivelLabel
+      }
+    })
+  })
+  return grid
 }
 
 function FichaCellEditor({ cell, onChange }) {
@@ -222,10 +231,19 @@ function FichaSheet({ grid, setGrid, tarifas, setTarifas, tel, setTel, email, se
 }
 
 function FichaFamilias() {
-  const [grid, setGrid] = React.useState(buildHorarioInicial);
+  const [grid, setGrid] = React.useState(buildHorarioVacio);
   const [tarifas, setTarifas] = React.useState(() => JSON.parse(JSON.stringify(TARIFAS_INICIALES)));
   const [tel, setTel] = React.useState("675 32 41 28");
   const [email, setEmail] = React.useState("info@lyceoacademia.es");
+
+  React.useEffect(() => {
+    supabase
+      .from('horario')
+      .select('*, alumnos(nombre, curso, nivel)')
+      .not('hora_inicio', 'is', null)
+      .eq('alumnos.activo', true)
+      .then(({ data }) => { if (data) setGrid(buildGridFromRows(data)) })
+  }, []);
 
   const sheetProps = { grid, setGrid, tarifas, setTarifas, tel, setTel, email, setEmail };
 
