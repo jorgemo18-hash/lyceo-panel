@@ -1,7 +1,6 @@
 import React from 'react'
-import { flushSync } from 'react-dom'
 import { supabase } from './supabase.js'
-import { InformeSheet, FacturaSheet, rango, mesLabel } from './sheets.jsx'
+import { InformeSheet, rango, mesLabel } from './sheets.jsx'
 
 const MESES_CURSO = [
   { mes: 9,  anio: 2025, label: 'Septiembre 2025' },
@@ -22,14 +21,6 @@ function defaultMesIdx() {
   return idx >= 0 ? idx : MESES_CURSO.length - 1
 }
 
-function makeHtmlDoc(inner) {
-  return `<!DOCTYPE html>
-<html lang="es">
-<head><base href="${window.location.origin}/">${document.head.innerHTML}</head>
-<body style="margin:0;padding:0;background:#fff">${inner}</body>
-</html>`
-}
-
 // ── Pantalla principal ─────────────────────────────────────────────
 export function Informes() {
   const [mesIdx, setMesIdx]           = React.useState(defaultMesIdx)
@@ -44,12 +35,10 @@ export function Informes() {
   const [resumen, setResumen]         = React.useState(null)
   const [enviando, setEnviando]       = React.useState(false)
   const [envioStatus, setEnvioStatus] = React.useState(null)
-  const [hiddenFacData, setHiddenFacData] = React.useState(null)
 
   const informesCache = React.useRef({})
   const festivosCache = React.useRef({})
   const informeRef    = React.useRef(null)
-  const hiddenFacRef  = React.useRef(null)
 
   const { mes, anio } = MESES_CURSO[mesIdx]
 
@@ -181,7 +170,6 @@ export function Informes() {
     setEnvioStatus(null)
 
     try {
-      const familia   = alumnoSel.familias
       const familiaId = alumnoSel.familia_id
 
       // Tarifa
@@ -217,16 +205,39 @@ export function Informes() {
         }
       }
 
-      // Renderizar FacturaSheet en el div oculto de forma síncrona
-      flushSync(() => setHiddenFacData({ alumno: alumnoSel, familia, tarifa, factura }))
+      // Construir diasMes desde sesiones y festivos del informe ya cargado
+      const diasMes = []
+      for (const s of informe.sesiones ?? []) {
+        if (s.tipo === 'ausencia') continue
+        const dia = parseInt(s.fecha.split('-')[2], 10)
+        diasMes.push({ dia, asignatura: s.asignatura || '', tema: s.tema || '' })
+      }
+      for (const f of informe.festivos ?? []) {
+        const dia = parseInt(f.fecha.split('-')[2], 10)
+        diasMes.push({ dia, festivo: f.descripcion || f.nombre || 'Festivo' })
+      }
 
-      const htmlInforme = makeHtmlDoc(informeRef.current?.innerHTML ?? '')
-      const htmlFactura = makeHtmlDoc(hiddenFacRef.current?.innerHTML ?? '')
+      const payload = {
+        emailDestino: email,
+        nombreAlumno: alumnoSel.nombre,
+        curso: alumnoSel.curso,
+        mes,
+        anio,
+        diasMes,
+        comentario: informe.comentario || '',
+        factura: factura ? {
+          numeroFactura: factura.numero_factura,
+          familia: alumnoSel.familias,
+          precioBruto: tarifa?.precio_bruto ?? factura.importe,
+          descuentoPct: tarifa?.descuento_pct ?? 0,
+          precioNeto: tarifa?.precio_neto ?? factura.importe,
+        } : null,
+      }
 
       const res = await fetch('https://lyceo-pdf-service.onrender.com/enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailDestino: email, nombreAlumno: alumnoSel.nombre, mes, anio, htmlInforme, htmlFactura }),
+        body: JSON.stringify(payload),
       })
       const json = await res.json()
       if (res.ok) {
@@ -238,7 +249,6 @@ export function Informes() {
       setEnvioStatus({ ok: false, msg: err.message ?? 'Error desconocido' })
     } finally {
       setEnviando(false)
-      setHiddenFacData(null)
     }
   }
 
@@ -255,22 +265,6 @@ export function Informes() {
 
   return (
     <div className="inf-layout">
-      {/* Div oculto para renderizar FacturaSheet al enviar */}
-      <div style={{ position: 'absolute', left: '-9999px', visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
-        <div ref={hiddenFacRef}>
-          {hiddenFacData && (
-            <FacturaSheet
-              alumno={hiddenFacData.alumno}
-              familia={hiddenFacData.familia}
-              tarifa={hiddenFacData.tarifa}
-              factura={hiddenFacData.factura}
-              mes={mes}
-              anio={anio}
-            />
-          )}
-        </div>
-      </div>
-
       {/* Panel izquierdo */}
       <aside className="inf-aside">
         <select

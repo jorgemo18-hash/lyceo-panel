@@ -1,7 +1,6 @@
 import React from 'react'
-import { flushSync } from 'react-dom'
 import { supabase } from './supabase.js'
-import { FacturaSheet, InformeSheet, rango, eur } from './sheets.jsx'
+import { FacturaSheet, eur } from './sheets.jsx'
 
 const MESES = [
   { label: 'Septiembre 2025', mes: 9,  anio: 2025 },
@@ -22,14 +21,6 @@ function defaultMesIdx() {
   return idx >= 0 ? idx : MESES.length - 1
 }
 
-function makeHtmlDoc(inner) {
-  return `<!DOCTYPE html>
-<html lang="es">
-<head><base href="${window.location.origin}/">${document.head.innerHTML}</head>
-<body style="margin:0;padding:0;background:#fff">${inner}</body>
-</html>`
-}
-
 // ── Pantalla principal ─────────────────────────────────────────────
 export function Facturas() {
   const [mesIdx, setMesIdx]         = React.useState(defaultMesIdx)
@@ -42,10 +33,8 @@ export function Facturas() {
   const [generando, setGenerando]   = React.useState(false)
   const [enviando, setEnviando]     = React.useState(false)
   const [envioStatus, setEnvioStatus] = React.useState(null)
-  const [hiddenInfData, setHiddenInfData] = React.useState(null)
 
-  const facturaRef   = React.useRef(null)
-  const hiddenInfRef = React.useRef(null)
+  const facturaRef = React.useRef(null)
 
   const { mes, anio } = MESES[mesIdx]
 
@@ -144,48 +133,28 @@ export function Facturas() {
     setEnvioStatus(null)
 
     try {
-      // Cargar datos del informe (sesiones + festivos + comentario AI)
-      const { primero, ultimo } = rango(mes, anio)
-      const [{ data: sesiones }, { data: festivos }] = await Promise.all([
-        supabase.from('sesiones').select('*')
-          .eq('alumno_id', alumnoSel.id)
-          .gte('fecha', primero).lte('fecha', ultimo)
-          .order('fecha'),
-        supabase.from('festivos').select('*')
-          .gte('fecha', primero).lte('fecha', ultimo),
-      ])
-
-      let comentario = ''
-      if ((sesiones ?? []).filter(s => s.tipo !== 'ausencia').length > 0) {
-        try {
-          const r = await fetch(
-            'https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/generar-comentario',
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ alumno: alumnoSel.nombre, curso: alumnoSel.curso, sesiones }),
-            }
-          )
-          if (r.ok) comentario = (await r.json()).comentario ?? ''
-        } catch {}
+      const tarifa = getTarifa(alumnoSel)
+      const payload = {
+        emailDestino: email,
+        nombreAlumno: alumnoSel.nombre,
+        curso: alumnoSel.curso,
+        mes,
+        anio,
+        diasMes: [],
+        comentario: '',
+        factura: {
+          numeroFactura: facturaSel.numero_factura,
+          familia: alumnoSel.familias,
+          precioBruto: tarifa?.precio_bruto ?? facturaSel.importe,
+          descuentoPct: tarifa?.descuento_pct ?? 0,
+          precioNeto: tarifa?.precio_neto ?? facturaSel.importe,
+        },
       }
-
-      const informe = { sesiones: sesiones ?? [], festivos: festivos ?? [], comentario }
-
-      // Renderizar InformeSheet en div oculto de forma síncrona
-      flushSync(() => setHiddenInfData({ alumno: alumnoSel, informe }))
-
-      const htmlFactura = makeHtmlDoc(facturaRef.current?.innerHTML ?? '')
-      const htmlInforme = makeHtmlDoc(hiddenInfRef.current?.innerHTML ?? '')
 
       const res = await fetch('https://lyceo-pdf-service.onrender.com/enviar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          emailDestino: email,
-          nombreAlumno: alumnoSel.nombre,
-          mes, anio, htmlInforme, htmlFactura,
-        }),
+        body: JSON.stringify(payload),
       })
       const json = await res.json()
       if (res.ok) {
@@ -197,7 +166,6 @@ export function Facturas() {
       setEnvioStatus({ ok: false, msg: err.message ?? 'Error desconocido' })
     } finally {
       setEnviando(false)
-      setHiddenInfData(null)
     }
   }
 
@@ -217,20 +185,6 @@ export function Facturas() {
   if (alumnoSel && facturaSel) {
     return (
       <div className="fac-view">
-        {/* Div oculto para InformeSheet al enviar */}
-        <div style={{ position: 'absolute', left: '-9999px', visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
-          <div ref={hiddenInfRef}>
-            {hiddenInfData && (
-              <InformeSheet
-                alumno={hiddenInfData.alumno}
-                mes={mes}
-                anio={anio}
-                informe={hiddenInfData.informe}
-              />
-            )}
-          </div>
-        </div>
-
         <div className="fac-toolbar no-print">
           <button className="btn btn--ghost btn--sm" onClick={volver}>← Volver</button>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
