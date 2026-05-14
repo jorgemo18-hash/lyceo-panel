@@ -2079,16 +2079,20 @@ button { font-family: inherit; }
   .doc-stack { display: block !important; gap: 0 !important; }
 
   /* FichaFamilias: 4 cuartillas A6 en rejilla 2×2 sobre A4 */
+  /* Página nombrada para usar margin:0 solo en esta sección    */
+  @page fichas { size: A4 portrait; margin: 0; }
+
   .ff-screen-sheet { display: none !important; }
   .ff-print-grid {
     display: grid !important;
     grid-template-columns: 105mm 105mm;
-    grid-template-rows: 148mm 148mm;
+    grid-template-rows: 148.5mm 148.5mm;
     width: 210mm;
-    height: 296mm;
+    height: 297mm;
     gap: 0;
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    page: fichas;
   }
   .ff-sheet {
     box-shadow: none !important;
@@ -2096,7 +2100,7 @@ button { font-family: inherit; }
     padding: 3mm !important;
     font-size: 6.5pt !important;
     width: 105mm !important;
-    height: 148mm !important;
+    height: 148.5mm !important;
     overflow: hidden;
     page-break-inside: avoid;
     break-inside: avoid;
