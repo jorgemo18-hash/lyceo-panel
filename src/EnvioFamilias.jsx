@@ -35,6 +35,8 @@ export function EnvioFamilias() {
   const [resumen, setResumen]             = React.useState(null)
   const [resultados, setResultados]       = React.useState([])
   const [envioStatus, setEnvioStatus]     = React.useState(null)
+  const [editandoComentario, setEditandoComentario] = React.useState(false)
+  const [comentarioEdit, setComentarioEdit]         = React.useState('')
 
   const informesCache = React.useRef({})
   const festivosCache = React.useRef({})
@@ -110,7 +112,14 @@ export function EnvioFamilias() {
     setEnvioStatus(null)
 
     cargarInforme(alumnoSel, mes, anio)
-      .then(result => { if (!aborted) { setInforme(result); setGenerando(false) } })
+      .then(result => {
+        if (!aborted) {
+          setInforme(result)
+          setGenerando(false)
+          setEditandoComentario(false)
+          setComentarioEdit(result.comentario ?? '')
+        }
+      })
       .catch(() => { if (!aborted) setGenerando(false) })
 
     return () => { aborted = true }
@@ -240,6 +249,14 @@ export function EnvioFamilias() {
     } finally {
       setEnviando(false)
     }
+  }
+
+  const guardarComentario = () => {
+    const updated = { ...informe, comentario: comentarioEdit }
+    setInforme(updated)
+    const key = `${alumnoSel.id}-${mes}-${anio}`
+    informesCache.current[key] = updated
+    setEditandoComentario(false)
   }
 
   const cambiarMes = (idx) => {
@@ -378,6 +395,30 @@ export function EnvioFamilias() {
               </div>
             )}
             <InformeSheet alumno={alumnoSel} mes={mes} anio={anio} informe={informe} />
+            <div className="comentario-edit no-print">
+              {editandoComentario ? (
+                <>
+                  <textarea
+                    className="comentario-edit__area"
+                    value={comentarioEdit}
+                    onChange={e => setComentarioEdit(e.target.value)}
+                    rows={5}
+                    autoFocus
+                  />
+                  <div className="comentario-edit__actions">
+                    <button className="btn btn--primary btn--sm" onClick={guardarComentario}>Guardar</button>
+                    <button className="btn btn--ghost btn--sm" onClick={() => setEditandoComentario(false)}>Cancelar</button>
+                  </div>
+                </>
+              ) : (
+                <button
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => { setComentarioEdit(informe.comentario ?? ''); setEditandoComentario(true) }}
+                >
+                  Editar comentario
+                </button>
+              )}
+            </div>
           </>
         )}
       </div>

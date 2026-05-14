@@ -3079,6 +3079,34 @@ body.printing .no-print { display: none !important; }
   border: 1px solid oklch(0.82 0.06 25);
 }
 
+/* ── Comentario editable ── */
+.comentario-edit {
+  margin: 12px 0 0;
+  padding: 0 2px;
+}
+.comentario-edit__area {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+  background: var(--surface);
+  color: var(--text);
+}
+.comentario-edit__area:focus {
+  outline: none;
+  border-color: var(--lyceo);
+}
+.comentario-edit__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 /* ── Batch send log ── */
 .envio-log {
   list-style: none;
