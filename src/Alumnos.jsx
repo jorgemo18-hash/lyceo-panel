@@ -43,6 +43,7 @@ const FORM_INICIAL = {
   familia_id: '', familia_nueva: false,
   fam_nombre: '', fam_email: '', fam_telefono: '',
   fam_metodo_pago: 'bizum', fam_codigo_sepa: '', fam_notas: '',
+  fam_dni: '', fam_direccion: '', fam_ciudad: 'Huesca', fam_cp: '22005',
   slots: [], // [{ dia, hora_inicio }]
   precio_bruto: '', descuento: 0,
 }
@@ -90,6 +91,10 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
             metodo_pago: form.fam_metodo_pago,
             codigo_sepa: sepa(form.fam_metodo_pago) ? form.fam_codigo_sepa.trim() || null : null,
             notas: form.fam_notas.trim() || null,
+            dni: form.fam_dni.trim() || null,
+            direccion: form.fam_direccion.trim() || null,
+            ciudad: form.fam_ciudad.trim() || null,
+            codigo_postal: form.fam_cp.trim() || null,
           })
           .select('id')
           .single()
@@ -105,6 +110,10 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
             metodo_pago: form.fam_metodo_pago,
             codigo_sepa: sepa(form.fam_metodo_pago) ? form.fam_codigo_sepa.trim() || null : null,
             notas: form.fam_notas.trim() || null,
+            dni: form.fam_dni.trim() || null,
+            direccion: form.fam_direccion.trim() || null,
+            ciudad: form.fam_ciudad.trim() || null,
+            codigo_postal: form.fam_cp.trim() || null,
           })
           .select('id')
           .single()
@@ -290,6 +299,30 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
                     onChange={e => set('fam_notas', e.target.value)}
                     placeholder="Opcional…" />
                 </label>
+                <label className="panel__field">
+                  <span className="panel__lbl">DNI/NIF</span>
+                  <input className="panel__input" value={form.fam_dni}
+                    onChange={e => set('fam_dni', e.target.value)}
+                    placeholder="12345678A" />
+                </label>
+                <label className="panel__field">
+                  <span className="panel__lbl">Dirección</span>
+                  <input className="panel__input" value={form.fam_direccion}
+                    onChange={e => set('fam_direccion', e.target.value)}
+                    placeholder="C/ Nombre, número" />
+                </label>
+                <div className="panel__row">
+                  <label className="panel__field">
+                    <span className="panel__lbl">Ciudad</span>
+                    <input className="panel__input" value={form.fam_ciudad}
+                      onChange={e => set('fam_ciudad', e.target.value)} />
+                  </label>
+                  <label className="panel__field">
+                    <span className="panel__lbl">Código postal</span>
+                    <input className="panel__input" value={form.fam_cp}
+                      onChange={e => set('fam_cp', e.target.value)} />
+                  </label>
+                </div>
               </>
             )}
           </section>
@@ -385,6 +418,7 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
       nombre: '', curso: '', fecha_alta: '',
       fam_email: '', fam_telefono: '', fam_metodo_pago: 'bizum',
       fam_codigo_sepa: '', fam_notas: '',
+      fam_dni: '', fam_direccion: '', fam_ciudad: 'Huesca', fam_cp: '22005',
       slots: [], precio_bruto: '', descuento: 0,
     }
     const slots = []
@@ -406,6 +440,10 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
       fam_metodo_pago: d.familias?.metodo_pago ?? 'bizum',
       fam_codigo_sepa: d.familias?.codigo_sepa ?? '',
       fam_notas: d.familias?.notas ?? '',
+      fam_dni: d.familias?.dni ?? '',
+      fam_direccion: d.familias?.direccion ?? '',
+      fam_ciudad: d.familias?.ciudad ?? 'Huesca',
+      fam_cp: d.familias?.codigo_postal ?? '22005',
       slots,
       precio_bruto: tarifa.precio_bruto ?? '',
       descuento: tarifa.descuento_pct ?? 0,
@@ -484,6 +522,10 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
             metodo_pago: form.fam_metodo_pago,
             codigo_sepa: sepa(form.fam_metodo_pago) ? form.fam_codigo_sepa.trim() || null : null,
             notas: form.fam_notas.trim() || null,
+            dni: form.fam_dni.trim() || null,
+            direccion: form.fam_direccion.trim() || null,
+            ciudad: form.fam_ciudad.trim() || null,
+            codigo_postal: form.fam_cp.trim() || null,
           })
           .eq('id', data.familia_id)
         if (e2) throw e2
@@ -629,6 +671,30 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
                 <textarea className="panel__input panel__textarea" rows={2}
                   value={form?.fam_notas ?? ''} onChange={e => set('fam_notas', e.target.value)} />
               </label>
+              <label className="panel__field">
+                <span className="panel__lbl">DNI/NIF</span>
+                <input className="panel__input" value={form?.fam_dni ?? ''}
+                  onChange={e => set('fam_dni', e.target.value)}
+                  placeholder="12345678A" />
+              </label>
+              <label className="panel__field">
+                <span className="panel__lbl">Dirección</span>
+                <input className="panel__input" value={form?.fam_direccion ?? ''}
+                  onChange={e => set('fam_direccion', e.target.value)}
+                  placeholder="C/ Nombre, número" />
+              </label>
+              <div className="panel__row">
+                <label className="panel__field">
+                  <span className="panel__lbl">Ciudad</span>
+                  <input className="panel__input" value={form?.fam_ciudad ?? 'Huesca'}
+                    onChange={e => set('fam_ciudad', e.target.value)} />
+                </label>
+                <label className="panel__field">
+                  <span className="panel__lbl">Código postal</span>
+                  <input className="panel__input" value={form?.fam_cp ?? '22005'}
+                    onChange={e => set('fam_cp', e.target.value)} />
+                </label>
+              </div>
             </section>
 
             <section className="panel__section">
@@ -725,6 +791,20 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
                 <div className="panel__field">
                   <span className="panel__lbl">Notas</span>
                   <span className="panel__val">{data.familias.notas}</span>
+                </div>
+              )}
+              {data.familias?.dni && (
+                <div className="panel__field">
+                  <span className="panel__lbl">DNI/NIF</span>
+                  <span className="panel__val">{data.familias.dni}</span>
+                </div>
+              )}
+              {data.familias?.direccion && (
+                <div className="panel__field">
+                  <span className="panel__lbl">Dirección</span>
+                  <span className="panel__val">
+                    {[data.familias.direccion, data.familias.ciudad, data.familias.codigo_postal].filter(Boolean).join(', ')}
+                  </span>
                 </div>
               )}
             </section>

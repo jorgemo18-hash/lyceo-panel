@@ -7,6 +7,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "diario", label: "Diario", icon: <Icon.calendar /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
     { id: "informes", label: "Informes", icon: <Icon.doc /> },
+    { id: "facturas", label: "Facturas", icon: <Icon.note /> },
     { id: "ficha", label: "Tarifas", icon: <Icon.tag /> },
     { id: "documentos", label: "Documentos", icon: <Icon.doc /> },
     { id: "pagos", label: "Pagos", icon: <Icon.euro /> },

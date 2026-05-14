@@ -2712,3 +2712,298 @@ body.printing .no-print { display: none !important; }
   overflow-y: auto;
   flex: 1;
 }
+
+/* ───────────── Facturas ───────────── */
+
+/* Lista */
+.fac-layout {
+  display: flex;
+  gap: 0;
+  height: 100%;
+  min-height: 0;
+}
+.fac-aside {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.fac-mes-sel {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  background: var(--bg-elev);
+  color: var(--ink);
+  cursor: pointer;
+}
+.fac-aside__actions { display: flex; flex-direction: column; gap: 8px; }
+
+.fac-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 4px;
+}
+.fac-list-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fac-list-th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  padding: 10px 16px;
+  border-bottom: 1.5px solid var(--line);
+}
+.fac-list-th--num { text-align: right; }
+.fac-list-row {
+  cursor: pointer;
+  border-bottom: 1px solid var(--line);
+  transition: background 0.1s;
+}
+.fac-list-row:hover { background: var(--lyceo-tint); }
+.fac-list-td {
+  padding: 12px 16px;
+  vertical-align: middle;
+}
+.fac-list-td--num { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; color: var(--ink); }
+.fac-list-nombre {
+  display: block;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink);
+}
+.fac-list-curso {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.fac-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.fac-badge--ok {
+  background: var(--ok-bg);
+  color: var(--ok);
+}
+.fac-badge--pending {
+  background: var(--bg-soft);
+  color: var(--ink-4);
+}
+
+/* Vista factura */
+.fac-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.fac-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: stretch;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+/* Hoja A4 */
+.fac-sheet {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  width: 100%;
+  max-width: 680px;
+  padding: 32px 36px;
+  font-family: var(--sans);
+  font-size: 13px;
+  color: #222;
+}
+
+/* Cabecera */
+.fac-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 0;
+}
+.fac-head__left { flex: 1; }
+.fac-head__emisor-name {
+  font-weight: 700;
+  font-size: 13px;
+  color: #111;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.fac-head__emisor-line {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.6;
+}
+.fac-head__right { flex-shrink: 0; }
+.fac-head__logo {
+  height: 44px;
+  width: auto;
+}
+
+.fac-divider {
+  border: none;
+  border-top: 1.5px solid var(--lyceo);
+  margin: 16px 0;
+}
+
+/* Título */
+.fac-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--lyceo);
+  margin-bottom: 20px;
+  letter-spacing: -0.01em;
+}
+
+/* Secciones cliente/pago */
+.fac-sections {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.fac-section {
+  background: var(--bg-soft);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.fac-section__title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--lyceo);
+  margin-bottom: 10px;
+}
+.fac-section__row {
+  display: flex;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #333;
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+.fac-section__row:last-child { margin-bottom: 0; }
+.fac-section__lbl {
+  min-width: 110px;
+  flex-shrink: 0;
+  font-weight: 500;
+  color: #777;
+}
+
+/* Tabla de conceptos */
+.fac-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+.fac-th {
+  background: var(--lyceo);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 8px 12px;
+  text-align: left;
+}
+.fac-th--num { text-align: right; }
+.fac-td {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #333;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+.fac-td--num { text-align: right; font-variant-numeric: tabular-nums; }
+.fac-td--exento { font-size: 11px; color: #888; }
+.fac-td--desc { color: var(--lyceo-soft); }
+
+.fac-tfoot-lbl {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #666;
+  text-align: left;
+  border-top: 1px solid var(--line);
+}
+.fac-tfoot-val {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: #333;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  border-top: 1px solid var(--line);
+}
+.fac-tfoot-total {
+  background: var(--lyceo-tint);
+}
+.fac-tfoot-lbl--total {
+  font-weight: 700;
+  color: #111;
+  font-size: 13px;
+  border-top: 1.5px solid var(--line-2);
+}
+.fac-tfoot-val--total {
+  font-weight: 700;
+  color: var(--lyceo);
+  font-size: 15px;
+  border-top: 1.5px solid var(--line-2);
+}
+
+/* Nota legal */
+.fac-footnote {
+  font-style: italic;
+  font-size: 11px;
+  color: #888;
+  margin: 16px 0 0;
+  line-height: 1.5;
+}
+
+/* ── Print facturas ── */
+@media print {
+  body.printing-fac .sidebar,
+  body.printing-fac .topbar,
+  body.printing-fac .bottomnav,
+  body.printing-fac .fac-toolbar,
+  body.printing-fac .fac-layout,
+  body.printing-fac .no-print { display: none !important; }
+  body.printing-fac .content,
+  body.printing-fac .main { padding: 0 !important; background: #fff !important; }
+  body.printing-fac .fac-view { align-items: stretch !important; }
+  body.printing-fac .fac-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 10pt !important;
+  }
+  body.printing-fac .fac-title { font-size: 18pt !important; }
+  body.printing-fac .fac-th { font-size: 9pt !important; padding: 5pt 8pt !important; }
+  body.printing-fac .fac-td { font-size: 10pt !important; padding: 6pt 8pt !important; }
+  body.printing-fac .fac-section { background: #f7f7f7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body.printing-fac .fac-tfoot-total { background: #f0e8e8 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
