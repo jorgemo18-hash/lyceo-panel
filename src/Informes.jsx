@@ -1,5 +1,7 @@
 import React from 'react'
+import { flushSync } from 'react-dom'
 import { supabase } from './supabase.js'
+import { InformeSheet, FacturaSheet, rango, mesLabel } from './sheets.jsx'
 
 const MESES_CURSO = [
   { mes: 9,  anio: 2025, label: 'Septiembre 2025' },
@@ -14,105 +16,18 @@ const MESES_CURSO = [
   { mes: 6,  anio: 2026, label: 'Junio 2026'      },
 ]
 
-function rango(mes, anio) {
-  const pad = n => String(n).padStart(2, '0')
-  const diasEnMes = new Date(anio, mes, 0).getDate()
-  return {
-    primero: `${anio}-${pad(mes)}-01`,
-    ultimo:  `${anio}-${pad(mes)}-${pad(diasEnMes)}`,
-    diasEnMes,
-  }
-}
-
-function mesLabel(mes, anio) {
-  return new Date(anio, mes - 1, 1)
-    .toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
-    .replace(/^\w/, c => c.toUpperCase())
-}
-
-function generarDias(mes, anio, sesiones, festivos) {
-  const pad = n => String(n).padStart(2, '0')
-  const { diasEnMes } = rango(mes, anio)
-  return Array.from({ length: diasEnMes }, (_, i) => {
-    const d = i + 1
-    const fecha = `${anio}-${pad(mes)}-${pad(d)}`
-    const dow = new Date(fecha).getDay()
-    const sesion  = sesiones?.find(s => s.fecha === fecha) ?? null
-    const festivo = festivos?.find(f => f.fecha === fecha) ?? null
-    return { d, fecha, dow, sesion, festivo }
-  })
-}
-
-function filaInfo(item) {
-  const { dow, sesion, festivo } = item
-  if (dow === 6) return { cls: 'inf-tr--weekend', asig: 'Sábado',  tema: '' }
-  if (dow === 0) return { cls: 'inf-tr--weekend', asig: 'Domingo', tema: '' }
-  if (festivo)   return { cls: 'inf-tr--festivo', asig: festivo.nombre ?? 'Festivo', tema: '' }
-  if (sesion?.tipo === 'ausencia') return { cls: 'inf-tr--ausencia', asig: 'NO', tema: 'NO' }
-  if (sesion)    return { cls: '', asig: sesion.asignatura ?? '', tema: sesion.tema ?? '' }
-  return { cls: 'inf-tr--empty', asig: '', tema: '' }
-}
-
 function defaultMesIdx() {
   const now = new Date()
   const idx = MESES_CURSO.findIndex(m => m.mes === now.getMonth() + 1 && m.anio === now.getFullYear())
   return idx >= 0 ? idx : MESES_CURSO.length - 1
 }
 
-// ── Hoja imprimible ────────────────────────────────────────────────
-function InformeSheet({ alumno, mes, anio, informe }) {
-  const { sesiones, festivos, comentario } = informe
-  const dias = generarDias(mes, anio, sesiones, festivos)
-
-  const tabla = (
-    <table className="inf-table">
-      <thead>
-        <tr>
-          <th className="inf-th inf-th--dia">Día</th>
-          <th className="inf-th inf-th--asig">Asignatura</th>
-          <th className="inf-th inf-th--tema">Tema</th>
-        </tr>
-      </thead>
-      <tbody>
-        {dias.map(item => {
-          const { cls, asig, tema } = filaInfo(item)
-          return (
-            <tr key={item.d} className={`inf-tr ${cls}`}>
-              <td className="inf-td inf-td--dia">{item.d}</td>
-              <td className="inf-td">{asig}</td>
-              <td className="inf-td">{tema}</td>
-            </tr>
-          )
-        })}
-      </tbody>
-    </table>
-  )
-
-  return (
-    <div className="inf-sheet">
-      <div className="inf-sheet__head">
-        <img src="logo.png" alt="Lyceo" className="inf-sheet__logo" />
-        <h1 className="inf-sheet__title">Lyceo · Informe mensual</h1>
-        <p className="inf-sheet__sub">
-          {alumno.nombre} ({alumno.curso}) · {mesLabel(mes, anio)}
-        </p>
-      </div>
-
-      {comentario ? (
-        <div className="inf-cols">
-          <div className="inf-col-tabla">{tabla}</div>
-          <div className="inf-col-coment">
-            <div className="inf-coment">
-              <div className="inf-coment__label">Resumen del mes</div>
-              <div className="inf-coment__body">{comentario}</div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="inf-table-solo">{tabla}</div>
-      )}
-    </div>
-  )
+function makeHtmlDoc(inner) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><base href="${window.location.origin}/">${document.head.innerHTML}</head>
+<body style="margin:0;padding:0;background:#fff">${inner}</body>
+</html>`
 }
 
 // ── Pantalla principal ─────────────────────────────────────────────
@@ -125,26 +40,28 @@ export function Informes() {
   const [cargando, setCargando]       = React.useState(true)
   const [generando, setGenerando]     = React.useState(false)
   const [generandoTodos, setGenerandoTodos] = React.useState(false)
-  const [progreso, setProgreso]       = React.useState(null)  // { actual, total }
-  const [resumen, setResumen]         = React.useState(null)  // { generados, sinSesiones }
+  const [progreso, setProgreso]       = React.useState(null)
+  const [resumen, setResumen]         = React.useState(null)
+  const [enviando, setEnviando]       = React.useState(false)
+  const [envioStatus, setEnvioStatus] = React.useState(null)
+  const [hiddenFacData, setHiddenFacData] = React.useState(null)
 
   const informesCache = React.useRef({})
   const festivosCache = React.useRef({})
+  const informeRef    = React.useRef(null)
+  const hiddenFacRef  = React.useRef(null)
 
   const { mes, anio } = MESES_CURSO[mesIdx]
 
-  // Festivos con caché por mes/año (son iguales para todos los alumnos)
   const cargarFestivos = React.useCallback(async (m, a) => {
     const key = `${m}-${a}`
     if (festivosCache.current[key]) return festivosCache.current[key]
     const { primero, ultimo } = rango(m, a)
-    const { data } = await supabase.from('festivos').select('*')
-      .gte('fecha', primero).lte('fecha', ultimo)
+    const { data } = await supabase.from('festivos').select('*').gte('fecha', primero).lte('fecha', ultimo)
     festivosCache.current[key] = data ?? []
     return festivosCache.current[key]
   }, [])
 
-  // Informe de un alumno con caché
   const cargarInforme = React.useCallback(async (alumno, m, a) => {
     const key = `${alumno.id}-${m}-${a}`
     if (informesCache.current[key]) return informesCache.current[key]
@@ -170,7 +87,7 @@ export function Informes() {
           }
         )
         if (res.ok) comentario = (await res.json()).comentario ?? ''
-      } catch { /* sin comentario si falla la Edge Function */ }
+      } catch {}
     }
 
     const result = { sesiones: sesiones ?? [], festivos, comentario }
@@ -178,17 +95,16 @@ export function Informes() {
     return result
   }, [cargarFestivos])
 
-  // Alumnos activos — una sola vez
+  // Alumnos activos con datos de familia para email y envío
   React.useEffect(() => {
     supabase
       .from('alumnos')
-      .select('id, nombre, curso, nivel')
+      .select('id, nombre, curso, nivel, familia_id, familias(email, nombre, dni, direccion, ciudad, codigo_postal, metodo_pago)')
       .eq('activo', true)
       .order('nombre')
       .then(({ data }) => { setAlumnos(data ?? []); setCargando(false) })
   }, [])
 
-  // Indicadores: qué alumnos tienen sesiones este mes
   React.useEffect(() => {
     const { primero, ultimo } = rango(mes, anio)
     supabase
@@ -199,12 +115,12 @@ export function Informes() {
       .then(({ data }) => setConSesiones(new Set((data ?? []).map(s => s.alumno_id))))
   }, [mes, anio])
 
-  // Informe individual al seleccionar alumno o cambiar mes
   React.useEffect(() => {
     if (!alumnoSel) return
     let aborted = false
     setInforme(null)
     setGenerando(true)
+    setEnvioStatus(null)
 
     cargarInforme(alumnoSel, mes, anio)
       .then(result => {
@@ -215,22 +131,16 @@ export function Informes() {
     return () => { aborted = true }
   }, [alumnoSel, mes, anio, cargarInforme])
 
-  // Limpiar clase printing-inf al cerrar el diálogo
   React.useEffect(() => {
     const after = () => document.body.classList.remove('printing-inf')
     window.addEventListener('afterprint', after)
     return () => window.removeEventListener('afterprint', after)
   }, [])
 
-  // ── Generar todos ──────────────────────────────────────────────
   const generarTodos = async () => {
-    const conSes    = alumnos.filter(a => conSesiones.has(a.id))
+    const conSes = alumnos.filter(a => conSesiones.has(a.id))
     const sinSesiones = alumnos.length - conSes.length
-
-    if (conSes.length === 0) {
-      setResumen({ generados: 0, sinSesiones })
-      return
-    }
+    if (conSes.length === 0) { setResumen({ generados: 0, sinSesiones }); return }
 
     setGenerandoTodos(true)
     setResumen(null)
@@ -262,17 +172,106 @@ export function Informes() {
     }, 30)
   }
 
+  const enviar = async () => {
+    if (!alumnoSel || !informe) return
+    const email = alumnoSel.familias?.email
+    if (!email) return
+
+    setEnviando(true)
+    setEnvioStatus(null)
+
+    try {
+      const familia   = alumnoSel.familias
+      const familiaId = alumnoSel.familia_id
+
+      // Tarifa
+      let tarifa = null
+      if (familiaId) {
+        const { data: tArr } = await supabase
+          .from('tarifas').select('*')
+          .eq('familia_id', familiaId)
+          .order('fecha_inicio', { ascending: false })
+          .limit(1)
+        tarifa = tArr?.[0] ?? null
+      }
+
+      // Factura — buscar o crear
+      let factura = null
+      if (familiaId) {
+        const { data: fArr } = await supabase
+          .from('facturas').select('*')
+          .eq('alumno_id', alumnoSel.id).eq('anio', anio).eq('mes', mes)
+          .limit(1)
+        if (fArr?.[0]) {
+          factura = fArr[0]
+        } else {
+          const { count } = await supabase
+            .from('facturas').select('id', { count: 'exact', head: true })
+            .eq('anio', anio)
+          const numero = `Lyceo-${anio}-${String((count ?? 0) + 1).padStart(3, '0')}`
+          const { data: nf } = await supabase
+            .from('facturas')
+            .insert({ familia_id: familiaId, alumno_id: alumnoSel.id, anio, mes, importe: tarifa?.precio_neto ?? 0, numero_factura: numero })
+            .select().single()
+          factura = nf
+        }
+      }
+
+      // Renderizar FacturaSheet en el div oculto de forma síncrona
+      flushSync(() => setHiddenFacData({ alumno: alumnoSel, familia, tarifa, factura }))
+
+      const htmlInforme = makeHtmlDoc(informeRef.current?.innerHTML ?? '')
+      const htmlFactura = makeHtmlDoc(hiddenFacRef.current?.innerHTML ?? '')
+
+      const res = await fetch('https://lyceo-pdf-service.onrender.com/enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailDestino: email, nombreAlumno: alumnoSel.nombre, mes, anio, htmlInforme, htmlFactura }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setEnvioStatus({ ok: true, msg: `Email enviado a ${email}` })
+      } else {
+        setEnvioStatus({ ok: false, msg: json.error ?? 'Error al enviar' })
+      }
+    } catch (err) {
+      setEnvioStatus({ ok: false, msg: err.message ?? 'Error desconocido' })
+    } finally {
+      setEnviando(false)
+      setHiddenFacData(null)
+    }
+  }
+
   const cambiarMes = (idx) => {
     setMesIdx(idx)
     setAlumnoSel(null)
     setInforme(null)
     setResumen(null)
     setProgreso(null)
+    setEnvioStatus(null)
   }
+
+  const email = alumnoSel?.familias?.email
 
   return (
     <div className="inf-layout">
-      {/* Panel izquierdo — selector + controles + lista */}
+      {/* Div oculto para renderizar FacturaSheet al enviar */}
+      <div style={{ position: 'absolute', left: '-9999px', visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
+        <div ref={hiddenFacRef}>
+          {hiddenFacData && (
+            <FacturaSheet
+              alumno={hiddenFacData.alumno}
+              familia={hiddenFacData.familia}
+              tarifa={hiddenFacData.tarifa}
+              factura={hiddenFacData.factura}
+              mes={mes}
+              anio={anio}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* Panel izquierdo */}
       <aside className="inf-aside">
         <select
           className="inf-mes-sel"
@@ -294,22 +293,15 @@ export function Informes() {
           {generandoTodos ? 'Generando…' : 'Generar todos'}
         </button>
 
-        {/* Progreso */}
         {progreso && (
           <div className="inf-progreso">
-            <div className="inf-progreso__label">
-              Generando {progreso.actual} de {progreso.total}…
-            </div>
+            <div className="inf-progreso__label">Generando {progreso.actual} de {progreso.total}…</div>
             <div className="inf-progreso__track">
-              <div
-                className="inf-progreso__fill"
-                style={{ width: `${Math.round(progreso.actual / progreso.total * 100)}%` }}
-              />
+              <div className="inf-progreso__fill" style={{ width: `${Math.round(progreso.actual / progreso.total * 100)}%` }} />
             </div>
           </div>
         )}
 
-        {/* Resumen final */}
         {resumen && !generandoTodos && (
           <div className="inf-resumen">
             <div className="inf-resumen__row">
@@ -346,7 +338,7 @@ export function Informes() {
         )}
       </aside>
 
-      {/* Panel derecho — informe */}
+      {/* Panel derecho */}
       <div className="inf-main">
         {!alumnoSel && (
           <div className="placeholder">
@@ -367,8 +359,27 @@ export function Informes() {
               <button className="btn btn--primary" onClick={onPrint}>
                 <Icon.printer /> Imprimir / PDF
               </button>
+              <span title={!email ? 'Sin email registrado' : undefined}>
+                <button
+                  className="btn btn--primary"
+                  onClick={enviar}
+                  disabled={!email || enviando}
+                  style={!email ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                >
+                  {enviando
+                    ? <><span className="btn-spinner" /> Enviando…</>
+                    : <><Icon.mail /> Enviar</>}
+                </button>
+              </span>
             </div>
-            <InformeSheet alumno={alumnoSel} mes={mes} anio={anio} informe={informe} />
+            {envioStatus && (
+              <div className={`envio-status ${envioStatus.ok ? 'envio-status--ok' : 'envio-status--err'}`}>
+                {envioStatus.msg}
+              </div>
+            )}
+            <div ref={informeRef}>
+              <InformeSheet alumno={alumnoSel} mes={mes} anio={anio} informe={informe} />
+            </div>
           </>
         )}
       </div>

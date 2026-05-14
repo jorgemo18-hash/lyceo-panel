@@ -1,13 +1,7 @@
 import React from 'react'
+import { flushSync } from 'react-dom'
 import { supabase } from './supabase.js'
-
-const EMISOR = {
-  nombre: 'MORENO PARDO JORGE',
-  dni: '18042793Y',
-  direccion: 'C/ Alvarado 4, 22100 Sangarrén (Huesca)',
-  telefono: '675 32 41 28',
-  email: 'info@lyceoacademia.es',
-}
+import { FacturaSheet, InformeSheet, rango, eur } from './sheets.jsx'
 
 const MESES = [
   { label: 'Septiembre 2025', mes: 9,  anio: 2025 },
@@ -22,162 +16,18 @@ const MESES = [
   { label: 'Junio 2026',      mes: 6,  anio: 2026 },
 ]
 
-const MESES_NOMBRE = [
-  'enero','febrero','marzo','abril','mayo','junio',
-  'julio','agosto','septiembre','octubre','noviembre','diciembre',
-]
-
-const METODOS_LABEL = {
-  bizum:         'Bizum',
-  transferencia: 'Transferencia bancaria',
-  efectivo:      'Efectivo',
-  sepa:          'Domiciliación bancaria (SEPA)',
-}
-
-function eur(n) {
-  return Number(n).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
-}
-
 function defaultMesIdx() {
   const now = new Date()
   const idx = MESES.findIndex(m => m.mes === now.getMonth() + 1 && m.anio === now.getFullYear())
   return idx >= 0 ? idx : MESES.length - 1
 }
 
-// ── Hoja A4 ───────────────────────────────────────────────────────
-function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
-  const precioBruto = tarifa?.precio_bruto ?? 0
-  const descPct     = tarifa?.descuento_pct ?? 0
-  const descImporte = Math.round(precioBruto * descPct / 100 * 100) / 100
-  const precioNeto  = Math.round(precioBruto * (1 - descPct / 100) * 100) / 100
-  const mesNombre   = MESES_NOMBRE[mes - 1]
-
-  const fecha = new Date().toLocaleDateString('es-ES', {
-    day: 'numeric', month: 'long', year: 'numeric',
-  })
-
-  const dirCompleta = [
-    familia?.direccion,
-    [familia?.codigo_postal, familia?.ciudad].filter(Boolean).join(' '),
-  ].filter(Boolean).join(', ')
-
-  return (
-    <div className="fac-sheet">
-
-      {/* Cabecera */}
-      <div className="fac-head">
-        <div className="fac-head__left">
-          <div className="fac-head__emisor-name">{EMISOR.nombre} · {EMISOR.dni}</div>
-          <div className="fac-head__emisor-line">{EMISOR.direccion}</div>
-          <div className="fac-head__emisor-line">Teléfono: {EMISOR.telefono}</div>
-          <div className="fac-head__emisor-line">Email: {EMISOR.email}</div>
-        </div>
-        <div className="fac-head__right">
-          <img src="logo.png" alt="Lyceo" className="fac-head__logo" />
-        </div>
-      </div>
-
-      <div className="fac-divider" />
-
-      {/* Título */}
-      <div className="fac-title">Factura {factura.numero_factura}</div>
-
-      {/* Dos columnas: cliente + pago */}
-      <div className="fac-sections">
-        <div className="fac-section">
-          <div className="fac-section__title">Datos del cliente</div>
-          <div className="fac-section__row">
-            <span className="fac-section__lbl">Nombre</span>
-            <span>{familia?.nombre ?? alumno.nombre}</span>
-          </div>
-          {familia?.dni && (
-            <div className="fac-section__row">
-              <span className="fac-section__lbl">DNI/NIF</span>
-              <span>{familia.dni}</span>
-            </div>
-          )}
-          {dirCompleta && (
-            <div className="fac-section__row">
-              <span className="fac-section__lbl">Dirección</span>
-              <span>{dirCompleta}</span>
-            </div>
-          )}
-        </div>
-        <div className="fac-section">
-          <div className="fac-section__title">Datos del pago</div>
-          <div className="fac-section__row">
-            <span className="fac-section__lbl">Fecha de emisión</span>
-            <span>{fecha}</span>
-          </div>
-          {familia?.metodo_pago && (
-            <div className="fac-section__row">
-              <span className="fac-section__lbl">Método de pago</span>
-              <span>{METODOS_LABEL[familia.metodo_pago] ?? familia.metodo_pago}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Tabla de conceptos */}
-      <table className="fac-table">
-        <thead>
-          <tr>
-            <th className="fac-th fac-th--desc">Descripción</th>
-            <th className="fac-th fac-th--num">Precio</th>
-            <th className="fac-th fac-th--num">Cantidad</th>
-            <th className="fac-th fac-th--num">Impuesto</th>
-            <th className="fac-th fac-th--num">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td className="fac-td">
-              Clases Lyceo {alumno.nombre} · mes de {mesNombre} {anio}
-            </td>
-            <td className="fac-td fac-td--num">{eur(precioBruto)}</td>
-            <td className="fac-td fac-td--num">1</td>
-            <td className="fac-td fac-td--num fac-td--exento">Exento IVA Art. 20</td>
-            <td className="fac-td fac-td--num">{eur(precioBruto)}</td>
-          </tr>
-          {descPct > 0 && (
-            <tr>
-              <td className="fac-td fac-td--desc">Descuento {descPct}%</td>
-              <td className="fac-td fac-td--num">{eur(-descImporte)}</td>
-              <td className="fac-td fac-td--num">1</td>
-              <td className="fac-td fac-td--num">—</td>
-              <td className="fac-td fac-td--num">{eur(-descImporte)}</td>
-            </tr>
-          )}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={3} />
-            <td className="fac-tfoot-lbl">Subtotal</td>
-            <td className="fac-tfoot-val">{eur(precioNeto)}</td>
-          </tr>
-          <tr>
-            <td colSpan={3} />
-            <td className="fac-tfoot-lbl">Base IVA 0%</td>
-            <td className="fac-tfoot-val">{eur(precioNeto)}</td>
-          </tr>
-          <tr>
-            <td colSpan={3} />
-            <td className="fac-tfoot-lbl">IVA 0%</td>
-            <td className="fac-tfoot-val">0,00 €</td>
-          </tr>
-          <tr className="fac-tfoot-total">
-            <td colSpan={3} />
-            <td className="fac-tfoot-lbl fac-tfoot-lbl--total">Total Factura</td>
-            <td className="fac-tfoot-val fac-tfoot-val--total">{eur(precioNeto)}</td>
-          </tr>
-        </tfoot>
-      </table>
-
-      <p className="fac-footnote">
-        Operación exenta de IVA según Art. 20.Uno.9º de la Ley 37/1992.
-      </p>
-    </div>
-  )
+function makeHtmlDoc(inner) {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head><base href="${window.location.origin}/">${document.head.innerHTML}</head>
+<body style="margin:0;padding:0;background:#fff">${inner}</body>
+</html>`
 }
 
 // ── Pantalla principal ─────────────────────────────────────────────
@@ -190,15 +40,20 @@ export function Facturas() {
   const [facturaSel, setFacturaSel] = React.useState(null)
   const [cargando, setCargando]     = React.useState(true)
   const [generando, setGenerando]   = React.useState(false)
+  const [enviando, setEnviando]     = React.useState(false)
+  const [envioStatus, setEnvioStatus] = React.useState(null)
+  const [hiddenInfData, setHiddenInfData] = React.useState(null)
+
+  const facturaRef   = React.useRef(null)
+  const hiddenInfRef = React.useRef(null)
 
   const { mes, anio } = MESES[mesIdx]
 
-  // Alumnos + familias — una vez
   React.useEffect(() => {
     const cargar = async () => {
       const { data: a } = await supabase
         .from('alumnos')
-        .select('id, nombre, curso, familia_id, familias(nombre, dni, direccion, ciudad, codigo_postal, metodo_pago)')
+        .select('id, nombre, curso, familia_id, familias(nombre, email, dni, direccion, ciudad, codigo_postal, metodo_pago)')
         .eq('activo', true)
         .order('nombre')
 
@@ -214,7 +69,6 @@ export function Facturas() {
     cargar().catch(() => setCargando(false))
   }, [])
 
-  // Facturas del mes seleccionado
   React.useEffect(() => {
     supabase
       .from('facturas')
@@ -229,9 +83,7 @@ export function Facturas() {
 
   const generarNumero = async (year) => {
     const { count } = await supabase
-      .from('facturas')
-      .select('id', { count: 'exact', head: true })
-      .eq('anio', year)
+      .from('facturas').select('id', { count: 'exact', head: true }).eq('anio', year)
     return `Lyceo-${year}-${String((count ?? 0) + 1).padStart(3, '0')}`
   }
 
@@ -242,8 +94,7 @@ export function Facturas() {
     const { data, error } = await supabase
       .from('facturas')
       .insert({ familia_id: alumno.familia_id, alumno_id: alumno.id, anio, mes, importe, numero_factura: numero })
-      .select()
-      .single()
+      .select().single()
     if (!error && data) {
       setFacturas(prev => [...prev, data])
       return data
@@ -266,6 +117,7 @@ export function Facturas() {
     if (!fac) return
     setAlumnoSel(alumno)
     setFacturaSel(fac)
+    setEnvioStatus(null)
   }
 
   const onPrint = () => {
@@ -283,7 +135,73 @@ export function Facturas() {
     }, 30)
   }
 
-  const volver = () => { setAlumnoSel(null); setFacturaSel(null) }
+  const enviar = async () => {
+    if (!alumnoSel || !facturaSel) return
+    const email = alumnoSel.familias?.email
+    if (!email) return
+
+    setEnviando(true)
+    setEnvioStatus(null)
+
+    try {
+      // Cargar datos del informe (sesiones + festivos + comentario AI)
+      const { primero, ultimo } = rango(mes, anio)
+      const [{ data: sesiones }, { data: festivos }] = await Promise.all([
+        supabase.from('sesiones').select('*')
+          .eq('alumno_id', alumnoSel.id)
+          .gte('fecha', primero).lte('fecha', ultimo)
+          .order('fecha'),
+        supabase.from('festivos').select('*')
+          .gte('fecha', primero).lte('fecha', ultimo),
+      ])
+
+      let comentario = ''
+      if ((sesiones ?? []).filter(s => s.tipo !== 'ausencia').length > 0) {
+        try {
+          const r = await fetch(
+            'https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/generar-comentario',
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ alumno: alumnoSel.nombre, curso: alumnoSel.curso, sesiones }),
+            }
+          )
+          if (r.ok) comentario = (await r.json()).comentario ?? ''
+        } catch {}
+      }
+
+      const informe = { sesiones: sesiones ?? [], festivos: festivos ?? [], comentario }
+
+      // Renderizar InformeSheet en div oculto de forma síncrona
+      flushSync(() => setHiddenInfData({ alumno: alumnoSel, informe }))
+
+      const htmlFactura = makeHtmlDoc(facturaRef.current?.innerHTML ?? '')
+      const htmlInforme = makeHtmlDoc(hiddenInfRef.current?.innerHTML ?? '')
+
+      const res = await fetch('https://lyceo-pdf-service.onrender.com/enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailDestino: email,
+          nombreAlumno: alumnoSel.nombre,
+          mes, anio, htmlInforme, htmlFactura,
+        }),
+      })
+      const json = await res.json()
+      if (res.ok) {
+        setEnvioStatus({ ok: true, msg: `Email enviado a ${email}` })
+      } else {
+        setEnvioStatus({ ok: false, msg: json.error ?? 'Error al enviar' })
+      }
+    } catch (err) {
+      setEnvioStatus({ ok: false, msg: err.message ?? 'Error desconocido' })
+    } finally {
+      setEnviando(false)
+      setHiddenInfData(null)
+    }
+  }
+
+  const volver = () => { setAlumnoSel(null); setFacturaSel(null); setEnvioStatus(null) }
 
   if (cargando) {
     return (
@@ -293,24 +211,63 @@ export function Facturas() {
     )
   }
 
+  const email = alumnoSel?.familias?.email
+
   // ── Vista factura individual ──
   if (alumnoSel && facturaSel) {
     return (
       <div className="fac-view">
+        {/* Div oculto para InformeSheet al enviar */}
+        <div style={{ position: 'absolute', left: '-9999px', visibility: 'hidden', pointerEvents: 'none' }} aria-hidden="true">
+          <div ref={hiddenInfRef}>
+            {hiddenInfData && (
+              <InformeSheet
+                alumno={hiddenInfData.alumno}
+                mes={mes}
+                anio={anio}
+                informe={hiddenInfData.informe}
+              />
+            )}
+          </div>
+        </div>
+
         <div className="fac-toolbar no-print">
           <button className="btn btn--ghost btn--sm" onClick={volver}>← Volver</button>
-          <button className="btn btn--primary" onClick={onPrint}>
-            <Icon.printer /> Imprimir / PDF
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="btn btn--primary" onClick={onPrint}>
+              <Icon.printer /> Imprimir / PDF
+            </button>
+            <span title={!email ? 'Sin email registrado' : undefined}>
+              <button
+                className="btn btn--primary"
+                onClick={enviar}
+                disabled={!email || enviando}
+                style={!email ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+              >
+                {enviando
+                  ? <><span className="btn-spinner" /> Enviando…</>
+                  : <><Icon.mail /> Enviar</>}
+              </button>
+            </span>
+          </div>
         </div>
-        <FacturaSheet
-          alumno={alumnoSel}
-          familia={alumnoSel.familias}
-          tarifa={getTarifa(alumnoSel)}
-          factura={facturaSel}
-          mes={mes}
-          anio={anio}
-        />
+
+        {envioStatus && (
+          <div className={`envio-status ${envioStatus.ok ? 'envio-status--ok' : 'envio-status--err'}`}>
+            {envioStatus.msg}
+          </div>
+        )}
+
+        <div ref={facturaRef}>
+          <FacturaSheet
+            alumno={alumnoSel}
+            familia={alumnoSel.familias}
+            tarifa={getTarifa(alumnoSel)}
+            factura={facturaSel}
+            mes={mes}
+            anio={anio}
+          />
+        </div>
       </div>
     )
   }
