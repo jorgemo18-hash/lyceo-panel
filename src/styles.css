@@ -851,6 +851,146 @@ button { font-family: inherit; }
 }
 .pag-check:disabled { cursor: not-allowed; opacity: 0.35; }
 
+/* ───────────── Informes ───────────── */
+.inf-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+.inf-aside {
+  width: 232px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 24px;
+}
+.inf-mes-sel {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  background: var(--bg-elev);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink);
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+.inf-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-elev);
+}
+.inf-alumno {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: none;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.inf-list li:last-child .inf-alumno { border-bottom: none; }
+.inf-alumno:hover { background: var(--bg-soft); }
+.inf-alumno--active { background: oklch(0.97 0.02 25) !important; }
+.inf-alumno--active .inf-alumno__nombre { color: var(--lyceo); }
+.inf-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--line-2);
+}
+.inf-dot--on { background: var(--lyceo); }
+.inf-alumno__nombre { flex-grow: 1; font-size: 12.5px; font-weight: 500; }
+.inf-alumno__curso  { font-size: 11px; color: var(--ink-3); }
+
+.inf-main { flex-grow: 1; min-width: 0; }
+.inf-toolbar { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+
+/* Hoja A4 */
+.inf-sheet {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 4px 24px -8px rgba(0,0,0,0.12);
+  padding: 12mm 16mm 14mm;
+  max-width: 210mm;
+  font-family: var(--serif);
+  font-size: 10pt;
+  color: #1a1a1a;
+  line-height: 1.4;
+}
+.inf-sheet__head { text-align: center; margin-bottom: 6mm; }
+.inf-sheet__logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 3mm;
+}
+.inf-sheet__title { font-size: 12pt; font-weight: 700; margin: 0 0 1.5mm; }
+.inf-sheet__sub   { font-size: 10pt; color: #555; margin: 0; }
+
+.inf-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid #bbb;
+  margin-top: 4mm;
+}
+.inf-th {
+  background: #2e2e2e;
+  color: #fff;
+  font-size: 8.5pt;
+  font-weight: 600;
+  padding: 4px 8px;
+  text-align: left;
+  border: 1px solid #2e2e2e;
+}
+.inf-th--dia  { width: 36px; text-align: center; }
+.inf-th--asig { width: 28%; }
+.inf-td {
+  padding: 3px 8px;
+  font-size: 9pt;
+  border: 1px solid #ddd;
+}
+.inf-td--dia { text-align: center; color: #555; width: 36px; }
+
+.inf-tr--weekend .inf-td { background: #f0f0f0; color: #999; }
+.inf-tr--festivo .inf-td { background: #fde8e8; }
+.inf-tr--ausencia .inf-td { color: #999; }
+.inf-tr--empty .inf-td { height: 16px; }
+
+.inf-coment {
+  margin-top: 6mm;
+  padding: 4mm 5mm;
+  border-radius: 4px;
+  background: #fafafa;
+  border: 1px solid #eee;
+}
+.inf-coment__label {
+  font-size: 8pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #666;
+  margin-bottom: 2mm;
+}
+.inf-coment__body {
+  font-size: 10pt;
+  line-height: 1.65;
+  padding-left: 10px;
+  border-left: 3px solid #8B0000;
+}
+
 /* ───────────── Placeholder ───────────── */
 .placeholder {
   border: 1px dashed var(--line-2);
@@ -1847,6 +1987,25 @@ button { font-family: inherit; }
   html, body { background: #fff !important; }
   .sidebar, .bottomnav, .topbar, .ff-toolbar, .doc-toolbar,
   .twk-panel, .no-print { display: none !important; }
+
+  /* ── Informes ── */
+  body.printing-inf .sidebar,
+  body.printing-inf .topbar,
+  body.printing-inf .bottomnav,
+  body.printing-inf .inf-aside,
+  body.printing-inf .inf-toolbar { display: none !important; }
+  body.printing-inf .content,
+  body.printing-inf .main { padding: 0 !important; background: #fff !important; }
+  body.printing-inf .inf-layout { display: block !important; }
+  body.printing-inf .inf-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    width: 210mm !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 12mm 16mm 14mm !important;
+  }
 
   /* ── Tarifas landscape ── */
   body.printing-tar .tar-intro { display: none !important; }

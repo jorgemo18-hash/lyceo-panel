@@ -11,6 +11,7 @@ import './FichaFamilias.jsx';
 import './Documentos.jsx';
 import { Alumnos } from './Alumnos.jsx';
 import { Pagos } from './Pagos.jsx';
+import { Informes } from './Informes.jsx';
 
 const PRIMARY = '#8B0000';
 
@@ -236,14 +237,17 @@ const PANTALLAS = {
       </>
     )
   },
-  informes: (p) => (
-    <PlaceholderScreen
-      eyebrow="Gestión"
-      title="Informes"
-      desc="Informes trimestrales por alumno listos para enviar a las familias."
-      {...p}
-    />
-  ),
+  informes: ({ mobile }) => {
+    const Topbar = window.Topbar;
+    return (
+      <>
+        <Topbar eyebrow="Gestión" title="Informes" showSearch={false} mobile={mobile} />
+        <div className="content content--wide">
+          <Informes />
+        </div>
+      </>
+    );
+  },
   pagos: ({ mobile }) => {
     const Topbar = window.Topbar;
     return (
