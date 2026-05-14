@@ -12,6 +12,7 @@ import './Documentos.jsx';
 import { Alumnos } from './Alumnos.jsx';
 import { Pagos } from './Pagos.jsx';
 import { Informes } from './Informes.jsx';
+import { EnvioFamilias } from './EnvioFamilias.jsx';
 import { Facturas } from './Facturas.jsx';
 
 const PRIMARY = '#8B0000';
@@ -245,6 +246,17 @@ const PANTALLAS = {
         <Topbar eyebrow="Gestión" title="Informes" showSearch={false} mobile={mobile} />
         <div className="content content--wide">
           <Informes />
+        </div>
+      </>
+    );
+  },
+  envio: ({ mobile }) => {
+    const Topbar = window.Topbar;
+    return (
+      <>
+        <Topbar eyebrow="Gestión" title="Envío familias" showSearch={false} mobile={mobile} />
+        <div className="content content--wide">
+          <EnvioFamilias />
         </div>
       </>
     );

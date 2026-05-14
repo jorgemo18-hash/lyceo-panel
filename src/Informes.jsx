@@ -30,9 +30,6 @@ export function Informes() {
   const [informe, setInforme]         = React.useState(null)
   const [cargando, setCargando]       = React.useState(true)
   const [generando, setGenerando]     = React.useState(false)
-  const [generandoTodos, setGenerandoTodos] = React.useState(false)
-  const [progreso, setProgreso]       = React.useState(null)
-  const [resumen, setResumen]         = React.useState(null)
   const [enviando, setEnviando]       = React.useState(false)
   const [envioStatus, setEnvioStatus] = React.useState(null)
 
@@ -125,26 +122,6 @@ export function Informes() {
     window.addEventListener('afterprint', after)
     return () => window.removeEventListener('afterprint', after)
   }, [])
-
-  const generarTodos = async () => {
-    const conSes = alumnos.filter(a => conSesiones.has(a.id))
-    const sinSesiones = alumnos.length - conSes.length
-    if (conSes.length === 0) { setResumen({ generados: 0, sinSesiones }); return }
-
-    setGenerandoTodos(true)
-    setResumen(null)
-    setProgreso({ actual: 0, total: conSes.length })
-
-    let generados = 0
-    for (let i = 0; i < conSes.length; i++) {
-      setProgreso({ actual: i + 1, total: conSes.length })
-      try { await cargarInforme(conSes[i], mes, anio); generados++ } catch {}
-    }
-
-    setGenerandoTodos(false)
-    setProgreso(null)
-    setResumen({ generados, sinSesiones })
-  }
 
   const onPrint = () => {
     const style = document.createElement('style')
@@ -256,8 +233,6 @@ export function Informes() {
     setMesIdx(idx)
     setAlumnoSel(null)
     setInforme(null)
-    setResumen(null)
-    setProgreso(null)
     setEnvioStatus(null)
   }
 
@@ -271,43 +246,11 @@ export function Informes() {
           className="inf-mes-sel"
           value={mesIdx}
           onChange={e => cambiarMes(Number(e.target.value))}
-          disabled={generandoTodos}
         >
           {MESES_CURSO.map((m, i) => (
             <option key={i} value={i}>{m.label}</option>
           ))}
         </select>
-
-        <button
-          className="btn btn--primary"
-          style={{ width: '100%' }}
-          onClick={generarTodos}
-          disabled={generandoTodos || cargando}
-        >
-          {generandoTodos ? 'Generando…' : 'Generar todos'}
-        </button>
-
-        {progreso && (
-          <div className="inf-progreso">
-            <div className="inf-progreso__label">Generando {progreso.actual} de {progreso.total}…</div>
-            <div className="inf-progreso__track">
-              <div className="inf-progreso__fill" style={{ width: `${Math.round(progreso.actual / progreso.total * 100)}%` }} />
-            </div>
-          </div>
-        )}
-
-        {resumen && !generandoTodos && (
-          <div className="inf-resumen">
-            <div className="inf-resumen__row">
-              <strong>{resumen.generados}</strong> informe{resumen.generados !== 1 ? 's' : ''} generado{resumen.generados !== 1 ? 's' : ''}
-            </div>
-            {resumen.sinSesiones > 0 && (
-              <div className="inf-resumen__row inf-resumen__row--dim">
-                {resumen.sinSesiones} alumno{resumen.sinSesiones !== 1 ? 's' : ''} sin sesiones
-              </div>
-            )}
-          </div>
-        )}
 
         {cargando ? (
           <div className="alumnos-estado">
@@ -320,7 +263,6 @@ export function Informes() {
                 <button
                   className={`inf-alumno${alumnoSel?.id === a.id ? ' inf-alumno--active' : ''}`}
                   onClick={() => setAlumnoSel(a)}
-                  disabled={generandoTodos}
                 >
                   <span className={`inf-dot${conSesiones.has(a.id) ? ' inf-dot--on' : ''}`} />
                   <span className="inf-alumno__nombre">{a.nombre}</span>

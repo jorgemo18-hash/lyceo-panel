@@ -30,7 +30,6 @@ export function Facturas() {
   const [alumnoSel, setAlumnoSel]   = React.useState(null)
   const [facturaSel, setFacturaSel] = React.useState(null)
   const [cargando, setCargando]     = React.useState(true)
-  const [generando, setGenerando]   = React.useState(false)
   const [enviando, setEnviando]     = React.useState(false)
   const [envioStatus, setEnvioStatus] = React.useState(null)
 
@@ -89,15 +88,6 @@ export function Facturas() {
       return data
     }
     return null
-  }
-
-  const generarTodas = async () => {
-    setGenerando(true)
-    const pendientes = alumnos.filter(a => !getFactura(a) && getTarifa(a))
-    for (const a of pendientes) {
-      await generarFactura(a)
-    }
-    setGenerando(false)
   }
 
   const onClickAlumno = async (alumno) => {
@@ -244,11 +234,6 @@ export function Facturas() {
           ))}
         </select>
 
-        <div className="fac-aside__actions">
-          <button className="btn btn--primary" onClick={generarTodas} disabled={generando}>
-            {generando ? 'Generando…' : 'Generar todas'}
-          </button>
-        </div>
       </aside>
 
       <div className="fac-main">

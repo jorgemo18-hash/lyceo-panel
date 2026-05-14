@@ -3079,6 +3079,28 @@ body.printing .no-print { display: none !important; }
   border: 1px solid oklch(0.82 0.06 25);
 }
 
+/* ── Batch send log ── */
+.envio-log {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+.envio-log__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+}
+.envio-log__item--ok  { background: var(--ok-bg); color: var(--ok); }
+.envio-log__item--err { background: oklch(0.96 0.03 25); color: var(--lyceo); }
+.envio-log__nombre { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.envio-log__estado { font-weight: 700; flex-shrink: 0; margin-left: 6px; }
+
 @keyframes btn-spin {
   to { transform: rotate(360deg); }
 }
