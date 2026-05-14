@@ -74,27 +74,29 @@ function InformeSheet({ alumno, mes, anio, informe }) {
         </p>
       </div>
 
-      <table className="inf-table">
-        <thead>
-          <tr>
-            <th className="inf-th inf-th--dia">Día</th>
-            <th className="inf-th inf-th--asig">Asignatura</th>
-            <th className="inf-th inf-th--tema">Tema</th>
-          </tr>
-        </thead>
-        <tbody>
-          {dias.map(item => {
-            const { cls, asig, tema } = filaInfo(item)
-            return (
-              <tr key={item.d} className={`inf-tr ${cls}`}>
-                <td className="inf-td inf-td--dia">{item.d}</td>
-                <td className="inf-td">{asig}</td>
-                <td className="inf-td">{tema}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+      <div className="inf-table-wrap">
+        <table className="inf-table">
+          <thead>
+            <tr>
+              <th className="inf-th inf-th--dia">Día</th>
+              <th className="inf-th inf-th--asig">Asignatura</th>
+              <th className="inf-th inf-th--tema">Tema</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dias.map(item => {
+              const { cls, asig, tema } = filaInfo(item)
+              return (
+                <tr key={item.d} className={`inf-tr ${cls}`}>
+                  <td className="inf-td inf-td--dia">{item.d}</td>
+                  <td className="inf-td">{asig}</td>
+                  <td className="inf-td">{tema}</td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
 
       {comentario && (
         <div className="inf-coment">

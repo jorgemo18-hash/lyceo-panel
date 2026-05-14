@@ -921,74 +921,100 @@ button { font-family: inherit; }
   background: #fff;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  box-shadow: 0 4px 24px -8px rgba(0,0,0,0.12);
-  padding: 12mm 16mm 14mm;
+  box-shadow: 0 4px 32px -8px rgba(0,0,0,0.13);
+  padding: 16mm 20mm 18mm;
   max-width: 210mm;
   font-family: var(--serif);
-  font-size: 10pt;
-  color: #1a1a1a;
-  line-height: 1.4;
+  font-size: 9.5pt;
+  color: #222;
+  line-height: 1.45;
 }
-.inf-sheet__head { text-align: center; margin-bottom: 6mm; }
+.inf-sheet__head {
+  text-align: center;
+  margin-bottom: 8mm;
+  padding-bottom: 6mm;
+  border-bottom: 1px solid #e0e0e0;
+}
 .inf-sheet__logo {
-  width: 52px;
-  height: 52px;
+  width: 46px;
+  height: 46px;
   object-fit: contain;
   display: block;
-  margin: 0 auto 3mm;
+  margin: 0 auto 3.5mm;
 }
-.inf-sheet__title { font-size: 12pt; font-weight: 700; margin: 0 0 1.5mm; }
-.inf-sheet__sub   { font-size: 10pt; color: #555; margin: 0; }
+.inf-sheet__title {
+  font-size: 11.5pt;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0 0 1.5mm;
+  color: #111;
+}
+.inf-sheet__sub {
+  font-size: 9.5pt;
+  color: #666;
+  margin: 0;
+  font-style: italic;
+}
 
+/* Tabla centrada y estrecha */
+.inf-table-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 5mm;
+}
 .inf-table {
   width: 100%;
+  max-width: 600px;
   border-collapse: collapse;
-  border: 1px solid #bbb;
-  margin-top: 4mm;
+  border: 1px solid #ccc;
+  font-size: 8.5pt;
 }
 .inf-th {
-  background: #2e2e2e;
+  background: #8B0000;
   color: #fff;
-  font-size: 8.5pt;
+  font-size: 8pt;
   font-weight: 600;
-  padding: 4px 8px;
+  padding: 5px 10px;
   text-align: left;
-  border: 1px solid #2e2e2e;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
-.inf-th--dia  { width: 36px; text-align: center; }
-.inf-th--asig { width: 28%; }
+.inf-th--dia  { width: 40px; text-align: center; }
+.inf-th--asig { width: 30%; }
 .inf-td {
-  padding: 3px 8px;
-  font-size: 9pt;
-  border: 1px solid #ddd;
+  padding: 3.5px 10px;
+  border-bottom: 1px solid #eee;
 }
-.inf-td--dia { text-align: center; color: #555; width: 36px; }
+.inf-td--dia { text-align: center; color: #777; font-size: 8pt; }
+/* Filas alternas */
+.inf-tr:nth-child(even) .inf-td { background: #f8f8f8; }
+.inf-tr:nth-child(odd)  .inf-td { background: #fff; }
 
-.inf-tr--weekend .inf-td { background: #f0f0f0; color: #999; }
-.inf-tr--festivo .inf-td { background: #fde8e8; }
-.inf-tr--ausencia .inf-td { color: #999; }
-.inf-tr--empty .inf-td { height: 16px; }
+.inf-tr--weekend .inf-td { background: #f0f0f0 !important; color: #aaa; font-style: italic; }
+.inf-tr--festivo .inf-td { background: #fdf0f0 !important; color: #8B0000; font-weight: 500; }
+.inf-tr--ausencia .inf-td { color: #aaa; font-style: italic; }
+.inf-tr--empty .inf-td { height: 14px; }
 
 .inf-coment {
-  margin-top: 6mm;
-  padding: 4mm 5mm;
-  border-radius: 4px;
+  max-width: 600px;
+  margin: 7mm auto 0;
+  padding: 4mm 5mm 4mm 12px;
+  border-left: 3px solid #8B0000;
   background: #fafafa;
-  border: 1px solid #eee;
+  border-radius: 0 4px 4px 0;
 }
 .inf-coment__label {
-  font-size: 8pt;
+  font-size: 7.5pt;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #666;
+  letter-spacing: 0.08em;
+  color: #8B0000;
   margin-bottom: 2mm;
 }
 .inf-coment__body {
-  font-size: 10pt;
+  font-size: 9.5pt;
   line-height: 1.65;
-  padding-left: 10px;
-  border-left: 3px solid #8B0000;
+  color: #444;
 }
 
 /* ───────────── Placeholder ───────────── */
