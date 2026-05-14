@@ -3023,6 +3023,10 @@ body.printing .no-print { display: none !important; }
   margin: 16px 0 0;
   line-height: 1.5;
 }
+.fac-footnote--aviso {
+  font-size: 10px;
+  margin-top: 6px;
+}
 
 /* ── Print facturas ── */
 @media print {

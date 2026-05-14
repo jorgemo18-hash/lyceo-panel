@@ -250,6 +250,9 @@ export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
       <p className="fac-footnote">
         Operación exenta de IVA según Art. 20.Uno.9º de la Ley 37/1992.
       </p>
+      <p className="fac-footnote fac-footnote--aviso">
+        Este documento es un recibo informativo. Para factura oficial a efectos fiscales (IRPF), solicítela en info@lyceoacademia.es
+      </p>
     </div>
   )
 }
