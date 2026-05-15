@@ -23,11 +23,12 @@ const METODOS = {
 
 const ORDEN_METODO = { sepa: 0, transferencia: 1, bizum: 2, efectivo: 3 }
 
-const COLUMNAS_HIST = [
-  { key: 'bizum',         label: 'Bizum',        cls: 'pag-badge--bizum' },
-  { key: 'transferencia', label: 'Transferencia', cls: 'pag-badge--transferencia' },
-  { key: 'efectivo',      label: 'Efectivo',      cls: 'pag-badge--efectivo' },
-  { key: 'sepa',          label: 'Domiciliado',   cls: 'pag-badge--sepa' },
+// Siempre 3 columnas fijas; SEPA aparece como 4.ª solo si hay familias
+const COLUMNAS = [
+  { key: 'bizum',         label: 'Bizum',        cls: 'pag-badge--bizum',         always: true },
+  { key: 'transferencia', label: 'Transferencia', cls: 'pag-badge--transferencia', always: true },
+  { key: 'efectivo',      label: 'Efectivo',      cls: 'pag-badge--efectivo',      always: true },
+  { key: 'sepa',          label: 'Domiciliado',   cls: 'pag-badge--sepa',          always: false },
 ]
 
 function defaultMesIdx() {
@@ -62,11 +63,11 @@ function agrupar(alumnos) {
 }
 
 export function Pagos() {
-  const [grupos, setGrupos]   = React.useState([])
-  const [pagos, setPagos]     = React.useState([])
+  const [grupos, setGrupos]     = React.useState([])
+  const [pagos, setPagos]       = React.useState([])
   const [cargando, setCargando] = React.useState(true)
-  const [vista, setVista]     = React.useState('pendientes')
-  const [mesIdx, setMesIdx]   = React.useState(defaultMesIdx)
+  const [vista, setVista]       = React.useState('pendientes')
+  const [mesIdx, setMesIdx]     = React.useState(defaultMesIdx)
   const [saliendo, setSaliendo] = React.useState(new Set())
 
   React.useEffect(() => {
@@ -140,14 +141,18 @@ export function Pagos() {
     .toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
 
   const gruposConTarifa = grupos.filter(g => g.precio_total > 0)
-  const pagadosCount  = gruposConTarifa.filter(g => getPago(g.familia_id, mes, anio)?.pagado).length
-  const totalEsperado = gruposConTarifa.reduce((s, g) => s + g.precio_total, 0)
+  const pagadosCount   = gruposConTarifa.filter(g => getPago(g.familia_id, mes, anio)?.pagado).length
+  const totalEsperado  = gruposConTarifa.reduce((s, g) => s + g.precio_total, 0)
   const totalRecaudado = gruposConTarifa.reduce((s, g) =>
     s + (getPago(g.familia_id, mes, anio)?.pagado ? g.precio_total : 0), 0)
 
-  const pendientes = gruposConTarifa.filter(g => !getPago(g.familia_id, mes, anio)?.pagado)
-
+  const pendientesTotal = gruposConTarifa.filter(g => !getPago(g.familia_id, mes, anio)?.pagado).length
   const mesActualIdx = defaultMesIdx()
+
+  // Columnas visibles: las 3 fijas + SEPA si hay familias SEPA
+  const columnasVisibles = COLUMNAS.filter(col =>
+    col.always || grupos.some(g => g.metodo_pago === col.key && g.precio_total > 0)
+  )
 
   return (
     <div className="pag-root">
@@ -170,139 +175,149 @@ export function Pagos() {
         </div>
       </div>
 
-      {/* Toggle */}
-      <div className="pag-toggle">
-        <button
-          className={`pag-toggle__btn${vista === 'pendientes' ? ' pag-toggle__btn--on' : ''}`}
-          onClick={() => setVista('pendientes')}
-        >
-          Pendientes
-          {pendientes.length > 0 && (
-            <span className="pag-toggle__badge">{pendientes.length}</span>
-          )}
-        </button>
-        <button
-          className={`pag-toggle__btn${vista === 'historial' ? ' pag-toggle__btn--on' : ''}`}
-          onClick={() => setVista('historial')}
-        >
-          Historial
-        </button>
+      {/* Toggle + selector de mes */}
+      <div className="pag-bar">
+        <div className="pag-toggle">
+          <button
+            className={`pag-toggle__btn${vista === 'pendientes' ? ' pag-toggle__btn--on' : ''}`}
+            onClick={() => setVista('pendientes')}
+          >
+            Pendientes
+            {pendientesTotal > 0 && (
+              <span className="pag-toggle__badge">{pendientesTotal}</span>
+            )}
+          </button>
+          <button
+            className={`pag-toggle__btn${vista === 'historial' ? ' pag-toggle__btn--on' : ''}`}
+            onClick={() => setVista('historial')}
+          >
+            Historial
+          </button>
+        </div>
+
+        {vista === 'pendientes' && (
+          <select
+            className="pag-mes-sel"
+            value={mesIdx}
+            onChange={e => setMesIdx(Number(e.target.value))}
+          >
+            {MESES.map((m, i) => (
+              <option key={i} value={i}>{m.label} {m.anio}</option>
+            ))}
+          </select>
+        )}
       </div>
 
-      {/* Vista pendientes */}
+      {/* Vista pendientes — tres columnas por método */}
       {vista === 'pendientes' && (
-        <div className="pag-pendientes">
-          <div className="pag-pendientes__header">
-            <select
-              className="pag-mes-sel"
-              value={mesIdx}
-              onChange={e => setMesIdx(Number(e.target.value))}
-            >
-              {MESES.map((m, i) => (
-                <option key={i} value={i}>{m.label} {m.anio}</option>
-              ))}
-            </select>
+        pendientesTotal === 0 ? (
+          <div className="pag-all-done">
+            <Icon.check /> Todo cobrado este mes
           </div>
+        ) : (
+          <div
+            className="pag-pend-cols"
+            style={{ gridTemplateColumns: `repeat(${columnasVisibles.length}, 1fr)` }}
+          >
+            {columnasVisibles.map(col => {
+              const familias = gruposConTarifa.filter(g =>
+                g.metodo_pago === col.key && !getPago(g.familia_id, mes, anio)?.pagado
+              )
+              return (
+                <div key={col.key} className="pag-pend-col">
+                  <div className="pag-pend-col__head">
+                    <span className={`pag-badge ${col.cls}`}>{col.label}</span>
+                    <span className="pag-pend-col__count">{familias.length}</span>
+                  </div>
+                  {familias.length === 0 ? (
+                    <div className="pag-pend-col__ok"><Icon.check /> Al día</div>
+                  ) : (
+                    familias.map(g => {
+                      const exiting = saliendo.has(g.key)
+                      return (
+                        <div
+                          key={g.key}
+                          className={`pag-col-item${exiting ? ' pag-col-item--exit' : ''}`}
+                        >
+                          <div className="pag-col-item__info">
+                            <span className="pag-col-nombre">{g.nombres.join(' + ')}</span>
+                            <span className="pag-col-importe">
+                              {g.precio_total > 0 ? `${g.precio_total} €` : '—'}
+                            </span>
+                          </div>
+                          <button
+                            className="pag-cobrar-btn pag-cobrar-btn--xs"
+                            onClick={() => marcarPagado(g)}
+                            disabled={exiting || !g.familia_id}
+                            title="Marcar cobrado"
+                          >
+                            <Icon.check />
+                          </button>
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      )}
 
-          {pendientes.length === 0 ? (
-            <div className="pag-all-done">
-              <Icon.check /> Todo cobrado este mes
-            </div>
-          ) : (
-            <ul className="pag-list">
-              {pendientes.map(g => {
+      {/* Vista historial — tabla única con todos los meses */}
+      {vista === 'historial' && (
+        <div className="pag-wrap">
+          <table className="pag-table">
+            <thead>
+              <tr>
+                <th className="pag-th pag-th--name">Alumno</th>
+                {MESES.map((m, i) => (
+                  <th
+                    key={`${m.mes}-${m.anio}`}
+                    className={`pag-th pag-th--mes${i === mesActualIdx ? ' pag-th--current' : ''}`}
+                  >
+                    {m.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {grupos.map(g => {
                 const metodo = g.metodo_pago ? METODOS[g.metodo_pago] : null
-                const exiting = saliendo.has(g.key)
                 return (
-                  <li key={g.key} className={`pag-item${exiting ? ' pag-item--exit' : ''}`}>
-                    <div className="pag-item__info">
-                      <span className="pag-nombre">{g.nombres.join(' + ')}</span>
+                  <tr key={g.key} className="pag-row">
+                    <td className="pag-td pag-td--name">
+                      <div className="pag-nombre-row">
+                        <span className="pag-nombre">{g.nombres.join(' + ')}</span>
+                        <span className="pag-importe">{g.precio_total > 0 ? `${g.precio_total} €` : '—'}</span>
+                      </div>
                       {metodo && (
                         <span className={`pag-badge ${metodo.cls}`}>{metodo.label}</span>
                       )}
-                    </div>
-                    <span className="pag-item__importe">
-                      {g.precio_total > 0 ? `${g.precio_total} €` : '—'}
-                    </span>
-                    <button
-                      className="pag-cobrar-btn"
-                      onClick={() => marcarPagado(g)}
-                      disabled={exiting || !g.familia_id}
-                    >
-                      <Icon.check /> Cobrado
-                    </button>
-                  </li>
+                    </td>
+                    {MESES.map(m => {
+                      const pago = getPago(g.familia_id, m.mes, m.anio)
+                      const checked = pago?.pagado ?? false
+                      return (
+                        <td
+                          key={`${m.mes}-${m.anio}`}
+                          className={`pag-td pag-td--mes${checked ? ' pag-td--paid' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="pag-check"
+                            checked={checked}
+                            disabled={!g.familia_id}
+                            onChange={() => toggle(g, m.mes, m.anio)}
+                          />
+                        </td>
+                      )
+                    })}
+                  </tr>
                 )
               })}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {/* Vista historial — columnas por método */}
-      {vista === 'historial' && (
-        <div className="pag-hist">
-          {COLUMNAS_HIST.map(col => {
-            const familias = grupos.filter(g => g.metodo_pago === col.key && g.precio_total > 0)
-            if (familias.length === 0) return null
-            return (
-              <div key={col.key} className="pag-hist-col">
-                <div className="pag-hist-col__head">
-                  <span className={`pag-badge ${col.cls}`}>{col.label}</span>
-                  <span className="pag-hist-col__count">
-                    {familias.length} {familias.length === 1 ? 'familia' : 'familias'}
-                  </span>
-                </div>
-                <div className="pag-wrap">
-                  <table className="pag-table pag-table--col">
-                    <thead>
-                      <tr>
-                        <th className="pag-th pag-th--name">Alumno</th>
-                        {MESES.map((m, i) => (
-                          <th
-                            key={`${m.mes}-${m.anio}`}
-                            className={`pag-th pag-th--mes${i === mesActualIdx ? ' pag-th--current' : ''}`}
-                          >
-                            {m.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {familias.map(g => (
-                        <tr key={g.key} className="pag-row">
-                          <td className="pag-td pag-td--name">
-                            <div className="pag-nombre-row">
-                              <span className="pag-nombre">{g.nombres.join(' + ')}</span>
-                              <span className="pag-importe">{g.precio_total > 0 ? `${g.precio_total} €` : '—'}</span>
-                            </div>
-                          </td>
-                          {MESES.map(m => {
-                            const pago = getPago(g.familia_id, m.mes, m.anio)
-                            const checked = pago?.pagado ?? false
-                            return (
-                              <td
-                                key={`${m.mes}-${m.anio}`}
-                                className={`pag-td pag-td--mes${checked ? ' pag-td--paid' : ''}`}
-                              >
-                                <input
-                                  type="checkbox"
-                                  className="pag-check"
-                                  checked={checked}
-                                  disabled={!g.familia_id}
-                                  onChange={() => toggle(g, m.mes, m.anio)}
-                                />
-                              </td>
-                            )
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )
-          })}
+            </tbody>
+          </table>
         </div>
       )}
 
