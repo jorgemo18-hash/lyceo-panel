@@ -651,6 +651,73 @@ function DetalleAlumnoPanel({ alumnoId, initialTab = null, onClose, onUpdated })
   const metodoLabel = (val) =>
     METODOS_PAGO.find(m => m.value === val)?.label ?? val
 
+  if (initialTab) {
+    return (
+      <>
+      <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+        <aside className="panel">
+          <div className="panel__head">
+            <h2 className="panel__title">{loading ? 'Cargando…' : (data?.nombre ?? '—')}</h2>
+            <button className="panel__close" onClick={onClose}>✕</button>
+          </div>
+          <div className="panel__body">
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+              <button
+                className={`btn btn--sm ${historialTab === 'informes' ? 'btn--primary' : 'btn--ghost'}`}
+                onClick={() => cargarHistorial('informes')}
+              >Informes</button>
+              <button
+                className={`btn btn--sm ${historialTab === 'facturas' ? 'btn--primary' : 'btn--ghost'}`}
+                onClick={() => cargarHistorial('facturas')}
+              >Facturas</button>
+            </div>
+            {historialLoading && (
+              <div className="alumnos-estado" style={{ padding: '8px 0' }}>
+                <div className="alumnos-estado__spinner" /> Cargando…
+              </div>
+            )}
+            {!historialLoading && historialTab === 'informes' && (
+              historialData.length === 0
+                ? <p className="panel__lbl" style={{ marginTop: 8 }}>Sin informes enviados.</p>
+                : <ul className="hist-list">
+                    {historialData.map(inf => (
+                      <li key={inf.id} className="hist-item">
+                        <span className="hist-item__fecha">{mesLabel(inf.mes, inf.anio)}</span>
+                        {inf.enviado_at && (
+                          <span className="hist-item__dim">
+                            {new Date(inf.enviado_at).toLocaleDateString('es-ES')}
+                          </span>
+                        )}
+                        <button className="btn btn--ghost btn--sm" onClick={() => setPreviewInforme(inf)}>
+                          Previsualizar
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+            )}
+            {!historialLoading && historialTab === 'facturas' && (
+              historialData.length === 0
+                ? <p className="panel__lbl" style={{ marginTop: 8 }}>Sin facturas.</p>
+                : <ul className="hist-list">
+                    {historialData.map(fac => (
+                      <li key={fac.id} className="hist-item">
+                        <span className="hist-item__fecha">{mesLabel(fac.mes, fac.anio)}</span>
+                        <span className="hist-item__num">{fac.numero_factura}</span>
+                        <span className="hist-item__importe">{fac.importe} €</span>
+                      </li>
+                    ))}
+                  </ul>
+            )}
+          </div>
+        </aside>
+      </div>
+      {previewInforme && data && (
+        <InformePreviewOverlay alumno={data} informe={previewInforme} onClose={() => setPreviewInforme(null)} />
+      )}
+      </>
+    )
+  }
+
   return (
     <>
     <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -914,68 +981,6 @@ function DetalleAlumnoPanel({ alumnoId, initialTab = null, onClose, onUpdated })
               </section>
             )}
 
-            <section className="panel__section">
-              <div className="panel__sh-row">
-                <h3 className="panel__sh">Historial</h3>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    className={`btn btn--sm ${historialTab === 'informes' ? 'btn--primary' : 'btn--ghost'}`}
-                    onClick={() => cargarHistorial('informes')}
-                  >
-                    Informes
-                  </button>
-                  <button
-                    className={`btn btn--sm ${historialTab === 'facturas' ? 'btn--primary' : 'btn--ghost'}`}
-                    onClick={() => cargarHistorial('facturas')}
-                  >
-                    Facturas
-                  </button>
-                </div>
-              </div>
-
-              {historialLoading && (
-                <div className="alumnos-estado" style={{ padding: '8px 0' }}>
-                  <div className="alumnos-estado__spinner" /> Cargando…
-                </div>
-              )}
-
-              {!historialLoading && historialTab === 'informes' && (
-                historialData.length === 0
-                  ? <p className="panel__lbl" style={{ marginTop: 8 }}>Sin informes enviados.</p>
-                  : <ul className="hist-list">
-                      {historialData.map(inf => (
-                        <li key={inf.id} className="hist-item">
-                          <span className="hist-item__fecha">{mesLabel(inf.mes, inf.anio)}</span>
-                          {inf.enviado_at && (
-                            <span className="hist-item__dim">
-                              {new Date(inf.enviado_at).toLocaleDateString('es-ES')}
-                            </span>
-                          )}
-                          <button
-                            className="btn btn--ghost btn--sm"
-                            onClick={() => setPreviewInforme(inf)}
-                          >
-                            Previsualizar
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-              )}
-
-              {!historialLoading && historialTab === 'facturas' && (
-                historialData.length === 0
-                  ? <p className="panel__lbl" style={{ marginTop: 8 }}>Sin facturas.</p>
-                  : <ul className="hist-list">
-                      {historialData.map(fac => (
-                        <li key={fac.id} className="hist-item">
-                          <span className="hist-item__fecha">{mesLabel(fac.mes, fac.anio)}</span>
-                          <span className="hist-item__num">{fac.numero_factura}</span>
-                          <span className="hist-item__importe">{fac.importe} €</span>
-                        </li>
-                      ))}
-                    </ul>
-              )}
-            </section>
           </div>
         )}
 

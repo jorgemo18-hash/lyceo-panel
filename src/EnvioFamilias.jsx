@@ -108,17 +108,26 @@ export function EnvioFamilias() {
 
   React.useEffect(() => {
     if (!alumnoSel) return
+    setEnvioStatus(null)
+    setEditandoComentario(false)
+
+    const key = `${alumnoSel.id}-${mes}-${anio}`
+    const cached = informesCache.current[key]
+    if (cached) {
+      setInforme(cached)
+      setComentarioEdit(cached.comentario ?? '')
+      return
+    }
+
     let aborted = false
     setInforme(null)
     setGenerando(true)
-    setEnvioStatus(null)
 
     cargarInforme(alumnoSel, mes, anio)
       .then(result => {
         if (!aborted) {
           setInforme(result)
           setGenerando(false)
-          setEditandoComentario(false)
           setComentarioEdit(result.comentario ?? '')
         }
       })
@@ -218,6 +227,7 @@ export function EnvioFamilias() {
   }
 
   const generarTodos = async () => {
+    informesCache.current = {}
     const candidatos = alumnos.filter(a => conSesiones.has(a.id))
     setGenerandoTodos(true)
     setTodosGenerados(false)
@@ -326,7 +336,7 @@ export function EnvioFamilias() {
 
         <div style={{ display: 'flex', gap: 6 }}>
           <button
-            className="btn btn--ghost"
+            className="btn btn--primary"
             style={{ flex: 1 }}
             onClick={generarTodos}
             disabled={generandoTodos || enviandoTodos || cargando}
@@ -334,7 +344,7 @@ export function EnvioFamilias() {
             {generandoTodos ? 'Generando…' : todosGenerados ? 'Regenerar' : 'Generar todos'}
           </button>
           <button
-            className="btn btn--ghost"
+            className="btn btn--primary"
             style={{ flex: 1 }}
             onClick={enviarTodos}
             disabled={!todosGenerados || enviandoTodos || generandoTodos}
