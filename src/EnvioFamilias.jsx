@@ -443,7 +443,6 @@ export function EnvioFamilias() {
                 {envioStatus.msg}
               </div>
             )}
-            <InformeSheet alumno={alumnoSel} mes={mes} anio={anio} informe={informe} />
             <div className="comentario-edit no-print">
               {editandoComentario ? (
                 <>
@@ -464,10 +463,11 @@ export function EnvioFamilias() {
                   className="btn btn--ghost btn--sm"
                   onClick={() => { setComentarioEdit(informe.comentario ?? ''); setEditandoComentario(true) }}
                 >
-                  Editar comentario
+                  Editar informe
                 </button>
               )}
             </div>
+            <InformeSheet alumno={alumnoSel} mes={mes} anio={anio} informe={informe} />
           </>
         )}
       </div>
