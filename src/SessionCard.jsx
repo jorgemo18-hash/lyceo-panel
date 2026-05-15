@@ -104,6 +104,13 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
           <p className="scard__absent-msg">
             {alumno.nombre.split(" ")[0]} no ha venido hoy. Se notificará a la familia automáticamente.
           </p>
+          <textarea
+            className="nota__area scard__absent-motivo"
+            rows="2"
+            value={registro.comentario || ""}
+            placeholder="Motivo (opcional) — ej: cambio de día, enfermedad…"
+            onChange={(e) => onChange({ comentario: e.target.value })}
+          />
           <button className="scard__undo" onClick={() => onChange({ estado: null })}>
             Deshacer ausencia
           </button>
