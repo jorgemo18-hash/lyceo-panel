@@ -12,7 +12,6 @@ import './FichaFamilias.jsx';
 import './Documentos.jsx';
 import { Alumnos } from './Alumnos.jsx';
 import { Pagos } from './Pagos.jsx';
-import { Informes } from './Informes.jsx';
 import { EnvioFamilias } from './EnvioFamilias.jsx';
 import { Facturas } from './Facturas.jsx';
 import { Ajustes } from './Ajustes.jsx';
@@ -372,17 +371,6 @@ const PANTALLAS = {
         </div>
       </>
     )
-  },
-  informes: ({ mobile }) => {
-    const Topbar = window.Topbar;
-    return (
-      <>
-        <Topbar eyebrow="Gestión" title="Informes" showSearch={false} mobile={mobile} />
-        <div className="content content--wide">
-          <Informes />
-        </div>
-      </>
-    );
   },
   envio: ({ mobile }) => {
     const Topbar = window.Topbar;

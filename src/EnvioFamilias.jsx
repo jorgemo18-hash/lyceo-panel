@@ -28,9 +28,11 @@ export function EnvioFamilias() {
   const [alumnoSel, setAlumnoSel]         = React.useState(null)
   const [informe, setInforme]             = React.useState(null)
   const [cargando, setCargando]           = React.useState(true)
-  const [generando, setGenerando]         = React.useState(false)
-  const [enviandoTodos, setEnviandoTodos] = React.useState(false)
-  const [enviando, setEnviando]           = React.useState(false)
+  const [generando, setGenerando]           = React.useState(false)
+  const [generandoTodos, setGenerandoTodos] = React.useState(false)
+  const [todosGenerados, setTodosGenerados] = React.useState(false)
+  const [enviandoTodos, setEnviandoTodos]   = React.useState(false)
+  const [enviando, setEnviando]             = React.useState(false)
   const [progreso, setProgreso]           = React.useState(null)
   const [resumen, setResumen]             = React.useState(null)
   const [resultados, setResultados]       = React.useState([])
@@ -201,6 +203,37 @@ export function EnvioFamilias() {
       : { ok: false, msg: json.error ?? 'Error al enviar' }
   }
 
+  const guardarInformeEnBD = async (alumno, informeData) => {
+    await supabase.from('informes').upsert(
+      {
+        alumno_id: alumno.id,
+        mes,
+        anio,
+        comentario: informeData.comentario ?? '',
+        enviado_at: new Date().toISOString(),
+        email_destino: alumno.familias?.email ?? null,
+      },
+      { onConflict: 'alumno_id,anio,mes' }
+    )
+  }
+
+  const generarTodos = async () => {
+    const candidatos = alumnos.filter(a => conSesiones.has(a.id))
+    setGenerandoTodos(true)
+    setTodosGenerados(false)
+    setResumen(null)
+    setResultados([])
+    setProgreso({ actual: 0, total: candidatos.length })
+    for (let i = 0; i < candidatos.length; i++) {
+      const alumno = candidatos[i]
+      setProgreso({ actual: i + 1, total: candidatos.length, nombre: alumno.nombre })
+      try { await cargarInforme(alumno, mes, anio) } catch {}
+    }
+    setGenerandoTodos(false)
+    setTodosGenerados(true)
+    setProgreso(null)
+  }
+
   const enviarTodos = async () => {
     const candidatos = alumnos.filter(a => conSesiones.has(a.id) && a.familias?.email)
     const sinEmail = alumnos.filter(a => conSesiones.has(a.id) && !a.familias?.email).length
@@ -221,9 +254,13 @@ export function EnvioFamilias() {
       const alumno = candidatos[i]
       setProgreso({ actual: i + 1, total: candidatos.length, nombre: alumno.nombre })
       try {
-        const informeData = await cargarInforme(alumno, mes, anio)
+        const key = `${alumno.id}-${mes}-${anio}`
+        const informeData = informesCache.current[key] ?? await cargarInforme(alumno, mes, anio)
         const resultado = await enviarUno(alumno, informeData)
-        if (resultado.ok) enviados++; else errores++
+        if (resultado.ok) {
+          enviados++
+          await guardarInformeEnBD(alumno, informeData)
+        } else errores++
         acumulados.push({ nombre: alumno.nombre, ...resultado })
       } catch (e) {
         errores++
@@ -244,6 +281,7 @@ export function EnvioFamilias() {
     try {
       const resultado = await enviarUno(alumnoSel, informe)
       setEnvioStatus(resultado)
+      if (resultado.ok) await guardarInformeEnBD(alumnoSel, informe)
     } catch (e) {
       setEnvioStatus({ ok: false, msg: e.message ?? 'Error desconocido' })
     } finally {
@@ -267,6 +305,7 @@ export function EnvioFamilias() {
     setProgreso(null)
     setEnvioStatus(null)
     setResultados([])
+    setTodosGenerados(false)
   }
 
   const email = alumnoSel?.familias?.email
@@ -286,12 +325,20 @@ export function EnvioFamilias() {
         </select>
 
         <button
+          className="btn btn--ghost"
+          style={{ width: '100%' }}
+          onClick={generarTodos}
+          disabled={generandoTodos || enviandoTodos || cargando}
+        >
+          {generandoTodos ? 'Generando…' : todosGenerados ? 'Regenerar todos' : 'Generar todos'}
+        </button>
+        <button
           className="btn btn--primary"
           style={{ width: '100%' }}
           onClick={enviarTodos}
-          disabled={enviandoTodos || cargando}
+          disabled={!todosGenerados || enviandoTodos || generandoTodos}
         >
-          {enviandoTodos ? 'Enviando…' : 'Generar y enviar todos'}
+          {enviandoTodos ? 'Enviando…' : 'Enviar todos'}
         </button>
 
         {progreso && (

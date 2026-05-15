@@ -5,7 +5,6 @@ function Sidebar({ activo = "horario", onNavigate }) {
   const items = [
     { id: "horario",   label: "Horario",        icon: <Icon.grid /> },
     { id: "diario",    label: "Diario",          icon: <Icon.calendar /> },
-    { id: "informes",  label: "Informes",        icon: <Icon.doc /> },
     { id: "facturas",  label: "Facturas",        icon: <Icon.note /> },
     { id: "envio",     label: "Envío familias",  icon: <Icon.mail /> },
     { id: "ficha",     label: "Tarifas",         icon: <Icon.tag /> },

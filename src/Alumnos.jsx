@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js'
+import { InformeSheet, rango, mesLabel } from './sheets.jsx'
 
 const NIVEL_LABEL = { primaria: 'Primaria', eso: 'ESO', bachillerato: 'Bachillerato' }
 const HORAS = ['15:30', '16:30', '17:30', '18:30', '19:30']
@@ -401,6 +402,40 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
   )
 }
 
+// ── InformePreviewOverlay ─────────────────────────────────────────
+
+function InformePreviewOverlay({ alumno, informe: inf, onClose }) {
+  const [datos, setDatos] = React.useState(null)
+
+  React.useEffect(() => {
+    const { primero, ultimo } = rango(inf.mes, inf.anio)
+    Promise.all([
+      supabase.from('sesiones').select('*').eq('alumno_id', alumno.id)
+        .gte('fecha', primero).lte('fecha', ultimo).order('fecha'),
+      supabase.from('festivos').select('*').gte('fecha', primero).lte('fecha', ultimo),
+    ]).then(([{ data: sesiones }, { data: festivos }]) => {
+      setDatos({ sesiones: sesiones ?? [], festivos: festivos ?? [], comentario: inf.comentario ?? '' })
+    })
+  }, [])
+
+  return (
+    <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal modal--wide" onClick={e => e.stopPropagation()}>
+        <div className="modal__header">
+          <span className="modal__title">{mesLabel(inf.mes, inf.anio)} · {alumno.nombre}</span>
+          <button className="modal__close" onClick={onClose}>✕</button>
+        </div>
+        <div style={{ overflowY: 'auto', maxHeight: '72vh', padding: '16px' }}>
+          {!datos
+            ? <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando…</div>
+            : <InformeSheet alumno={alumno} mes={inf.mes} anio={inf.anio} informe={datos} />
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── DetalleAlumnoPanel ────────────────────────────────────────────
 
 function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
@@ -412,6 +447,10 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
   const [saving, setSaving] = React.useState(false)
   const [saveError, setSaveError] = React.useState(null)
   const [savedAt, setSavedAt] = React.useState(null)
+  const [historialTab, setHistorialTab] = React.useState(null)
+  const [historialData, setHistorialData] = React.useState([])
+  const [historialLoading, setHistorialLoading] = React.useState(false)
+  const [previewInforme, setPreviewInforme] = React.useState(null)
 
   const dataToForm = (d) => {
     if (!d) return {
@@ -587,10 +626,32 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
     }
   }
 
+  const cargarHistorial = async (tab) => {
+    if (historialTab === tab) { setHistorialTab(null); return }
+    setHistorialTab(tab)
+    setHistorialData([])
+    setHistorialLoading(true)
+    try {
+      if (tab === 'informes') {
+        const { data } = await supabase
+          .from('informes').select('*').eq('alumno_id', alumnoId)
+          .order('anio', { ascending: false }).order('mes', { ascending: false })
+        setHistorialData(data ?? [])
+      } else {
+        const { data } = await supabase
+          .from('facturas').select('*').eq('alumno_id', alumnoId)
+          .order('anio', { ascending: false }).order('mes', { ascending: false })
+        setHistorialData(data ?? [])
+      }
+    } catch {}
+    setHistorialLoading(false)
+  }
+
   const metodoLabel = (val) =>
     METODOS_PAGO.find(m => m.value === val)?.label ?? val
 
   return (
+    <>
     <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <aside className="panel">
         <div className="panel__head">
@@ -851,6 +912,69 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
                 </div>
               </section>
             )}
+
+            <section className="panel__section">
+              <div className="panel__sh-row">
+                <h3 className="panel__sh">Historial</h3>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    className={`btn btn--sm ${historialTab === 'informes' ? 'btn--primary' : 'btn--ghost'}`}
+                    onClick={() => cargarHistorial('informes')}
+                  >
+                    Informes
+                  </button>
+                  <button
+                    className={`btn btn--sm ${historialTab === 'facturas' ? 'btn--primary' : 'btn--ghost'}`}
+                    onClick={() => cargarHistorial('facturas')}
+                  >
+                    Facturas
+                  </button>
+                </div>
+              </div>
+
+              {historialLoading && (
+                <div className="alumnos-estado" style={{ padding: '8px 0' }}>
+                  <div className="alumnos-estado__spinner" /> Cargando…
+                </div>
+              )}
+
+              {!historialLoading && historialTab === 'informes' && (
+                historialData.length === 0
+                  ? <p className="panel__lbl" style={{ marginTop: 8 }}>Sin informes enviados.</p>
+                  : <ul className="hist-list">
+                      {historialData.map(inf => (
+                        <li key={inf.id} className="hist-item">
+                          <span className="hist-item__fecha">{mesLabel(inf.mes, inf.anio)}</span>
+                          {inf.enviado_at && (
+                            <span className="hist-item__dim">
+                              {new Date(inf.enviado_at).toLocaleDateString('es-ES')}
+                            </span>
+                          )}
+                          <button
+                            className="btn btn--ghost btn--sm"
+                            onClick={() => setPreviewInforme(inf)}
+                          >
+                            Previsualizar
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+              )}
+
+              {!historialLoading && historialTab === 'facturas' && (
+                historialData.length === 0
+                  ? <p className="panel__lbl" style={{ marginTop: 8 }}>Sin facturas.</p>
+                  : <ul className="hist-list">
+                      {historialData.map(fac => (
+                        <li key={fac.id} className="hist-item">
+                          <span className="hist-item__fecha">{mesLabel(fac.mes, fac.anio)}</span>
+                          <span className="hist-item__num">{fac.numero_factura}</span>
+                          <span className="hist-item__importe">{fac.importe} €</span>
+                        </li>
+                      ))}
+                    </ul>
+              )}
+            </section>
           </div>
         )}
 
@@ -875,6 +999,14 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
         )}
       </aside>
     </div>
+    {previewInforme && data && (
+      <InformePreviewOverlay
+        alumno={data}
+        informe={previewInforme}
+        onClose={() => setPreviewInforme(null)}
+      />
+    )}
+    </>
   )
 }
 
