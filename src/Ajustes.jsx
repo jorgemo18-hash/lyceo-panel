@@ -17,6 +17,7 @@ export function Ajustes() {
 
   const [festivos, setFestivos]           = React.useState([])
   const [cargandoFestivos, setCargando]   = React.useState(true)
+  const [errorFestivos, setErrorFestivos] = React.useState(null)
   const [formOpen, setFormOpen]           = React.useState(false)
   const [nuevaFecha, setNuevaFecha]       = React.useState('')
   const [nuevaDesc, setNuevaDesc]         = React.useState('')
@@ -35,11 +36,17 @@ export function Ajustes() {
   }, [])
 
   React.useEffect(() => {
-    supabase
-      .from('festivos')
-      .select('*')
-      .order('fecha')
-      .then(({ data }) => { setFestivos(data ?? []); setCargando(false) })
+    const cargar = async () => {
+      const { data, error } = await supabase
+        .from('festivos')
+        .select('*')
+        .order('fecha', { ascending: true })
+      console.log('festivos data:', data, 'error:', error)
+      if (error) setErrorFestivos(error.message)
+      setFestivos(data ?? [])
+      setCargando(false)
+    }
+    cargar()
   }, [])
 
   const guardarEmisor = async () => {
@@ -177,6 +184,11 @@ export function Ajustes() {
           </div>
         )}
 
+        {errorFestivos && (
+          <div className="ajustes__status ajustes__status--err" style={{ marginBottom: 12 }}>
+            Error: {errorFestivos}
+          </div>
+        )}
         {cargandoFestivos ? (
           <div className="alumnos-estado">
             <div className="alumnos-estado__spinner" /> Cargando…
