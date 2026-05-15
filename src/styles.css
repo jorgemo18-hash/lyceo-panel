@@ -3143,3 +3143,110 @@ body.printing .no-print { display: none !important; }
   vertical-align: middle;
   margin-right: 6px;
 }
+
+/* ── Modal añadir alumno ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modal {
+  background: var(--bg);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.modal__title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text);
+}
+.modal__close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.modal__close:hover { color: var(--text); }
+.modal__body {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.modal__label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 5px;
+}
+.modal__input,
+.modal__select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+.modal__input:focus,
+.modal__select:focus {
+  outline: none;
+  border-color: var(--lyceo);
+}
+.modal__hint {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+.modal__results {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.modal__result {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  gap: 8px;
+}
+.modal__result:not(:last-child) { border-bottom: 1px solid var(--border); }
+.modal__result:hover { background: var(--surface); }
+.modal__result--sel { background: oklch(0.95 0.03 25); }
+.modal__result-nombre { font-weight: 500; }
+.modal__result-curso { font-size: 11px; color: var(--text-dim); flex-shrink: 0; }
+.modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 16px 14px;
+  border-top: 1px solid var(--border);
+}
