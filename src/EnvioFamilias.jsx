@@ -68,7 +68,14 @@ export function EnvioFamilias() {
     ])
 
     let comentario = ''
-    if ((sesiones ?? []).filter(s => s.tipo !== 'ausencia').length > 0) {
+    const { data: savedInforme } = await supabase
+      .from('informes').select('comentario')
+      .eq('alumno_id', alumno.id).eq('mes', m).eq('anio', a)
+      .maybeSingle()
+
+    if (savedInforme?.comentario) {
+      comentario = savedInforme.comentario
+    } else if ((sesiones ?? []).filter(s => s.tipo !== 'ausencia').length > 0) {
       try {
         const res = await fetch(
           'https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/generar-comentario',
@@ -305,6 +312,10 @@ export function EnvioFamilias() {
     const key = `${alumnoSel.id}-${mes}-${anio}`
     informesCache.current[key] = updated
     setEditandoComentario(false)
+    supabase.from('informes').upsert(
+      { alumno_id: alumnoSel.id, mes, anio, comentario: comentarioEdit },
+      { onConflict: 'alumno_id,anio,mes' }
+    )
   }
 
   const cambiarMes = (idx) => {

@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js'
-import { InformeSheet, rango, mesLabel } from './sheets.jsx'
+import { InformeSheet, FacturaSheet, rango, mesLabel } from './sheets.jsx'
 
 const NIVEL_LABEL = { primaria: 'Primaria', eso: 'ESO', bachillerato: 'Bachillerato' }
 const HORAS = ['15:30', '16:30', '17:30', '18:30', '19:30']
@@ -406,6 +406,8 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
 
 function InformePreviewOverlay({ alumno, informe: inf, onClose }) {
   const [datos, setDatos] = React.useState(null)
+  const [enviando, setEnviando] = React.useState(false)
+  const [envioStatus, setEnvioStatus] = React.useState(null)
 
   React.useEffect(() => {
     const { primero, ultimo } = rango(inf.mes, inf.anio)
@@ -418,17 +420,165 @@ function InformePreviewOverlay({ alumno, informe: inf, onClose }) {
     })
   }, [])
 
+  const onPrint = () => window.print()
+
+  const enviar = async () => {
+    const email = alumno.familias?.email
+    if (!email || !datos) return
+    setEnviando(true)
+    setEnvioStatus(null)
+    try {
+      const diasMes = []
+      for (const s of datos.sesiones) {
+        if (s.tipo === 'ausencia') continue
+        diasMes.push({ dia: parseInt(s.fecha.split('-')[2], 10), asignatura: s.asignatura || '', tema: s.tema || '' })
+      }
+      for (const f of datos.festivos) {
+        diasMes.push({ dia: parseInt(f.fecha.split('-')[2], 10), festivo: f.descripcion || 'Festivo' })
+      }
+      const res = await fetch('https://lyceo-pdf-service.onrender.com/enviar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailDestino: email, nombreAlumno: alumno.nombre, curso: alumno.curso, mes: inf.mes, anio: inf.anio, diasMes, comentario: datos.comentario, factura: null }),
+      })
+      const json = await res.json()
+      setEnvioStatus(res.ok ? { ok: true, msg: `Enviado a ${email}` } : { ok: false, msg: json.error ?? 'Error' })
+    } catch (e) {
+      setEnvioStatus({ ok: false, msg: e.message ?? 'Error' })
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  const email = alumno.familias?.email
+
   return (
     <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal modal--wide" onClick={e => e.stopPropagation()}>
         <div className="modal__header">
           <span className="modal__title">{mesLabel(inf.mes, inf.anio)} · {alumno.nombre}</span>
-          <button className="modal__close" onClick={onClose}>✕</button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="btn btn--ghost btn--sm" onClick={onPrint}>
+              <Icon.printer /> Imprimir
+            </button>
+            <span title={!email ? 'Sin email registrado' : undefined}>
+              <button className="btn btn--primary btn--sm" onClick={enviar}
+                disabled={!email || !datos || enviando}
+                style={!email ? { opacity: 0.4, cursor: 'not-allowed' } : {}}>
+                {enviando ? <><span className="btn-spinner" /> Enviando…</> : <><Icon.mail /> Enviar</>}
+              </button>
+            </span>
+            <button className="modal__close" onClick={onClose}>✕</button>
+          </div>
         </div>
-        <div style={{ overflowY: 'auto', maxHeight: '72vh', padding: '16px' }}>
+        {envioStatus && (
+          <div className={`envio-status ${envioStatus.ok ? 'envio-status--ok' : 'envio-status--err'}`}>
+            {envioStatus.msg}
+          </div>
+        )}
+        <div style={{ overflowY: 'auto', maxHeight: '68vh', padding: '16px' }}>
           {!datos
             ? <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando…</div>
             : <InformeSheet alumno={alumno} mes={inf.mes} anio={inf.anio} informe={datos} />
+          }
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function FacturaPreviewOverlay({ alumno, factura: fac, onClose }) {
+  const [tarifa, setTarifa] = React.useState(null)
+  const [cargando, setCargando] = React.useState(true)
+  const [enviando, setEnviando] = React.useState(false)
+  const [envioStatus, setEnvioStatus] = React.useState(null)
+
+  React.useEffect(() => {
+    if (!alumno.familia_id) { setCargando(false); return }
+    supabase.from('tarifas').select('*').eq('familia_id', alumno.familia_id)
+      .order('fecha_inicio', { ascending: false }).limit(1)
+      .then(({ data }) => { setTarifa(data?.[0] ?? null); setCargando(false) })
+  }, [])
+
+  const onPrint = () => {
+    const style = document.createElement('style')
+    style.id = 'fac-print-override'
+    style.textContent = '@page { size: A4 portrait; margin: 15mm; }'
+    document.head.appendChild(style)
+    document.body.classList.add('printing-fac')
+    setTimeout(() => {
+      window.print()
+      setTimeout(() => {
+        document.head.removeChild(style)
+        document.body.classList.remove('printing-fac')
+      }, 300)
+    }, 30)
+  }
+
+  const enviar = async () => {
+    const email = alumno.familias?.email
+    if (!email) return
+    setEnviando(true)
+    setEnvioStatus(null)
+    try {
+      const payload = {
+        emailDestino: email,
+        nombreAlumno: alumno.nombre,
+        curso: alumno.curso,
+        mes: fac.mes,
+        anio: fac.anio,
+        diasMes: [],
+        comentario: '',
+        factura: {
+          numeroFactura: fac.numero_factura,
+          familia: alumno.familias,
+          precioBruto: tarifa?.precio_bruto ?? fac.importe,
+          descuentoPct: tarifa?.descuento_pct ?? 0,
+          precioNeto: tarifa?.precio_neto ?? fac.importe,
+        },
+      }
+      const res = await fetch('https://lyceo-pdf-service.onrender.com/enviar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      })
+      const json = await res.json()
+      setEnvioStatus(res.ok ? { ok: true, msg: `Enviado a ${email}` } : { ok: false, msg: json.error ?? 'Error' })
+    } catch (e) {
+      setEnvioStatus({ ok: false, msg: e.message ?? 'Error' })
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  const email = alumno.familias?.email
+
+  return (
+    <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal modal--wide" onClick={e => e.stopPropagation()}>
+        <div className="modal__header">
+          <span className="modal__title">{mesLabel(fac.mes, fac.anio)} · {fac.numero_factura}</span>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button className="btn btn--ghost btn--sm" onClick={onPrint}>
+              <Icon.printer /> Imprimir
+            </button>
+            <span title={!email ? 'Sin email registrado' : undefined}>
+              <button className="btn btn--primary btn--sm" onClick={enviar}
+                disabled={!email || cargando || enviando}
+                style={!email ? { opacity: 0.4, cursor: 'not-allowed' } : {}}>
+                {enviando ? <><span className="btn-spinner" /> Enviando…</> : <><Icon.mail /> Enviar</>}
+              </button>
+            </span>
+            <button className="modal__close" onClick={onClose}>✕</button>
+          </div>
+        </div>
+        {envioStatus && (
+          <div className={`envio-status ${envioStatus.ok ? 'envio-status--ok' : 'envio-status--err'}`}>
+            {envioStatus.msg}
+          </div>
+        )}
+        <div style={{ overflowY: 'auto', maxHeight: '68vh', padding: '16px' }}>
+          {cargando
+            ? <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando…</div>
+            : <FacturaSheet alumno={alumno} familia={alumno.familias} tarifa={tarifa} factura={fac} mes={fac.mes} anio={fac.anio} />
           }
         </div>
       </div>
@@ -451,6 +601,7 @@ function DetalleAlumnoPanel({ alumnoId, initialTab = null, onClose, onUpdated })
   const [historialData, setHistorialData] = React.useState([])
   const [historialLoading, setHistorialLoading] = React.useState(false)
   const [previewInforme, setPreviewInforme] = React.useState(null)
+  const [previewFactura, setPreviewFactura] = React.useState(null)
 
   const dataToForm = (d) => {
     if (!d) return {
@@ -704,6 +855,9 @@ function DetalleAlumnoPanel({ alumnoId, initialTab = null, onClose, onUpdated })
                         <span className="hist-item__fecha">{mesLabel(fac.mes, fac.anio)}</span>
                         <span className="hist-item__num">{fac.numero_factura}</span>
                         <span className="hist-item__importe">{fac.importe} €</span>
+                        <button className="btn btn--ghost btn--sm" onClick={() => setPreviewFactura(fac)}>
+                          Previsualizar
+                        </button>
                       </li>
                     ))}
                   </ul>
@@ -713,6 +867,9 @@ function DetalleAlumnoPanel({ alumnoId, initialTab = null, onClose, onUpdated })
       </div>
       {previewInforme && data && (
         <InformePreviewOverlay alumno={data} informe={previewInforme} onClose={() => setPreviewInforme(null)} />
+      )}
+      {previewFactura && data && (
+        <FacturaPreviewOverlay alumno={data} factura={previewFactura} onClose={() => setPreviewFactura(null)} />
       )}
       </>
     )
