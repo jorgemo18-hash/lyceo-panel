@@ -11,7 +11,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "facturas", label: "Facturas", icon: <Icon.note /> },
     { id: "ficha", label: "Tarifas", icon: <Icon.tag /> },
     { id: "documentos", label: "Documentos", icon: <Icon.doc /> },
-    { id: "pagos", label: "Pagos", icon: <Icon.euro /> },
+    { id: "pagos", label: "Cobros", icon: <Icon.euro /> },
   ];
   return (
     <aside className="sidebar">

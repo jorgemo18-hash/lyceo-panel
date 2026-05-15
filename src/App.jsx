@@ -409,7 +409,7 @@ const PANTALLAS = {
     const Topbar = window.Topbar;
     return (
       <>
-        <Topbar eyebrow="Gestión" title="Pagos" showSearch={false} mobile={mobile} />
+        <Topbar eyebrow="Gestión" title="Cobros" showSearch={false} mobile={mobile} />
         <div className="content content--wide">
           <Pagos />
         </div>
