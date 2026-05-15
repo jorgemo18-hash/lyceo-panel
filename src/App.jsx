@@ -16,6 +16,7 @@ import { Informes } from './Informes.jsx';
 import { EnvioFamilias } from './EnvioFamilias.jsx';
 import { Facturas } from './Facturas.jsx';
 import { Ajustes } from './Ajustes.jsx';
+import { Login } from './Login.jsx';
 
 const PRIMARY = '#8B0000';
 const HORAS_EXTRA = ['15:30', '16:30', '17:30', '18:30', '19:30'];
@@ -432,7 +433,27 @@ const PANTALLAS = {
 // ── App ──────────────────────────────────────────────────────────
 export default function App() {
   const [pantalla, setPantalla] = React.useState('horario');
+  const [session, setSession]   = React.useState(null);
+  const [loadingAuth, setLoadingAuth] = React.useState(true);
   const mobile = useMobile();
+
+  React.useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoadingAuth(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (loadingAuth) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
+      Cargando…
+    </div>
+  );
+  if (!session) return <Login />;
 
   const Sidebar = window.Sidebar;
   const BottomNav = window.BottomNav;

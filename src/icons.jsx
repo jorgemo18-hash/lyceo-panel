@@ -125,6 +125,12 @@ const Icon = {
       <path d="M8 3v10M3 8h10" />
     </svg>
   ),
+  logout: (p) => (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M6 2.5H3a.5.5 0 0 0-.5.5v10a.5.5 0 0 0 .5.5h3" />
+      <path d="M10.5 11l3-3-3-3M13.5 8H6" />
+    </svg>
+  ),
 };
 
 window.Icon = Icon;

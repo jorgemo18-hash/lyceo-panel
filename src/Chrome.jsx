@@ -53,6 +53,13 @@ function Sidebar({ activo = "horario", onNavigate }) {
             <div>Jorge Moreno Pardo</div>
             <div className="user__role">Profesor</div>
           </div>
+          <button
+            className="user__signout"
+            title="Cerrar sesión"
+            onClick={() => import('./supabase.js').then(m => m.supabase.auth.signOut())}
+          >
+            <Icon.logout />
+          </button>
         </div>
       </div>
     </aside>
