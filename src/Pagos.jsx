@@ -23,6 +23,12 @@ const METODOS = {
 
 const ORDEN_METODO = { sepa: 0, transferencia: 1, bizum: 2, efectivo: 3 }
 
+function defaultMesIdx() {
+  const now = new Date()
+  const idx = MESES.findIndex(m => m.mes === now.getMonth() + 1 && m.anio === now.getFullYear())
+  return idx >= 0 ? idx : MESES.length - 1
+}
+
 function agrupar(alumnos) {
   const map = new Map()
   alumnos.forEach(a => {
@@ -49,9 +55,12 @@ function agrupar(alumnos) {
 }
 
 export function Pagos() {
-  const [grupos, setGrupos] = React.useState([])
-  const [pagos, setPagos] = React.useState([])
+  const [grupos, setGrupos]   = React.useState([])
+  const [pagos, setPagos]     = React.useState([])
   const [cargando, setCargando] = React.useState(true)
+  const [vista, setVista]     = React.useState('pendientes')
+  const [mesIdx, setMesIdx]   = React.useState(defaultMesIdx)
+  const [saliendo, setSaliendo] = React.useState(new Set())
 
   React.useEffect(() => {
     const cargar = async () => {
@@ -102,6 +111,15 @@ export function Pagos() {
     )
   }
 
+  const marcarPagado = (grupo) => {
+    const { mes, anio } = MESES[mesIdx]
+    setSaliendo(prev => new Set([...prev, grupo.key]))
+    setTimeout(() => {
+      toggle(grupo, mes, anio)
+      setSaliendo(prev => { const s = new Set(prev); s.delete(grupo.key); return s })
+    }, 320)
+  }
+
   if (cargando) {
     return (
       <div className="alumnos-estado">
@@ -110,18 +128,24 @@ export function Pagos() {
     )
   }
 
-  const mesActual = new Date().getMonth() + 1
-  const anioActual = new Date().getFullYear()
-  const labelMes = new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
+  const { mes, anio } = MESES[mesIdx]
+  const labelMes = new Date(anio, mes - 1, 1)
+    .toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })
 
   const gruposConTarifa = grupos.filter(g => g.precio_total > 0)
-  const pagadosCount = gruposConTarifa.filter(g => getPago(g.familia_id, mesActual, anioActual)?.pagado).length
+  const pagadosCount  = gruposConTarifa.filter(g => getPago(g.familia_id, mes, anio)?.pagado).length
   const totalEsperado = gruposConTarifa.reduce((s, g) => s + g.precio_total, 0)
   const totalRecaudado = gruposConTarifa.reduce((s, g) =>
-    s + (getPago(g.familia_id, mesActual, anioActual)?.pagado ? g.precio_total : 0), 0)
+    s + (getPago(g.familia_id, mes, anio)?.pagado ? g.precio_total : 0), 0)
+
+  const pendientes = gruposConTarifa.filter(g => !getPago(g.familia_id, mes, anio)?.pagado)
+
+  const mesActualIdx = defaultMesIdx()
 
   return (
-    <div>
+    <div className="pag-root">
+
+      {/* Stats */}
       <div className="pag-stats">
         <div className="pag-stat">
           <div className="pag-stat__label">Pagados · {labelMes}</div>
@@ -139,59 +163,132 @@ export function Pagos() {
         </div>
       </div>
 
-      <div className="pag-wrap">
-        <table className="pag-table">
-          <thead>
-            <tr>
-              <th className="pag-th pag-th--name">Alumno</th>
-              {MESES.map(m => (
-                <th
-                  key={`${m.mes}-${m.anio}`}
-                  className={`pag-th pag-th--mes${m.mes === mesActual && m.anio === anioActual ? ' pag-th--current' : ''}`}
-                >
-                  {m.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {grupos.map(g => {
-              const metodo = g.metodo_pago ? METODOS[g.metodo_pago] : null
-              return (
-                <tr key={g.key} className="pag-row">
-                  <td className="pag-td pag-td--name">
-                    <div className="pag-nombre-row">
-                      <span className="pag-nombre">{g.nombres.join(' + ')}</span>
-                      <span className="pag-importe">{g.precio_total > 0 ? `${g.precio_total} €` : '—'}</span>
-                    </div>
-                    {metodo && (
-                      <span className={`pag-badge ${metodo.cls}`}>{metodo.label}</span>
-                    )}
-                  </td>
-                  {MESES.map(m => {
-                    const pago = getPago(g.familia_id, m.mes, m.anio)
-                    const checked = pago?.pagado ?? false
-                    return (
-                      <td
-                        key={`${m.mes}-${m.anio}`}
-                        className={`pag-td pag-td--mes${checked ? ' pag-td--paid' : ''}`}
-                      >
-                        <input
-                          type="checkbox"
-                          className="pag-check"
-                          checked={checked}
-                          disabled={!g.familia_id}
-                          onChange={() => toggle(g, m.mes, m.anio)}
-                        />
-                      </td>
-                    )
-                  })}
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
+      {/* Toggle */}
+      <div className="pag-toggle">
+        <button
+          className={`pag-toggle__btn${vista === 'pendientes' ? ' pag-toggle__btn--on' : ''}`}
+          onClick={() => setVista('pendientes')}
+        >
+          Pendientes
+          {pendientes.length > 0 && (
+            <span className="pag-toggle__badge">{pendientes.length}</span>
+          )}
+        </button>
+        <button
+          className={`pag-toggle__btn${vista === 'historial' ? ' pag-toggle__btn--on' : ''}`}
+          onClick={() => setVista('historial')}
+        >
+          Historial
+        </button>
       </div>
+
+      {/* Vista pendientes */}
+      {vista === 'pendientes' && (
+        <div className="pag-pendientes">
+          <div className="pag-pendientes__header">
+            <select
+              className="pag-mes-sel"
+              value={mesIdx}
+              onChange={e => setMesIdx(Number(e.target.value))}
+            >
+              {MESES.map((m, i) => (
+                <option key={i} value={i}>{m.label} {m.anio}</option>
+              ))}
+            </select>
+          </div>
+
+          {pendientes.length === 0 ? (
+            <div className="pag-all-done">
+              <Icon.check /> Todo cobrado este mes
+            </div>
+          ) : (
+            <ul className="pag-list">
+              {pendientes.map(g => {
+                const metodo = g.metodo_pago ? METODOS[g.metodo_pago] : null
+                const exiting = saliendo.has(g.key)
+                return (
+                  <li key={g.key} className={`pag-item${exiting ? ' pag-item--exit' : ''}`}>
+                    <div className="pag-item__info">
+                      <span className="pag-nombre">{g.nombres.join(' + ')}</span>
+                      {metodo && (
+                        <span className={`pag-badge ${metodo.cls}`}>{metodo.label}</span>
+                      )}
+                    </div>
+                    <span className="pag-item__importe">
+                      {g.precio_total > 0 ? `${g.precio_total} €` : '—'}
+                    </span>
+                    <button
+                      className="pag-cobrar-btn"
+                      onClick={() => marcarPagado(g)}
+                      disabled={exiting || !g.familia_id}
+                    >
+                      <Icon.check /> Cobrado
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Vista historial */}
+      {vista === 'historial' && (
+        <div className="pag-wrap">
+          <table className="pag-table">
+            <thead>
+              <tr>
+                <th className="pag-th pag-th--name">Alumno</th>
+                {MESES.map((m, i) => (
+                  <th
+                    key={`${m.mes}-${m.anio}`}
+                    className={`pag-th pag-th--mes${i === mesActualIdx ? ' pag-th--current' : ''}`}
+                  >
+                    {m.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {grupos.map(g => {
+                const metodo = g.metodo_pago ? METODOS[g.metodo_pago] : null
+                return (
+                  <tr key={g.key} className="pag-row">
+                    <td className="pag-td pag-td--name">
+                      <div className="pag-nombre-row">
+                        <span className="pag-nombre">{g.nombres.join(' + ')}</span>
+                        <span className="pag-importe">{g.precio_total > 0 ? `${g.precio_total} €` : '—'}</span>
+                      </div>
+                      {metodo && (
+                        <span className={`pag-badge ${metodo.cls}`}>{metodo.label}</span>
+                      )}
+                    </td>
+                    {MESES.map(m => {
+                      const pago = getPago(g.familia_id, m.mes, m.anio)
+                      const checked = pago?.pagado ?? false
+                      return (
+                        <td
+                          key={`${m.mes}-${m.anio}`}
+                          className={`pag-td pag-td--mes${checked ? ' pag-td--paid' : ''}`}
+                        >
+                          <input
+                            type="checkbox"
+                            className="pag-check"
+                            checked={checked}
+                            disabled={!g.familia_id}
+                            onChange={() => toggle(g, m.mes, m.anio)}
+                          />
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
     </div>
   )
 }
