@@ -938,6 +938,33 @@ button { font-family: inherit; }
 }
 .pag-cobrar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Historial columnas */
+.pag-hist {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  overflow-x: auto;
+}
+.pag-hist-col {
+  flex: 1;
+  min-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pag-hist-col__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.pag-hist-col__count {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.pag-table--col .pag-th--name { min-width: 100px; max-width: 150px; }
+.pag-table--col { min-width: unset; width: 100%; }
+
 /* Table */
 .pag-wrap {
   overflow-x: auto;
