@@ -438,7 +438,7 @@ function InformePreviewOverlay({ alumno, informe: inf, onClose }) {
 
 // ── DetalleAlumnoPanel ────────────────────────────────────────────
 
-function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
+function DetalleAlumnoPanel({ alumnoId, initialTab = null, onClose, onUpdated }) {
   const [data, setData] = React.useState(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState(null)
@@ -523,6 +523,7 @@ function DetalleAlumnoPanel({ alumnoId, onClose, onUpdated }) {
   }
 
   React.useEffect(() => { cargarDetalle() }, [alumnoId])
+  React.useEffect(() => { if (initialTab) cargarHistorial(initialTab) }, []) // eslint-disable-line
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
@@ -1060,6 +1061,7 @@ export function Alumnos() {
   const [archivando, setArchivando] = React.useState(null)
   const [eliminando, setEliminando] = React.useState(null)
   const [detalleId, setDetalleId] = React.useState(null)
+  const [detalleTab, setDetalleTab] = React.useState(null)
 
   const cargar = React.useCallback(() => {
     setLoading(true)
@@ -1187,11 +1189,20 @@ export function Alumnos() {
                   )}
                 </div>
                 {filtro === 'activos' ? (
-                  <button className="alumno-card__archive-btn"
-                    title="Archivar alumno"
-                    onClick={e => { e.stopPropagation(); setArchivando(a) }}>
-                    <Icon.archive />
-                  </button>
+                  <div className="alumno-card__actions" onClick={e => e.stopPropagation()}>
+                    <button className="alumno-card__archive-btn" title="Ver informes"
+                      onClick={() => { setDetalleId(a.id); setDetalleTab('informes') }}>
+                      <Icon.doc />
+                    </button>
+                    <button className="alumno-card__archive-btn" title="Ver facturas"
+                      onClick={() => { setDetalleId(a.id); setDetalleTab('facturas') }}>
+                      <Icon.note />
+                    </button>
+                    <button className="alumno-card__archive-btn" title="Archivar alumno"
+                      onClick={() => setArchivando(a)}>
+                      <Icon.archive />
+                    </button>
+                  </div>
                 ) : (
                   <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                     <button className="btn btn--ghost btn--sm" onClick={() => reactivar(a)}>
@@ -1211,7 +1222,8 @@ export function Alumnos() {
       {detalleId && (
         <DetalleAlumnoPanel
           alumnoId={detalleId}
-          onClose={() => setDetalleId(null)}
+          initialTab={detalleTab}
+          onClose={() => { setDetalleId(null); setDetalleTab(null) }}
           onUpdated={cargar}
         />
       )}

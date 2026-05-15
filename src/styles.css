@@ -3575,6 +3575,13 @@ body.printing .no-print { display: none !important; }
 }
 
 /* ── Historial alumno ── */
+/* ── Acciones tarjeta alumno ── */
+.alumno-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .hist-list {
   list-style: none;
   margin: 8px 0 0;

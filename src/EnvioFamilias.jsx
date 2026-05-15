@@ -324,22 +324,24 @@ export function EnvioFamilias() {
           ))}
         </select>
 
-        <button
-          className="btn btn--ghost"
-          style={{ width: '100%' }}
-          onClick={generarTodos}
-          disabled={generandoTodos || enviandoTodos || cargando}
-        >
-          {generandoTodos ? 'Generando…' : todosGenerados ? 'Regenerar todos' : 'Generar todos'}
-        </button>
-        <button
-          className="btn btn--primary"
-          style={{ width: '100%' }}
-          onClick={enviarTodos}
-          disabled={!todosGenerados || enviandoTodos || generandoTodos}
-        >
-          {enviandoTodos ? 'Enviando…' : 'Enviar todos'}
-        </button>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button
+            className="btn btn--ghost"
+            style={{ flex: 1 }}
+            onClick={generarTodos}
+            disabled={generandoTodos || enviandoTodos || cargando}
+          >
+            {generandoTodos ? 'Generando…' : todosGenerados ? 'Regenerar' : 'Generar todos'}
+          </button>
+          <button
+            className="btn btn--ghost"
+            style={{ flex: 1 }}
+            onClick={enviarTodos}
+            disabled={!todosGenerados || enviandoTodos || generandoTodos}
+          >
+            {enviandoTodos ? 'Enviando…' : 'Enviar todos'}
+          </button>
+        </div>
 
         {progreso && (
           <div className="inf-progreso">
