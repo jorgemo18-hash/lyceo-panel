@@ -15,6 +15,7 @@ import { Pagos } from './Pagos.jsx';
 import { Informes } from './Informes.jsx';
 import { EnvioFamilias } from './EnvioFamilias.jsx';
 import { Facturas } from './Facturas.jsx';
+import { Ajustes } from './Ajustes.jsx';
 
 const PRIMARY = '#8B0000';
 const HORAS_EXTRA = ['15:30', '16:30', '17:30', '18:30', '19:30'];
@@ -411,6 +412,17 @@ const PANTALLAS = {
         <Topbar eyebrow="Gestión" title="Pagos" showSearch={false} mobile={mobile} />
         <div className="content content--wide">
           <Pagos />
+        </div>
+      </>
+    );
+  },
+  ajustes: ({ mobile }) => {
+    const Topbar = window.Topbar;
+    return (
+      <>
+        <Topbar eyebrow="Configuración" title="Ajustes" showSearch={false} mobile={mobile} />
+        <div className="content">
+          <Ajustes />
         </div>
       </>
     );

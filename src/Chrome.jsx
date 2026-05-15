@@ -39,7 +39,11 @@ function Sidebar({ activo = "horario", onNavigate }) {
       </nav>
 
       <div className="sidebar__foot">
-        <a href="#" className="navitem" onClick={(e) => e.preventDefault()}>
+        <a
+          href="#"
+          className={`navitem ${activo === 'ajustes' ? 'navitem--on' : ''}`}
+          onClick={(e) => { e.preventDefault(); onNavigate && onNavigate('ajustes'); }}
+        >
           <span className="navitem__icon"><Icon.settings /></span>
           <span className="navitem__label">Ajustes</span>
         </a>
