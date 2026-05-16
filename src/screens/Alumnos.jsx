@@ -58,18 +58,31 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
+  const convertirAJpeg = (file) => new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      canvas.getContext('2d').drawImage(img, 0, 0)
+      canvas.toBlob((blob) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result.split(',')[1])
+        reader.readAsDataURL(blob)
+      }, 'image/jpeg', 0.9)
+      URL.revokeObjectURL(url)
+    }
+    img.src = url
+  })
+
   const handleOcr = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setOcr({ procesando: true, msg: null })
     try {
-      const mediaType = file.type === 'application/pdf' ? 'application/pdf' : file.type
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result.split(',')[1])
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
+      const base64 = await convertirAJpeg(file)
+      const mediaType = 'image/jpeg'
       const res = await fetch(
         'https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/extraer-ficha',
         { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base64, mediaType }) }
@@ -229,7 +242,7 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
 
           {/* ── OCR ── */}
           <section className="panel__section" style={{ paddingBottom: 0 }}>
-            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+            <input ref={fileRef} type="file" accept="image/*"
               hidden onChange={handleOcr} />
             <button
               type="button"
