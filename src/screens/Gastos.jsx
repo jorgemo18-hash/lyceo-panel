@@ -281,6 +281,7 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
     setOcr({ procesando: true, msg: null })
     ocrDesdeUrl(pendiente.foto_url)
       .then(datos => {
+        console.log('OCR resultado completo:', datos)
         if (datos.error) throw new Error(datos.error)
         setForm(prev => ({
           ...prev,
@@ -331,7 +332,7 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
       ])
 
       const datos = await res.json()
-      console.log('Respuesta OCR:', JSON.stringify(datos))
+      console.log('OCR resultado completo:', datos)
       if (datos.error) throw new Error(datos.error)
 
       setForm(prev => ({
