@@ -33,7 +33,6 @@ function Sidebar({ activo = "horario", onNavigate }) {
           >
             <span className="navitem__icon">{it.icon}</span>
             <span className="navitem__label">{it.label}</span>
-            {it.id === "diario" && <span className="navitem__badge">8</span>}
           </a>
         ))}
       </nav>

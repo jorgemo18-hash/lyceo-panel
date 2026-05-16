@@ -35,7 +35,8 @@ function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
-const ANIOS = [2025, 2026]
+const anioHoy = new Date().getFullYear()
+const ANIOS = [anioHoy - 1, anioHoy]
 const MESES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 
 const FORM_INICIAL = {
@@ -600,13 +601,12 @@ function GastoCampo({ label, value }) {
 
 // ── Gastos ────────────────────────────────────────────────────────
 export function Gastos() {
-  const anioActual = new Date().getFullYear()
   const [gastos, setGastos]       = React.useState([])
   const [loading, setLoading]     = React.useState(true)
   const [error, setError]         = React.useState(null)
   const [showPanel, setShowPanel] = React.useState(false)
   const [gastoSel, setGastoSel]   = React.useState(null)
-  const [filtroAnio, setFiltroAnio] = React.useState(anioActual)
+  const [filtroAnio, setFiltroAnio] = React.useState(anioHoy)
   const [filtroMes, setFiltroMes]   = React.useState(null)
 
   const filtroAnioRef = React.useRef(filtroAnio)
