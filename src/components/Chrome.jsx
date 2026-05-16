@@ -2,6 +2,15 @@
 // Desktop: sidebar izquierdo fijo. Móvil: topbar + bottom nav.
 
 function Sidebar({ activo = "horario", onNavigate }) {
+  const [gastosBadge, setGastosBadge] = React.useState(0)
+
+  React.useEffect(() => {
+    import('../lib/supabase.js').then(({ supabase }) => {
+      supabase.from('gastos_pendientes').select('id', { count: 'exact', head: true }).eq('procesado', false)
+        .then(({ count }) => setGastosBadge(count || 0))
+    })
+  }, [])
+
   const items = [
     { id: "horario",   label: "Horario",        icon: <Icon.grid /> },
     { id: "diario",    label: "Diario",          icon: <Icon.calendar /> },
@@ -10,7 +19,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "ficha",     label: "Tarifas",         icon: <Icon.tag /> },
     { id: "alumnos",   label: "Alumnos",         icon: <Icon.users /> },
     { id: "pagos",     label: "Cobros",          icon: <Icon.euro /> },
-    { id: "gastos",    label: "Gastos",          icon: <Icon.receipt /> },
+    { id: "gastos",    label: "Gastos",          icon: <Icon.receipt />, badge: gastosBadge || null },
     { id: "documentos",label: "Documentos",      icon: <Icon.doc /> },
   ];
   return (
@@ -31,7 +40,10 @@ function Sidebar({ activo = "horario", onNavigate }) {
             className={`navitem ${activo === it.id ? "navitem--on" : ""}`}
             onClick={(e) => { e.preventDefault(); onNavigate && onNavigate(it.id); }}
           >
-            <span className="navitem__icon">{it.icon}</span>
+            <span className="navitem__icon">
+              {it.icon}
+              {it.badge ? <span className="navitem__badge">{it.badge}</span> : null}
+            </span>
             <span className="navitem__label">{it.label}</span>
           </a>
         ))}

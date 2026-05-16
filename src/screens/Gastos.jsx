@@ -150,6 +150,23 @@ function leerBase64(file) {
   })
 }
 
+async function ocrDesdeUrl(url) {
+  const esPdf = url.toLowerCase().endsWith('.pdf')
+  const blob = await fetch(url).then(r => r.blob())
+  const base64 = await new Promise(resolve => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.readAsDataURL(blob)
+  })
+  const mediaType = esPdf ? 'application/pdf' : 'image/jpeg'
+  const res = await fetch('https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/extraer-gasto', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64, mediaType }),
+  })
+  return res.json()
+}
+
 // ── Spinner de carga para subida de foto ─────────────────────────
 function FotoSpinner({ texto = 'Procesando imagen…' }) {
   return (
@@ -214,15 +231,71 @@ function CamposFiscales({ form, set }) {
   )
 }
 
+// ── Pendientes de revisar ─────────────────────────────────────────
+function PendientesSection({ pendientes, show, onToggle, onRevisar }) {
+  if (pendientes.length === 0) return null
+  return (
+    <div className="gastos-pendientes">
+      <div className="gastos-pendientes__banner">
+        <span>
+          {pendientes.length} {pendientes.length === 1 ? 'factura pendiente' : 'facturas pendientes'} de revisar
+        </span>
+        <button className="btn btn--ghost btn--sm" onClick={onToggle}>
+          {show ? 'Ocultar' : 'Ver'}
+        </button>
+      </div>
+      {show && (
+        <div className="gastos-pendientes__lista">
+          {pendientes.map(p => (
+            <div key={p.id} className="gastos-pendiente-item">
+              {p.foto_url && (
+                p.foto_url.toLowerCase().endsWith('.pdf') ? (
+                  <div className="gastos-pendiente-item__thumb gastos-pendiente-item__thumb--pdf">PDF</div>
+                ) : (
+                  <img src={p.foto_url} alt="" className="gastos-pendiente-item__thumb" />
+                )
+              )}
+              <button className="btn btn--primary btn--sm" onClick={() => onRevisar(p)}>
+                Revisar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Panel nuevo gasto ─────────────────────────────────────────────
-function NuevoGastoPanel({ onClose, onSaved }) {
-  const [form, setForm] = React.useState(FORM_INICIAL)
+function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
+  const [form, setForm] = React.useState(() => ({ ...FORM_INICIAL, foto_url: pendiente?.foto_url ?? '' }))
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState(null)
   const [ocr, setOcr] = React.useState({ procesando: false, msg: null })
   const fileRef = React.useRef(null)
 
   const set = (k, v) => setForm(prev => recalcFiscal(prev, k, v))
+
+  React.useEffect(() => {
+    if (!pendiente?.foto_url) return
+    setOcr({ procesando: true, msg: null })
+    ocrDesdeUrl(pendiente.foto_url)
+      .then(datos => {
+        if (datos.error) throw new Error(datos.error)
+        setForm(prev => ({
+          ...prev,
+          ...(datos.fecha      ? { fecha: datos.fecha }         : {}),
+          ...(datos.proveedor  ? { proveedor: datos.proveedor } : {}),
+          ...(datos.concepto   ? { concepto: datos.concepto }   : {}),
+          ...(datos.cif        ? { cif: datos.cif }             : {}),
+          ...(datos.categoria  ? { categoria: datos.categoria, subcategoria: '' } : {}),
+          ...(datos.importe    ? { importe: datos.importe }     : {}),
+          ...(datos.notas      ? { notas: datos.notas }         : {}),
+        }))
+        setOcr({ procesando: false, msg: 'ok' })
+      })
+      .catch(err => setOcr({ procesando: false, msg: 'Error: ' + (err.message ?? 'al procesar') }))
+  }, [])
 
   const handleOcr = async (e) => {
     const file = e.target.files?.[0]
@@ -289,6 +362,9 @@ function NuevoGastoPanel({ onClose, onSaved }) {
     try {
       const { error: e } = await supabase.from('gastos').insert(formToRow(form))
       if (e) throw e
+      if (pendiente?.id) {
+        await supabase.from('gastos_pendientes').update({ procesado: true }).eq('id', pendiente.id)
+      }
       onSaved()
     } catch (err) {
       setError(err.message ?? String(err))
@@ -660,6 +736,9 @@ export function Gastos() {
   const [gastoSel, setGastoSel]   = React.useState(null)
   const [filtroAnio, setFiltroAnio] = React.useState(anioHoy)
   const [filtroTrimestre, setFiltroTrimestre] = React.useState(null)
+  const [pendientes, setPendientes] = React.useState([])
+  const [showPendientes, setShowPendientes] = React.useState(false)
+  const [pendienteRevisando, setPendienteRevisando] = React.useState(null)
 
   const filtroAnioRef = React.useRef(filtroAnio)
   React.useEffect(() => { filtroAnioRef.current = filtroAnio }, [filtroAnio])
@@ -677,7 +756,13 @@ export function Gastos() {
     setLoading(false)
   }, [])
 
+  const cargarPendientes = React.useCallback(async () => {
+    const { data } = await supabase.from('gastos_pendientes').select('*').eq('procesado', false).order('created_at', { ascending: false })
+    setPendientes(data ?? [])
+  }, [])
+
   React.useEffect(() => { cargar(filtroAnio) }, [cargar, filtroAnio])
+  React.useEffect(() => { cargarPendientes() }, [cargarPendientes])
 
   const gastosFiltrados = React.useMemo(() => {
     if (filtroTrimestre === null) return gastos
@@ -714,6 +799,13 @@ export function Gastos() {
 
   return (
     <>
+      <PendientesSection
+        pendientes={pendientes}
+        show={showPendientes}
+        onToggle={() => setShowPendientes(v => !v)}
+        onRevisar={(p) => { setPendienteRevisando(p); setShowPanel(true) }}
+      />
+
       {/* Filtros */}
       <div className="gastos-filtros">
         <div className="gastos-filtros__anios">
@@ -823,8 +915,9 @@ export function Gastos() {
 
       {showPanel && (
         <NuevoGastoPanel
-          onClose={() => setShowPanel(false)}
-          onSaved={() => { setShowPanel(false); cargar(filtroAnioRef.current) }}
+          pendiente={pendienteRevisando}
+          onClose={() => { setShowPanel(false); setPendienteRevisando(null) }}
+          onSaved={() => { setShowPanel(false); setPendienteRevisando(null); cargar(filtroAnioRef.current); cargarPendientes() }}
         />
       )}
 
