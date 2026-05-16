@@ -289,13 +289,18 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
         if (datos.error) throw new Error(datos.error)
         setForm(prev => ({
           ...prev,
-          ...(datos.fecha      ? { fecha: datos.fecha }         : {}),
-          ...(datos.proveedor  ? { proveedor: datos.proveedor } : {}),
-          ...(datos.concepto   ? { concepto: datos.concepto }   : {}),
-          ...(datos.cif        ? { cif: datos.cif }             : {}),
-          ...(datos.categoria  ? { categoria: datos.categoria, subcategoria: '' } : {}),
-          ...(datos.importe    ? { importe: datos.importe }     : {}),
-          ...(datos.notas      ? { notas: datos.notas }         : {}),
+          ...(datos.fecha             ? { fecha: datos.fecha }                                     : {}),
+          ...(datos.proveedor         ? { proveedor: datos.proveedor }                             : {}),
+          ...(datos.concepto          ? { concepto: datos.concepto }                               : {}),
+          ...(datos.cif               ? { cif: datos.cif }                                         : {}),
+          ...(datos.categoria         ? { categoria: datos.categoria, subcategoria: '' }           : {}),
+          ...(datos.base_imponible    != null ? { base_imponible: String(datos.base_imponible) }   : {}),
+          ...(datos.iva_pct           != null ? { iva_pct: String(datos.iva_pct) }                 : {}),
+          ...(datos.iva_importe       != null ? { iva_importe: String(datos.iva_importe) }         : {}),
+          ...(datos.retencion_pct     != null ? { retencion_pct: String(datos.retencion_pct) }     : {}),
+          ...(datos.retencion_importe != null ? { retencion_importe: String(datos.retencion_importe) } : {}),
+          ...(datos.importe           != null ? { importe: String(datos.importe) }                 : {}),
+          ...(datos.notas             ? { notas: datos.notas }                                     : {}),
         }))
         setOcr({ procesando: false, msg: 'ok' })
       })
@@ -342,13 +347,18 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
       setForm(prev => ({
         ...prev,
         foto_url: fotoUrl ?? prev.foto_url,
-        ...(datos.fecha      ? { fecha: datos.fecha }         : {}),
-        ...(datos.proveedor  ? { proveedor: datos.proveedor } : {}),
-        ...(datos.concepto   ? { concepto: datos.concepto }   : {}),
-        ...(datos.cif        ? { cif: datos.cif }             : {}),
-        ...(datos.categoria  ? { categoria: datos.categoria, subcategoria: '' } : {}),
-        ...(datos.importe    ? { importe: datos.importe }     : {}),
-        ...(datos.notas      ? { notas: datos.notas }         : {}),
+        ...(datos.fecha             ? { fecha: datos.fecha }                                     : {}),
+        ...(datos.proveedor         ? { proveedor: datos.proveedor }                             : {}),
+        ...(datos.concepto          ? { concepto: datos.concepto }                               : {}),
+        ...(datos.cif               ? { cif: datos.cif }                                         : {}),
+        ...(datos.categoria         ? { categoria: datos.categoria, subcategoria: '' }           : {}),
+        ...(datos.base_imponible    != null ? { base_imponible: String(datos.base_imponible) }   : {}),
+        ...(datos.iva_pct           != null ? { iva_pct: String(datos.iva_pct) }                 : {}),
+        ...(datos.iva_importe       != null ? { iva_importe: String(datos.iva_importe) }         : {}),
+        ...(datos.retencion_pct     != null ? { retencion_pct: String(datos.retencion_pct) }     : {}),
+        ...(datos.retencion_importe != null ? { retencion_importe: String(datos.retencion_importe) } : {}),
+        ...(datos.importe           != null ? { importe: String(datos.importe) }                 : {}),
+        ...(datos.notas             ? { notas: datos.notas }                                     : {}),
       }))
       setOcr({ procesando: false, msg: 'ok' })
     } catch (err) {
@@ -824,8 +834,6 @@ export function Gastos() {
   const [pendientes, setPendientes] = React.useState([])
   const [showPendientes, setShowPendientes] = React.useState(false)
   const [pendienteRevisando, setPendienteRevisando] = React.useState(null)
-  const [vista, setVista] = React.useState('gastos')
-  const [borradorRefreshKey, setBorradorRefreshKey] = React.useState(0)
 
   const filtroAnioRef = React.useRef(filtroAnio)
   React.useEffect(() => { filtroAnioRef.current = filtroAnio }, [filtroAnio])
@@ -845,7 +853,7 @@ export function Gastos() {
 
   const cargarPendientes = React.useCallback(async () => {
     const { data } = await supabase.from('gastos_pendientes').select('*')
-      .eq('tipo', 'gasto').eq('procesado', false).is('datos_json', null)
+      .eq('tipo', 'gasto').eq('procesado', false)
       .order('created_at', { ascending: false })
     setPendientes(data ?? [])
   }, [])
@@ -900,129 +908,113 @@ export function Gastos() {
         <div className="gastos-filtros__anios">
           {ANIOS.map(a => (
             <button key={a}
-              className={`gastos-filtro-btn${vista === 'gastos' && filtroAnio === a ? ' gastos-filtro-btn--on' : ''}`}
-              onClick={() => { setVista('gastos'); setFiltroAnio(a); setFiltroTrimestre(null) }}
+              className={`gastos-filtro-btn${filtroAnio === a ? ' gastos-filtro-btn--on' : ''}`}
+              onClick={() => { setFiltroAnio(a); setFiltroTrimestre(null) }}
             >{a}</button>
           ))}
-          <button
-            className={`gastos-filtro-btn${vista === 'borradores' ? ' gastos-filtro-btn--on' : ''}`}
-            onClick={() => setVista('borradores')}
-          >Borradores</button>
         </div>
-        {vista === 'gastos' && (
-          <div className="gastos-filtros__meses">
-            <button
-              className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === null ? ' gastos-filtro-btn--on' : ''}`}
-              onClick={() => setFiltroTrimestre(null)}
-            >Todos</button>
-            {[1, 2, 3, 4].map(t => (
-              <button key={t}
-                className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === t ? ' gastos-filtro-btn--on' : ''}`}
-                onClick={() => setFiltroTrimestre(filtroTrimestre === t ? null : t)}
-              >T{t}</button>
-            ))}
+        <div className="gastos-filtros__meses">
+          <button
+            className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === null ? ' gastos-filtro-btn--on' : ''}`}
+            onClick={() => setFiltroTrimestre(null)}
+          >Todos</button>
+          {[1, 2, 3, 4].map(t => (
+            <button key={t}
+              className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === t ? ' gastos-filtro-btn--on' : ''}`}
+              onClick={() => setFiltroTrimestre(filtroTrimestre === t ? null : t)}
+            >T{t}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats */}
+      {stats.length > 0 && (
+        <div className="gastos-stats">
+          {stats.map(c => (
+            <div key={c.value} className="gastos-stat">
+              <span className="gastos-stat__dot" style={{ background: c.color }} />
+              <span className="gastos-stat__label">{c.label}</span>
+              <span className="gastos-stat__val">{eur(c.total)}</span>
+            </div>
+          ))}
+          <div className="gastos-stat gastos-stat--total">
+            <span className="gastos-stat__label">Total</span>
+            <span className="gastos-stat__val">{eur(totalGeneral)}</span>
           </div>
+        </div>
+      )}
+
+      {/* Botón añadir + CSV */}
+      <div className="gastos-bar">
+        <button className="btn btn--primary" onClick={() => setShowPanel(true)}>
+          <Icon.plus /> Añadir gasto
+        </button>
+        {filtroTrimestre !== null && gastosFiltrados.length > 0 && (
+          <button className="btn btn--ghost" onClick={descargarCsv}>
+            Descargar CSV
+          </button>
         )}
       </div>
 
-      {vista === 'borradores' ? (
-        <BorradoresTab
-          key={borradorRefreshKey}
-          refreshKey={borradorRefreshKey}
-          onContinuar={(b) => { setPendienteRevisando(b); setShowPanel(true) }}
-        />
+      {/* Lista */}
+      {loading ? (
+        <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando gastos…</div>
+      ) : error ? (
+        <div className="alumnos-estado alumnos-estado--error">Error: {error}</div>
+      ) : gastosFiltrados.length === 0 ? (
+        <div className="alumnos-estado">Sin gastos en este período.</div>
       ) : (
-        <>
-          {/* Stats */}
-          {stats.length > 0 && (
-            <div className="gastos-stats">
-              {stats.map(c => (
-                <div key={c.value} className="gastos-stat">
-                  <span className="gastos-stat__dot" style={{ background: c.color }} />
-                  <span className="gastos-stat__label">{c.label}</span>
-                  <span className="gastos-stat__val">{eur(c.total)}</span>
-                </div>
-              ))}
-              <div className="gastos-stat gastos-stat--total">
-                <span className="gastos-stat__label">Total</span>
-                <span className="gastos-stat__val">{eur(totalGeneral)}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Botón añadir + CSV */}
-          <div className="gastos-bar">
-            <button className="btn btn--primary" onClick={() => setShowPanel(true)}>
-              <Icon.plus /> Añadir gasto
-            </button>
-            {filtroTrimestre !== null && gastosFiltrados.length > 0 && (
-              <button className="btn btn--ghost" onClick={descargarCsv}>
-                Descargar CSV
-              </button>
-            )}
-          </div>
-
-          {/* Lista */}
-          {loading ? (
-            <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando gastos…</div>
-          ) : error ? (
-            <div className="alumnos-estado alumnos-estado--error">Error: {error}</div>
-          ) : gastosFiltrados.length === 0 ? (
-            <div className="alumnos-estado">Sin gastos en este período.</div>
-          ) : (
-            <div className="gastos-table-wrap">
-              <table className="gastos-table">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Proveedor</th>
-                    <th>Categoría</th>
-                    <th className="gastos-table__num">Importe</th>
+        <div className="gastos-table-wrap">
+          <table className="gastos-table">
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Proveedor</th>
+                <th>Categoría</th>
+                <th className="gastos-table__num">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {gastosFiltrados.map(g => {
+                const cat = catInfo(g.categoria)
+                return (
+                  <tr key={g.id} className="gastos-row gastos-row--clickable"
+                    onClick={() => setGastoSel(g)}>
+                    <td className="gastos-row__fecha">
+                      {new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="gastos-row__proveedor">
+                      {g.proveedor || '—'}
+                      {g.concepto && <span className="gastos-row__notas"> · {g.concepto}</span>}
+                    </td>
+                    <td>
+                      <span className="gastos-badge" style={{ background: cat.color + '1a', color: cat.color, borderColor: cat.color + '44' }}>
+                        {catDisplay(g)}
+                      </span>
+                    </td>
+                    <td className="gastos-table__num gastos-row__importe">
+                      {eur(g.importe)}
+                      {g.base_imponible != null && (
+                        <div className="gastos-row__desglose">
+                          {eur(g.base_imponible)}
+                          {g.iva_importe     != null && <> + {eur(g.iva_importe)} IVA</>}
+                          {g.retencion_importe != null && <> − {eur(g.retencion_importe)} ret.</>}
+                        </div>
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {gastosFiltrados.map(g => {
-                    const cat = catInfo(g.categoria)
-                    return (
-                      <tr key={g.id} className="gastos-row gastos-row--clickable"
-                        onClick={() => setGastoSel(g)}>
-                        <td className="gastos-row__fecha">
-                          {new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                        </td>
-                        <td className="gastos-row__proveedor">
-                          {g.proveedor || '—'}
-                          {g.concepto && <span className="gastos-row__notas"> · {g.concepto}</span>}
-                        </td>
-                        <td>
-                          <span className="gastos-badge" style={{ background: cat.color + '1a', color: cat.color, borderColor: cat.color + '44' }}>
-                            {catDisplay(g)}
-                          </span>
-                        </td>
-                        <td className="gastos-table__num gastos-row__importe">
-                          {eur(g.importe)}
-                          {g.base_imponible != null && (
-                            <div className="gastos-row__desglose">
-                              {eur(g.base_imponible)}
-                              {g.iva_importe     != null && <> + {eur(g.iva_importe)} IVA</>}
-                              {g.retencion_importe != null && <> − {eur(g.retencion_importe)} ret.</>}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {showPanel && (
         <NuevoGastoPanel
           pendiente={pendienteRevisando}
           onClose={() => { setShowPanel(false); setPendienteRevisando(null) }}
-          onSaved={() => { setShowPanel(false); setPendienteRevisando(null); cargar(filtroAnioRef.current); cargarPendientes(); setBorradorRefreshKey(k => k + 1) }}
+          onSaved={() => { setShowPanel(false); setPendienteRevisando(null); cargar(filtroAnioRef.current); cargarPendientes() }}
         />
       )}
 
