@@ -131,10 +131,10 @@ async function subirFoto(blob) {
   const anio  = ahora.getFullYear()
   const mes   = String(ahora.getMonth() + 1).padStart(2, '0')
   const { data, error } = await supabase.storage
-    .from('documentos')
+    .from('DOCUMENTO')
     .upload(`gastos/${anio}/${mes}/${Date.now()}.jpg`, blob, { contentType: 'image/jpeg' })
   if (error || !data) return null
-  const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(data.path)
+  const { data: { publicUrl } } = supabase.storage.from('DOCUMENTO').getPublicUrl(data.path)
   return publicUrl
 }
 
