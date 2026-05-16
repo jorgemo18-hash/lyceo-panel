@@ -84,28 +84,69 @@ function Sidebar({ activo = "horario", onNavigate }) {
 }
 
 function BottomNav({ activo = "horario", onNavigate }) {
-  const items = [
+  const [masOpen, setMasOpen] = React.useState(false)
+
+  const main = [
     { id: "horario", label: "Horario", icon: <Icon.grid /> },
-    { id: "diario", label: "Diario", icon: <Icon.calendar /> },
+    { id: "diario",  label: "Diario",  icon: <Icon.calendar /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
-    { id: "ficha", label: "Tarifas", icon: <Icon.tag /> },
-    { id: "ajustes", label: "Más", icon: <Icon.settings /> },
-  ];
+    { id: "gastos",  label: "Gastos",  icon: <Icon.receipt /> },
+    { id: "pagos",   label: "Cobros",  icon: <Icon.euro /> },
+  ]
+
+  const mas = [
+    { id: "facturas",  label: "Facturas",       icon: <Icon.note /> },
+    { id: "envio",     label: "Envío familias", icon: <Icon.mail /> },
+    { id: "ficha",     label: "Tarifas",        icon: <Icon.tag /> },
+    { id: "documentos",label: "Documentos",     icon: <Icon.doc /> },
+    { id: "ajustes",   label: "Ajustes",        icon: <Icon.settings /> },
+  ]
+
+  const handleNav = (id) => { setMasOpen(false); onNavigate && onNavigate(id) }
+  const masActivo = mas.some(it => it.id === activo)
+
   return (
-    <nav className="bottomnav">
-      {items.map((it) => (
-        <a
-          key={it.id}
-          href="#"
-          className={`bnav ${activo === it.id ? "bnav--on" : ""}`}
-          onClick={(e) => { e.preventDefault(); onNavigate && onNavigate(it.id); }}
+    <>
+      {masOpen && (
+        <div className="bnav-mas-backdrop" onClick={() => setMasOpen(false)} />
+      )}
+      {masOpen && (
+        <div className="bnav-mas">
+          {mas.map(it => (
+            <a
+              key={it.id}
+              href="#"
+              className={`bnav-mas__item ${activo === it.id ? "bnav-mas__item--on" : ""}`}
+              onClick={(e) => { e.preventDefault(); handleNav(it.id) }}
+            >
+              <span className="bnav-mas__icon">{it.icon}</span>
+              <span className="bnav-mas__label">{it.label}</span>
+            </a>
+          ))}
+        </div>
+      )}
+      <nav className="bottomnav">
+        {main.map(it => (
+          <a
+            key={it.id}
+            href="#"
+            className={`bnav ${activo === it.id ? "bnav--on" : ""}`}
+            onClick={(e) => { e.preventDefault(); handleNav(it.id) }}
+          >
+            <span className="bnav__icon">{it.icon}</span>
+            <span className="bnav__label">{it.label}</span>
+          </a>
+        ))}
+        <button
+          className={`bnav bnav--more ${masActivo || masOpen ? "bnav--on" : ""}`}
+          onClick={() => setMasOpen(v => !v)}
         >
-          <span className="bnav__icon">{it.icon}</span>
-          <span className="bnav__label">{it.label}</span>
-        </a>
-      ))}
-    </nav>
-  );
+          <span className="bnav__icon"><Icon.settings /></span>
+          <span className="bnav__label">Más</span>
+        </button>
+      </nav>
+    </>
+  )
 }
 
 function Topbar({ eyebrow, title, allSavedAt, mobile, rightExtra, showSearch = true }) {
