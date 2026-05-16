@@ -126,17 +126,28 @@ function recalcFiscal(prev, changed, value) {
   return next
 }
 
-// ── Subir imagen a Storage ────────────────────────────────────────
-async function subirFoto(blob) {
+// ── Subir archivo a Storage ───────────────────────────────────────
+async function subirArchivo(payload, contentType, ext) {
   const ahora = new Date()
   const anio  = ahora.getFullYear()
   const mes   = String(ahora.getMonth() + 1).padStart(2, '0')
   const { data, error } = await supabase.storage
     .from('documentos')
-    .upload(`gastos/${anio}/${mes}/${Date.now()}.jpg`, blob, { contentType: 'image/jpeg' })
+    .upload(`gastos/${anio}/${mes}/${Date.now()}.${ext}`, payload, { contentType })
   if (error || !data) return null
   const { data: { publicUrl } } = supabase.storage.from('documentos').getPublicUrl(data.path)
   return publicUrl
+}
+const subirFoto = (blob) => subirArchivo(blob, 'image/jpeg', 'jpg')
+const subirPdf  = (file) => subirArchivo(file, 'application/pdf', 'pdf')
+
+// ── Leer archivo como base64 ──────────────────────────────────────
+function leerBase64(file) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.readAsDataURL(file)
+  })
 }
 
 // ── Spinner de carga para subida de foto ─────────────────────────
@@ -218,15 +229,27 @@ function NuevoGastoPanel({ onClose, onSaved }) {
     if (!file) return
     setOcr({ procesando: true, msg: null })
     try {
-      const { base64, blob } = await convertirAJpeg(file)
+      const esPdf = file.type === 'application/pdf'
+      let base64, mediaType, uploadPromise
 
-      // Subir a Storage (en paralelo con el OCR)
+      if (esPdf) {
+        base64 = await leerBase64(file)
+        mediaType = 'application/pdf'
+        uploadPromise = subirPdf(file)
+      } else {
+        const converted = await convertirAJpeg(file)
+        base64 = converted.base64
+        mediaType = 'image/jpeg'
+        uploadPromise = subirFoto(converted.blob)
+      }
+
+      // Subir a Storage en paralelo con el OCR
       const [fotoUrl, res] = await Promise.all([
-        subirFoto(blob),
+        uploadPromise,
         fetch('https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/extraer-gasto', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base64, mediaType: 'image/jpeg' }),
+          body: JSON.stringify({ base64, mediaType }),
         }),
       ])
 
@@ -280,7 +303,7 @@ function NuevoGastoPanel({ onClose, onSaved }) {
         <div className="panel__body">
           {/* OCR */}
           <section className="panel__section" style={{ paddingBottom: 0 }}>
-            <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleOcr} />
+            <input ref={fileRef} type="file" accept="image/*,application/pdf" hidden onChange={handleOcr} />
             {ocr.procesando ? <FotoSpinner /> : (
               <button type="button" className="btn btn--ghost"
                 style={{ width: '100%', justifyContent: 'center', gap: 8 }}
@@ -289,7 +312,11 @@ function NuevoGastoPanel({ onClose, onSaved }) {
                 <Icon.receipt /> Subir foto de factura
               </button>
             )}
-            {form.foto_url && <img src={form.foto_url} alt="" className="gastos-foto-preview" />}
+            {form.foto_url && (
+              form.foto_url.endsWith('.pdf')
+                ? <iframe src={form.foto_url} title="Factura PDF" style={{ width: '100%', height: 200, border: '1px solid #ddd', borderRadius: 4, marginTop: 4 }} />
+                : <img src={form.foto_url} alt="" className="gastos-foto-preview" />
+            )}
             {ocr.msg === 'ok' && <div className="ocr-ok">Datos extraídos — revisa antes de guardar</div>}
             {ocr.msg && ocr.msg !== 'ok' && <div className="panel__error" style={{ marginTop: 6 }}>{ocr.msg}</div>}
           </section>
@@ -384,8 +411,14 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
     if (!file) return
     setUploadingFoto(true)
     try {
-      const { blob } = await convertirAJpeg(file)
-      const url = await subirFoto(blob)
+      const esPdf = file.type === 'application/pdf'
+      let url
+      if (esPdf) {
+        url = await subirPdf(file)
+      } else {
+        const { blob } = await convertirAJpeg(file)
+        url = await subirFoto(blob)
+      }
       if (url) set('foto_url', url)
     } catch {}
     setUploadingFoto(false)
@@ -429,7 +462,13 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
             <section className="panel__section" style={{ gap: 8 }}>
               {fotoActual ? (
                 <>
-                  {imgError ? (
+                  {fotoActual.endsWith('.pdf') ? (
+                    <iframe
+                      src={fotoActual}
+                      title="Factura PDF"
+                      style={{ width: '100%', height: 220, border: '1px solid #ddd', borderRadius: 4 }}
+                    />
+                  ) : imgError ? (
                     <div className="gastos-foto-error">No se pudo cargar la imagen</div>
                   ) : (
                     <img
@@ -463,7 +502,7 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
                 </>
               ) : editando ? (
                 <>
-                  <input ref={fileEditRef} type="file" accept="image/*" hidden onChange={handleFotoEdit} />
+                  <input ref={fileEditRef} type="file" accept="image/*,application/pdf" hidden onChange={handleFotoEdit} />
                   {uploadingFoto ? <FotoSpinner /> : (
                     <button
                       className="btn btn--ghost"
@@ -481,7 +520,7 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
               )}
               {/* input oculto para "Cambiar foto" cuando ya hay imagen */}
               {fotoActual && editando && (
-                <input ref={fileEditRef} type="file" accept="image/*" hidden onChange={handleFotoEdit} />
+                <input ref={fileEditRef} type="file" accept="image/*,application/pdf" hidden onChange={handleFotoEdit} />
               )}
             </section>
 
