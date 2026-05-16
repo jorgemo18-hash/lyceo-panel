@@ -10,6 +10,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "ficha",     label: "Tarifas",         icon: <Icon.tag /> },
     { id: "alumnos",   label: "Alumnos",         icon: <Icon.users /> },
     { id: "pagos",     label: "Cobros",          icon: <Icon.euro /> },
+    { id: "gastos",    label: "Gastos",          icon: <Icon.receipt /> },
     { id: "documentos",label: "Documentos",      icon: <Icon.doc /> },
   ];
   return (

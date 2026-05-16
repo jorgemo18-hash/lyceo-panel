@@ -12,6 +12,7 @@ import './screens/Documentos.jsx';
 import { DiarioScreen } from './screens/Diario.jsx';
 import { Alumnos } from './screens/Alumnos.jsx';
 import { Cobros } from './screens/Cobros.jsx';
+import { Gastos } from './screens/Gastos.jsx';
 import { EnvioFamilias } from './screens/EnvioFamilias.jsx';
 import { Facturas } from './screens/Facturas.jsx';
 import { Ajustes } from './screens/Ajustes.jsx';
@@ -131,6 +132,17 @@ const PANTALLAS = {
         <Topbar eyebrow="Gestión" title="Cobros" showSearch={false} mobile={mobile} />
         <div className="content content--wide">
           <Cobros />
+        </div>
+      </>
+    );
+  },
+  gastos: ({ mobile }) => {
+    const Topbar = window.Topbar;
+    return (
+      <>
+        <Topbar eyebrow="Gestión" title="Gastos" showSearch={false} mobile={mobile} />
+        <div className="content content--wide">
+          <Gastos />
         </div>
       </>
     );

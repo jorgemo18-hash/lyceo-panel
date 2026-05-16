@@ -131,6 +131,12 @@ const Icon = {
       <path d="M10.5 11l3-3-3-3M13.5 8H6" />
     </svg>
   ),
+  receipt: (p) => (
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M3 1.5v13l2-1.5 2 1.5 2-1.5 2 1.5 2-1.5V1.5z" />
+      <path d="M6 5.5h4M6 8h4M6 10.5h2.5" />
+    </svg>
+  ),
 };
 
 window.Icon = Icon;
