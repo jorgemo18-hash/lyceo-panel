@@ -350,15 +350,16 @@ function NuevoGastoPanel({ onClose, onSaved }) {
 
 // ── Panel detalle / edición ───────────────────────────────────────
 function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
-  const [editando, setEditando]   = React.useState(false)
-  const [form, setForm]           = React.useState(() => gastoToForm(gasto))
-  const [saving, setSaving]       = React.useState(false)
-  const [error, setError]         = React.useState(null)
-  const [lightbox, setLightbox]   = React.useState(false)
-  const [imgError, setImgError]   = React.useState(false)
+  const [editando, setEditando]       = React.useState(false)
+  const [form, setForm]               = React.useState(() => gastoToForm(gasto))
+  const [saving, setSaving]           = React.useState(false)
+  const [error, setError]             = React.useState(null)
+  const [lightbox, setLightbox]       = React.useState(false)
+  const [imgError, setImgError]       = React.useState(false)
+  const [uploadingFoto, setUploadingFoto] = React.useState(false)
+  const fileEditRef = React.useRef(null)
 
-  // Reset image error when gasto changes
-  React.useEffect(() => { setImgError(false) }, [gasto.foto_url])
+  React.useEffect(() => { setImgError(false) }, [form.foto_url])
 
   const set = (k, v) => setForm(prev => recalcFiscal(prev, k, v))
 
@@ -368,12 +369,24 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
     setError(null)
   }
 
+  const handleFotoEdit = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadingFoto(true)
+    try {
+      const { blob } = await convertirAJpeg(file)
+      const url = await subirFoto(blob)
+      if (url) set('foto_url', url)
+    } catch {}
+    setUploadingFoto(false)
+    e.target.value = ''
+  }
+
   const guardar = async () => {
     setSaving(true)
     setError(null)
-    const row = { ...formToRow(form), foto_url: gasto.foto_url ?? null }
     const { data: updated, error: e } = await supabase
-      .from('gastos').update(row).eq('id', gasto.id).select().single()
+      .from('gastos').update(formToRow(form)).eq('id', gasto.id).select().single()
     if (e) { setError(e.message); setSaving(false); return }
     setSaving(false)
     setEditando(false)
@@ -388,6 +401,7 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
   }
 
   const cat = catInfo(gasto.categoria)
+  const fotoActual = form.foto_url
   const fmtFecha = (iso) =>
     new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
 
@@ -401,30 +415,66 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
           </div>
 
           <div className="panel__body">
-            {/* Foto */}
-            {gasto.foto_url && (
-              <section className="panel__section" style={{ gap: 8 }}>
-                {imgError ? (
-                  <div className="gastos-foto-error">No se pudo cargar la imagen</div>
-                ) : (
-                  <img
-                    src={gasto.foto_url}
-                    alt="Factura"
-                    className="gastos-foto-thumb"
-                    onClick={() => setLightbox(true)}
-                    onError={() => setImgError(true)}
-                    title="Ver a tamaño completo"
-                  />
-                )}
-                <button
-                  className="btn btn--ghost btn--sm"
-                  style={{ width: '100%', justifyContent: 'center' }}
-                  onClick={() => window.open(gasto.foto_url, '_blank')}
-                >
-                  <Icon.doc /> Descargar factura
-                </button>
-              </section>
-            )}
+            {/* Foto — siempre visible si existe, con opción de subir en edición */}
+            <section className="panel__section" style={{ gap: 8 }}>
+              {fotoActual ? (
+                <>
+                  {imgError ? (
+                    <div className="gastos-foto-error">No se pudo cargar la imagen</div>
+                  ) : (
+                    <img
+                      src={fotoActual}
+                      alt="Factura"
+                      className="gastos-foto-thumb"
+                      onClick={() => setLightbox(true)}
+                      onError={() => setImgError(true)}
+                      title="Ver a tamaño completo"
+                    />
+                  )}
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      className="btn btn--ghost btn--sm"
+                      style={{ flex: 1, justifyContent: 'center' }}
+                      onClick={() => window.open(fotoActual, '_blank')}
+                    >
+                      <Icon.doc /> Descargar
+                    </button>
+                    {editando && (
+                      <button
+                        className="btn btn--ghost btn--sm"
+                        style={{ flex: 1, justifyContent: 'center' }}
+                        onClick={() => fileEditRef.current?.click()}
+                        disabled={uploadingFoto}
+                      >
+                        {uploadingFoto ? 'Subiendo…' : 'Cambiar foto'}
+                      </button>
+                    )}
+                  </div>
+                </>
+              ) : editando ? (
+                <>
+                  <input ref={fileEditRef} type="file" accept="image/*" hidden onChange={handleFotoEdit} />
+                  <button
+                    className="btn btn--ghost"
+                    style={{ width: '100%', justifyContent: 'center', gap: 8 }}
+                    onClick={() => fileEditRef.current?.click()}
+                    disabled={uploadingFoto}
+                  >
+                    {uploadingFoto
+                      ? <><span className="alumnos-estado__spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Subiendo…</>
+                      : <><Icon.receipt /> Añadir foto de factura</>}
+                  </button>
+                </>
+              ) : (
+                <div className="gastos-foto-error" style={{ color: 'var(--ink-4)' }}>
+                  Sin foto — pulsa <strong>Editar</strong> para añadirla
+                </div>
+              )}
+              {/* input oculto para "Cambiar foto" cuando ya hay imagen */}
+              {fotoActual && editando && (
+                <input ref={fileEditRef} type="file" accept="image/*" hidden onChange={handleFotoEdit} />
+              )}
+            </section>
 
             {editando ? (
               /* ── Modo edición ── */
@@ -493,8 +543,8 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
                   <>
                     <div className="gasto-campo__sep">Desglose fiscal</div>
                     <GastoCampo label="Base imponible" value={eur(gasto.base_imponible)} />
-                    {gasto.iva_pct     != null && <GastoCampo label={`IVA ${gasto.iva_pct} %`}         value={eur(gasto.iva_importe)} />}
-                    {gasto.retencion_pct != null && <GastoCampo label={`Retención ${gasto.retencion_pct} %`} value={eur(gasto.retencion_importe)} />}
+                    {Number(gasto.iva_pct) > 0 && <GastoCampo label={`IVA ${gasto.iva_pct} %`} value={eur(gasto.iva_importe)} />}
+                    {Number(gasto.retencion_pct) > 0 && <GastoCampo label={`Retención ${gasto.retencion_pct} %`} value={eur(gasto.retencion_importe)} />}
                   </>
                 )}
                 <div className="gasto-campo gasto-campo--total">
