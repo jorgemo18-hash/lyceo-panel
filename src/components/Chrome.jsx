@@ -46,11 +46,9 @@ function Sidebar({ activo = "horario", onNavigate }) {
             className={`navitem ${activo === it.id ? "navitem--on" : ""}`}
             onClick={(e) => { e.preventDefault(); onNavigate && onNavigate(it.id); }}
           >
-            <span className="navitem__icon">
-              {it.icon}
-              {it.badge ? <span className="navitem__badge">{it.badge}</span> : null}
-            </span>
+            <span className="navitem__icon">{it.icon}</span>
             <span className="navitem__label">{it.label}</span>
+            {it.badge ? <span className="navitem__badge">{it.badge}</span> : null}
           </a>
         ))}
       </nav>
