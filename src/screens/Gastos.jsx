@@ -355,6 +355,10 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
   const [saving, setSaving]       = React.useState(false)
   const [error, setError]         = React.useState(null)
   const [lightbox, setLightbox]   = React.useState(false)
+  const [imgError, setImgError]   = React.useState(false)
+
+  // Reset image error when gasto changes
+  React.useEffect(() => { setImgError(false) }, [gasto.foto_url])
 
   const set = (k, v) => setForm(prev => recalcFiscal(prev, k, v))
 
@@ -367,8 +371,9 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
   const guardar = async () => {
     setSaving(true)
     setError(null)
+    const row = { ...formToRow(form), foto_url: gasto.foto_url ?? null }
     const { data: updated, error: e } = await supabase
-      .from('gastos').update(formToRow(form)).eq('id', gasto.id).select().single()
+      .from('gastos').update(row).eq('id', gasto.id).select().single()
     if (e) { setError(e.message); setSaving(false); return }
     setSaving(false)
     setEditando(false)
@@ -398,14 +403,26 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
           <div className="panel__body">
             {/* Foto */}
             {gasto.foto_url && (
-              <section className="panel__section" style={{ paddingBottom: 8 }}>
-                <img
-                  src={gasto.foto_url}
-                  alt="Factura"
-                  className="gastos-foto-thumb"
-                  onClick={() => setLightbox(true)}
-                  title="Ver a tamaño completo"
-                />
+              <section className="panel__section" style={{ gap: 8 }}>
+                {imgError ? (
+                  <div className="gastos-foto-error">No se pudo cargar la imagen</div>
+                ) : (
+                  <img
+                    src={gasto.foto_url}
+                    alt="Factura"
+                    className="gastos-foto-thumb"
+                    onClick={() => setLightbox(true)}
+                    onError={() => setImgError(true)}
+                    title="Ver a tamaño completo"
+                  />
+                )}
+                <button
+                  className="btn btn--ghost btn--sm"
+                  style={{ width: '100%', justifyContent: 'center' }}
+                  onClick={() => window.open(gasto.foto_url, '_blank')}
+                >
+                  <Icon.doc /> Descargar factura
+                </button>
               </section>
             )}
 

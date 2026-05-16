@@ -3743,6 +3743,17 @@ body.printing .no-print { display: none !important; }
   background: var(--surface-1);
 }
 
+/* ── Error de carga de imagen ── */
+.gastos-foto-error {
+  padding: 20px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 13px;
+  border: 1px dashed var(--line-2);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+
 /* ── Thumbnail en panel detalle ── */
 .gastos-foto-thumb {
   width: 100%;
