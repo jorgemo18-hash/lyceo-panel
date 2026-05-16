@@ -409,6 +409,35 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
     } catch {}
   }
 
+  const reejecutarOcr = () => {
+    if (!form.foto_url || ocr.procesando) return
+    setOcr({ procesando: true, msg: null })
+    ocrDesdeUrl(form.foto_url)
+      .then(datos => {
+        console.log('OCR resultado completo:', datos)
+        if (datos.error) throw new Error(datos.error)
+        setForm(prev => ({
+          ...prev,
+          ...(datos.fecha             ? { fecha: datos.fecha }                                     : {}),
+          ...(datos.proveedor         ? { proveedor: datos.proveedor }                             : {}),
+          ...(datos.concepto          ? { concepto: datos.concepto }                               : {}),
+          ...(datos.cif               ? { cif: datos.cif }                                         : {}),
+          ...(datos.categoria         ? { categoria: datos.categoria, subcategoria: '' }           : {}),
+          ...(datos.base_imponible    != null ? { base_imponible: String(datos.base_imponible) }   : {}),
+          ...(datos.iva_pct           != null ? { iva_pct: String(datos.iva_pct) }                 : {}),
+          ...(datos.iva_importe       != null ? { iva_importe: String(datos.iva_importe) }         : {}),
+          ...(datos.retencion_pct     != null ? { retencion_pct: String(datos.retencion_pct) }     : {}),
+          ...(datos.retencion_importe != null ? { retencion_importe: String(datos.retencion_importe) } : {}),
+          ...(datos.importe           != null ? { importe: String(datos.importe) }                 : {}),
+          ...(datos.notas             ? { notas: datos.notas }                                     : {}),
+        }))
+        setOcr({ procesando: false, msg: 'ok' })
+      })
+      .catch(err => setOcr({ procesando: false, msg: 'Error: ' + (err.message ?? 'al procesar') }))
+  }
+
+  const formVacio = !form.proveedor.trim() && form.importe === ''
+
   return (
     <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <aside className="panel">
@@ -433,6 +462,14 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
               form.foto_url.endsWith('.pdf')
                 ? <iframe src={form.foto_url} title="Factura PDF" style={{ width: '100%', height: 200, border: '1px solid #ddd', borderRadius: 4, marginTop: 4 }} />
                 : <img src={form.foto_url} alt="" className="gastos-foto-preview" />
+            )}
+            {form.foto_url && formVacio && !ocr.procesando && (
+              <button type="button" className="btn btn--ghost"
+                style={{ width: '100%', justifyContent: 'center', gap: 8, marginTop: 6 }}
+                onClick={reejecutarOcr}
+              >
+                <Icon.receipt /> Volver a extraer datos
+              </button>
             )}
             {ocr.msg === 'ok' && <div className="ocr-ok">Datos extraídos — revisa antes de guardar</div>}
             {ocr.msg && ocr.msg !== 'ok' && <div className="panel__error" style={{ marginTop: 6 }}>{ocr.msg}</div>}
@@ -495,7 +532,9 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
           <button className="btn btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
           {borradorGuardado
             ? <span className="panel__saved">Guardado como borrador</span>
-            : <button className="btn btn--ghost" onClick={handleBorrador} disabled={saving}>Borrador</button>}
+            : <button className="btn btn--ghost" onClick={handleBorrador} disabled={saving || ocr.procesando}>
+                {ocr.procesando ? 'Procesando…' : 'Borrador'}
+              </button>}
           <button className="btn btn--primary" onClick={handleSave} disabled={saving || !valid}>
             {saving ? 'Guardando…' : 'Guardar gasto'}
           </button>
