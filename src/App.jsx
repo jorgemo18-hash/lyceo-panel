@@ -419,19 +419,33 @@ const PANTALLAS = {
 };
 
 // ── App ──────────────────────────────────────────────────────────
+const ALLOWED_EMAIL = 'jorgemo18@gmail.com';
+
 export default function App() {
   const [pantalla, setPantalla] = React.useState('horario');
   const [session, setSession]   = React.useState(null);
   const [loadingAuth, setLoadingAuth] = React.useState(true);
+  const [accessDenied, setAccessDenied] = React.useState(false);
   const mobile = useMobile();
 
   React.useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+      if (session && session.user.email !== ALLOWED_EMAIL) {
+        supabase.auth.signOut();
+        setAccessDenied(true);
+      } else {
+        setSession(session);
+      }
       setLoadingAuth(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+      if (session && session.user.email !== ALLOWED_EMAIL) {
+        supabase.auth.signOut();
+        setAccessDenied(true);
+        setSession(null);
+      } else {
+        setSession(session);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -439,6 +453,12 @@ export default function App() {
   if (loadingAuth) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
       Cargando…
+    </div>
+  );
+  if (accessDenied) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '16px' }}>
+      <h2 style={{ color: '#8B0000' }}>Acceso denegado</h2>
+      <p>Este panel es privado.</p>
     </div>
   );
   if (!session) return <Login />;
