@@ -3719,7 +3719,8 @@ body.printing .no-print { display: none !important; }
 .gastos-row__proveedor { font-weight: 500; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gastos-row__concepto { color: var(--ink-1); }
 .gastos-row__notas    { color: var(--ink-3); font-size: 12px; }
-.gastos-row__importe  { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gastos-row__importe  { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: top; }
+.gastos-row__desglose { font-size: 11px; font-weight: 400; color: var(--ink-3); margin-top: 2px; white-space: nowrap; }
 .gastos-row__actions  { width: 36px; text-align: center; }
 
 .gastos-badge {

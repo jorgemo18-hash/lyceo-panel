@@ -20,15 +20,15 @@ const CATEGORIAS = [
 ]
 
 const eur = (n) => Number(n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
+const round2 = (n) => Math.round(n * 100) / 100
 
 function catInfo(value) {
   return CATEGORIAS.find(c => c.value === value) ?? CATEGORIAS.at(-1)
 }
 
 function catDisplay(g) {
-  const cat = catInfo(g.categoria)
   if (g.categoria === 'otros' && g.subcategoria?.trim()) return g.subcategoria.trim()
-  return cat.label
+  return catInfo(g.categoria).label
 }
 
 function today() {
@@ -40,7 +40,10 @@ const MESES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct
 
 const FORM_INICIAL = {
   fecha: today(), proveedor: '', concepto: '', cif: '',
-  categoria: 'otros', subcategoria: '', importe: '', notas: '',
+  categoria: 'otros', subcategoria: '',
+  base_imponible: '', iva_pct: '', iva_importe: '',
+  retencion_pct: '', retencion_importe: '',
+  importe: '', notas: '',
 }
 
 // ── Convierte imagen a JPEG via canvas ────────────────────────────
@@ -64,6 +67,28 @@ function convertirAJpeg(file) {
   })
 }
 
+// ── Recalcula campos fiscales derivados ───────────────────────────
+function recalcFiscal(prev, changed, value) {
+  const next = { ...prev, [changed]: value }
+  const base = parseFloat(next.base_imponible) || 0
+
+  if (base > 0) {
+    if (changed === 'base_imponible' || changed === 'iva_pct') {
+      const pct = parseFloat(next.iva_pct) || 0
+      if (pct > 0) next.iva_importe = String(round2(base * pct / 100))
+    }
+    if (changed === 'base_imponible' || changed === 'retencion_pct') {
+      const pct = parseFloat(next.retencion_pct) || 0
+      if (pct > 0) next.retencion_importe = String(round2(base * pct / 100))
+    }
+    const iva = parseFloat(next.iva_importe) || 0
+    const ret = parseFloat(next.retencion_importe) || 0
+    next.importe = String(round2(base + iva - ret))
+  }
+
+  return next
+}
+
 // ── Panel nuevo gasto ─────────────────────────────────────────────
 function NuevoGastoPanel({ onClose, onSaved }) {
   const [form, setForm] = React.useState(FORM_INICIAL)
@@ -72,7 +97,7 @@ function NuevoGastoPanel({ onClose, onSaved }) {
   const [ocr, setOcr] = React.useState({ procesando: false, msg: null })
   const fileRef = React.useRef(null)
 
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+  const set = (k, v) => setForm(prev => recalcFiscal(prev, k, v))
 
   const handleOcr = async (e) => {
     const file = e.target.files?.[0]
@@ -103,6 +128,7 @@ function NuevoGastoPanel({ onClose, onSaved }) {
     e.target.value = ''
   }
 
+  const tieneDesglose = form.base_imponible !== ''
   const valid = form.fecha && form.concepto.trim() && form.importe !== '' &&
     (form.categoria !== 'otros' || form.subcategoria.trim() !== '')
 
@@ -112,14 +138,19 @@ function NuevoGastoPanel({ onClose, onSaved }) {
     setError(null)
     try {
       const { error: e } = await supabase.from('gastos').insert({
-        fecha:        form.fecha,
-        proveedor:    form.proveedor.trim(),
-        concepto:     form.concepto.trim(),
-        cif:          form.cif.trim() || null,
-        categoria:    form.categoria,
-        subcategoria: form.categoria === 'otros' ? (form.subcategoria.trim() || null) : null,
-        importe:      Number(form.importe),
-        notas:        form.notas.trim() || null,
+        fecha:              form.fecha,
+        proveedor:          form.proveedor.trim(),
+        concepto:           form.concepto.trim(),
+        cif:                form.cif.trim() || null,
+        categoria:          form.categoria,
+        subcategoria:       form.categoria === 'otros' ? (form.subcategoria.trim() || null) : null,
+        base_imponible:     form.base_imponible !== '' ? Number(form.base_imponible) : null,
+        iva_pct:            form.iva_pct !== '' ? Number(form.iva_pct) : null,
+        iva_importe:        form.iva_importe !== '' ? Number(form.iva_importe) : null,
+        retencion_pct:      form.retencion_pct !== '' ? Number(form.retencion_pct) : null,
+        retencion_importe:  form.retencion_importe !== '' ? Number(form.retencion_importe) : null,
+        importe:            Number(form.importe),
+        notas:              form.notas.trim() || null,
       })
       if (e) throw e
       onSaved()
@@ -162,7 +193,7 @@ function NuevoGastoPanel({ onClose, onSaved }) {
             )}
           </section>
 
-          {/* Campos */}
+          {/* Datos generales */}
           <section className="panel__section">
             <label className="panel__field">
               <span className="panel__lbl">Fecha *</span>
@@ -201,12 +232,66 @@ function NuevoGastoPanel({ onClose, onSaved }) {
                   placeholder="Describe el tipo de gasto" autoFocus />
               </label>
             )}
+          </section>
+
+          {/* Desglose fiscal */}
+          <section className="panel__section">
+            <div className="panel__sh">Importe y desglose fiscal</div>
+
             <label className="panel__field">
-              <span className="panel__lbl">Importe (€) *</span>
+              <span className="panel__lbl">Base imponible (€)</span>
               <input className="panel__input" type="number" min="0" step="0.01"
-                value={form.importe} onChange={e => set('importe', e.target.value)}
+                value={form.base_imponible}
+                onChange={e => set('base_imponible', e.target.value)}
                 placeholder="0.00" />
             </label>
+
+            <div className="panel__row">
+              <label className="panel__field">
+                <span className="panel__lbl">IVA %</span>
+                <input className="panel__input" type="number" min="0" max="100" step="0.01"
+                  value={form.iva_pct}
+                  onChange={e => set('iva_pct', e.target.value)}
+                  placeholder="21" disabled={!tieneDesglose} />
+              </label>
+              <label className="panel__field">
+                <span className="panel__lbl">Importe IVA (€)</span>
+                <input className="panel__input" type="number" min="0" step="0.01"
+                  value={form.iva_importe}
+                  onChange={e => set('iva_importe', e.target.value)}
+                  placeholder="0.00" disabled={!tieneDesglose} />
+              </label>
+            </div>
+
+            <div className="panel__row">
+              <label className="panel__field">
+                <span className="panel__lbl">Retención %</span>
+                <input className="panel__input" type="number" min="0" max="100" step="0.01"
+                  value={form.retencion_pct}
+                  onChange={e => set('retencion_pct', e.target.value)}
+                  placeholder="15" disabled={!tieneDesglose} />
+              </label>
+              <label className="panel__field">
+                <span className="panel__lbl">Importe retención (€)</span>
+                <input className="panel__input" type="number" min="0" step="0.01"
+                  value={form.retencion_importe}
+                  onChange={e => set('retencion_importe', e.target.value)}
+                  placeholder="0.00" disabled={!tieneDesglose} />
+              </label>
+            </div>
+
+            <label className="panel__field">
+              <span className="panel__lbl">Total a pagar (€) *</span>
+              <input
+                className={`panel__input${tieneDesglose ? ' panel__input--calc' : ''}`}
+                type="number" min="0" step="0.01"
+                value={form.importe}
+                onChange={e => !tieneDesglose && set('importe', e.target.value)}
+                readOnly={tieneDesglose}
+                placeholder="0.00"
+              />
+            </label>
+
             <label className="panel__field">
               <span className="panel__lbl">Notas</span>
               <textarea className="panel__input panel__textarea" rows={2}
@@ -359,7 +444,6 @@ export function Gastos() {
               <tr>
                 <th>Fecha</th>
                 <th>Proveedor</th>
-                <th>Concepto</th>
                 <th>Categoría</th>
                 <th className="gastos-table__num">Importe</th>
                 <th />
@@ -368,28 +452,35 @@ export function Gastos() {
             <tbody>
               {gastosFiltrados.map(g => {
                 const cat = catInfo(g.categoria)
-                const displayLabel = catDisplay(g)
                 return (
                   <tr key={g.id} className="gastos-row">
                     <td className="gastos-row__fecha">
                       {new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </td>
-                    <td className="gastos-row__proveedor">{g.proveedor || '—'}</td>
-                    <td className="gastos-row__concepto">
-                      {g.concepto}
-                      {g.notas && <span className="gastos-row__notas"> · {g.notas}</span>}
+                    <td className="gastos-row__proveedor">
+                      {g.proveedor || '—'}
+                      {g.concepto && <span className="gastos-row__notas"> · {g.concepto}</span>}
                     </td>
                     <td>
                       <span className="gastos-badge" style={{ background: cat.color + '1a', color: cat.color, borderColor: cat.color + '44' }}>
-                        {displayLabel}
+                        {catDisplay(g)}
                       </span>
                     </td>
-                    <td className="gastos-table__num gastos-row__importe">{eur(g.importe)}</td>
+                    <td className="gastos-table__num gastos-row__importe">
+                      {eur(g.importe)}
+                      {g.base_imponible != null && (
+                        <div className="gastos-row__desglose">
+                          {eur(g.base_imponible)}
+                          {g.iva_importe != null && <> + {eur(g.iva_importe)} IVA</>}
+                          {g.retencion_importe != null && <> − {eur(g.retencion_importe)} ret.</>}
+                        </div>
+                      )}
+                    </td>
                     <td className="gastos-row__actions">
                       <button
                         className="alumno-card__archive-btn"
                         title="Eliminar"
-                        onClick={() => { if (confirm(`¿Eliminar "${g.concepto}"?`)) eliminar(g.id) }}
+                        onClick={() => { if (confirm(`¿Eliminar "${g.concepto || g.proveedor}"?`)) eliminar(g.id) }}
                       >
                         <Icon.absent />
                       </button>
