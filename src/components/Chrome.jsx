@@ -87,14 +87,15 @@ function BottomNav({ activo = "horario", onNavigate }) {
   const [masOpen, setMasOpen] = React.useState(false)
 
   const main = [
+    { id: "captura", label: "Captura", icon: <Icon.camera /> },
     { id: "horario", label: "Horario", icon: <Icon.grid /> },
-    { id: "diario",  label: "Diario",  icon: <Icon.calendar /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
     { id: "gastos",  label: "Gastos",  icon: <Icon.receipt /> },
     { id: "pagos",   label: "Cobros",  icon: <Icon.euro /> },
   ]
 
   const mas = [
+    { id: "diario",    label: "Diario",         icon: <Icon.calendar /> },
     { id: "facturas",  label: "Facturas",       icon: <Icon.note /> },
     { id: "envio",     label: "Envío familias", icon: <Icon.mail /> },
     { id: "ficha",     label: "Tarifas",        icon: <Icon.tag /> },

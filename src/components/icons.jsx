@@ -137,6 +137,12 @@ const Icon = {
       <path d="M6 5.5h4M6 8h4M6 10.5h2.5" />
     </svg>
   ),
+  camera: (p) => (
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M1.5 5.5a1 1 0 0 1 1-1h1.5l1.5-2h4l1.5 2H13a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H2.5a1 1 0 0 1-1-1z" />
+      <circle cx="8" cy="9" r="2.2" />
+    </svg>
+  ),
 };
 
 window.Icon = Icon;

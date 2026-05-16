@@ -267,7 +267,7 @@ function PendientesSection({ pendientes, show, onToggle, onRevisar }) {
 }
 
 // ── Panel nuevo gasto ─────────────────────────────────────────────
-function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
+export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
   const [form, setForm] = React.useState(() => ({ ...FORM_INICIAL, foto_url: pendiente?.foto_url ?? '' }))
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState(null)

@@ -95,7 +95,7 @@ const FORM_INICIAL = {
   precio_bruto: '', descuento: 0,
 }
 
-function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null }) {
+export function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null }) {
   const [form, setForm] = React.useState(FORM_INICIAL)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState(null)
