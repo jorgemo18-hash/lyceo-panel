@@ -254,6 +254,7 @@ function NuevoGastoPanel({ onClose, onSaved }) {
       ])
 
       const datos = await res.json()
+      console.log('Respuesta OCR:', JSON.stringify(datos))
       if (datos.error) throw new Error(datos.error)
 
       setForm(prev => ({
