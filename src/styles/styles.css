@@ -3843,7 +3843,7 @@ body.printing .no-print { display: none !important; }
   background: var(--surface-1);
   border-bottom: 1px solid var(--border);
 }
-.gastos-table__num { text-align: right; }
+.gastos-table__num { text-align: right !important; }
 .gastos-row td {
   padding: 11px 14px;
   border-bottom: 1px solid var(--border);
