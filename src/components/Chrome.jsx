@@ -5,7 +5,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
   const [gastosBadge, setGastosBadge] = React.useState(0)
   const [alumnosBadge, setAlumnosBadge] = React.useState(0)
 
-  React.useEffect(() => {
+  const cargarBadges = React.useCallback(() => {
     import('../lib/supabase.js').then(({ supabase }) => {
       Promise.all([
         supabase.from('gastos_pendientes').select('id', { count: 'exact', head: true }).eq('tipo', 'gasto').eq('procesado', false),
@@ -16,6 +16,12 @@ function Sidebar({ activo = "horario", onNavigate }) {
       })
     })
   }, [])
+
+  React.useEffect(() => {
+    cargarBadges()
+    window.addEventListener('pendientes-actualizado', cargarBadges)
+    return () => window.removeEventListener('pendientes-actualizado', cargarBadges)
+  }, [cargarBadges])
 
   const items = [
     { id: "horario",   label: "Horario",        icon: <Icon.grid /> },

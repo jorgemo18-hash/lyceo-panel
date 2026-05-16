@@ -381,6 +381,7 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
       if (e) throw e
       if (pendiente?.id) {
         await supabase.from('gastos_pendientes').update({ procesado: true }).eq('id', pendiente.id)
+        window.dispatchEvent(new CustomEvent('pendientes-actualizado'))
       }
       onSaved()
     } catch (err) {
