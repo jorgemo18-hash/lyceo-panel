@@ -355,6 +355,8 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
   const valid = form.fecha && form.concepto.trim() && form.importe !== '' &&
     (form.categoria !== 'otros' || form.subcategoria.trim() !== '')
 
+  const [borradorGuardado, setBorradorGuardado] = React.useState(false)
+
   const handleSave = async () => {
     if (!valid) return
     setSaving(true)
@@ -371,6 +373,17 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleBorrador = async () => {
+    try {
+      await supabase.from('gastos_pendientes').insert({
+        foto_url: form.foto_url || null,
+        tipo: 'gasto',
+        procesado: false,
+      })
+      setBorradorGuardado(true)
+    } catch {}
   }
 
   return (
@@ -457,6 +470,9 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
 
         <div className="panel__foot">
           <button className="btn btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+          {borradorGuardado
+            ? <span className="panel__saved">Guardado como borrador</span>
+            : <button className="btn btn--ghost" onClick={handleBorrador} disabled={saving}>Borrador</button>}
           <button className="btn btn--primary" onClick={handleSave} disabled={saving || !valid}>
             {saving ? 'Guardando…' : 'Guardar gasto'}
           </button>

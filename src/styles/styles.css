@@ -2944,8 +2944,10 @@ body.printing .no-print { display: none !important; }
   color: var(--ink-2);
   transition: background 0.1s;
 }
-.captura-btn + .captura-btn { border-top: 1px solid var(--line); }
-.captura-btn:active:not(:disabled) { background: var(--bg-elev); }
+.captura-btn--gasto { background: var(--lyceo); color: #fff; }
+.captura-btn--inscripcion { background: #2d3748; color: #fff; }
+.captura-btn--gasto:active:not(:disabled) { background: color-mix(in srgb, var(--lyceo) 85%, #000); }
+.captura-btn--inscripcion:active:not(:disabled) { background: #1a2333; }
 .captura-btn:disabled { opacity: 0.5; }
 .captura-btn__label {
   font-size: 20px;
@@ -2956,8 +2958,8 @@ body.printing .no-print { display: none !important; }
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 3px solid var(--line);
-  border-top-color: var(--lyceo);
+  border: 3px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
   animation: spin 0.8s linear infinite;
 }
 

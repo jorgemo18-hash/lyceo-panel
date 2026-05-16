@@ -100,6 +100,7 @@ export function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null 
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState(null)
   const [ocr, setOcr] = React.useState({ procesando: false, msg: null })
+  const [borradorGuardado, setBorradorGuardado] = React.useState(false)
   const fileRef = React.useRef(null)
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
@@ -195,6 +196,17 @@ export function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null 
 
   const valid = form.nombre.trim() && form.curso &&
     (form.sin_familia || (form.familia_nueva ? form.fam_nombre.trim() : form.familia_id))
+
+  const handleBorrador = async () => {
+    try {
+      await supabase.from('gastos_pendientes').insert({
+        foto_url: pendiente?.foto_url || null,
+        tipo: 'inscripcion',
+        procesado: false,
+      })
+      setBorradorGuardado(true)
+    } catch {}
+  }
 
   const handleSave = async () => {
     if (!valid) return
@@ -538,11 +550,11 @@ export function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null 
         {error && <div className="panel__error">{error}</div>}
 
         <div className="panel__foot">
-          <button className="btn btn--ghost" onClick={onClose} disabled={saving}>
-            Cancelar
-          </button>
-          <button className="btn btn--primary" onClick={handleSave}
-            disabled={saving || !valid}>
+          <button className="btn btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
+          {borradorGuardado
+            ? <span className="panel__saved">Guardado como borrador</span>
+            : <button className="btn btn--ghost" onClick={handleBorrador} disabled={saving}>Borrador</button>}
+          <button className="btn btn--primary" onClick={handleSave} disabled={saving || !valid}>
             {saving ? 'Guardando…' : 'Guardar alumno'}
           </button>
         </div>
