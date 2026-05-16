@@ -139,6 +139,16 @@ async function subirFoto(blob) {
   return publicUrl
 }
 
+// ── Spinner de carga para subida de foto ─────────────────────────
+function FotoSpinner({ texto = 'Procesando imagen…' }) {
+  return (
+    <div className="gastos-foto-spinner">
+      <span className="gastos-foto-spinner__circle" />
+      <span className="gastos-foto-spinner__txt">{texto}</span>
+    </div>
+  )
+}
+
 // ── Sección de campos fiscales (reutilizada en crear y editar) ────
 function CamposFiscales({ form, set }) {
   const tieneDesglose = form.base_imponible !== ''
@@ -271,15 +281,14 @@ function NuevoGastoPanel({ onClose, onSaved }) {
           {/* OCR */}
           <section className="panel__section" style={{ paddingBottom: 0 }}>
             <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleOcr} />
-            <button type="button" className="btn btn--ghost"
-              style={{ width: '100%', justifyContent: 'center', gap: 8 }}
-              onClick={() => fileRef.current?.click()}
-              disabled={ocr.procesando}
-            >
-              {ocr.procesando
-                ? <><span className="alumnos-estado__spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Procesando…</>
-                : <><Icon.receipt /> Subir foto de factura</>}
-            </button>
+            {ocr.procesando ? <FotoSpinner /> : (
+              <button type="button" className="btn btn--ghost"
+                style={{ width: '100%', justifyContent: 'center', gap: 8 }}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Icon.receipt /> Subir foto de factura
+              </button>
+            )}
             {form.foto_url && <img src={form.foto_url} alt="" className="gastos-foto-preview" />}
             {ocr.msg === 'ok' && <div className="ocr-ok">Datos extraídos — revisa antes de guardar</div>}
             {ocr.msg && ocr.msg !== 'ok' && <div className="panel__error" style={{ marginTop: 6 }}>{ocr.msg}</div>}
@@ -447,7 +456,7 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
                         onClick={() => fileEditRef.current?.click()}
                         disabled={uploadingFoto}
                       >
-                        {uploadingFoto ? 'Subiendo…' : 'Cambiar foto'}
+                        {uploadingFoto ? <><span className="gastos-foto-spinner__circle" /> Procesando…</> : 'Cambiar foto'}
                       </button>
                     )}
                   </div>
@@ -455,16 +464,15 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
               ) : editando ? (
                 <>
                   <input ref={fileEditRef} type="file" accept="image/*" hidden onChange={handleFotoEdit} />
-                  <button
-                    className="btn btn--ghost"
-                    style={{ width: '100%', justifyContent: 'center', gap: 8 }}
-                    onClick={() => fileEditRef.current?.click()}
-                    disabled={uploadingFoto}
-                  >
-                    {uploadingFoto
-                      ? <><span className="alumnos-estado__spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Subiendo…</>
-                      : <><Icon.receipt /> Añadir foto de factura</>}
-                  </button>
+                  {uploadingFoto ? <FotoSpinner /> : (
+                    <button
+                      className="btn btn--ghost"
+                      style={{ width: '100%', justifyContent: 'center', gap: 8 }}
+                      onClick={() => fileEditRef.current?.click()}
+                    >
+                      <Icon.receipt /> Añadir foto de factura
+                    </button>
+                  )}
                 </>
               ) : (
                 <div className="gastos-foto-error" style={{ color: 'var(--ink-4)' }}>
