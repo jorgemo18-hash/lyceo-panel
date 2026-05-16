@@ -2,20 +2,33 @@ import React from 'react'
 import { supabase } from '../lib/supabase.js'
 
 const CATEGORIAS = [
-  { value: 'material',      label: 'Material',      color: '#2563eb' },
-  { value: 'gasolina',      label: 'Gasolina',      color: '#d97706' },
-  { value: 'formacion',     label: 'Formación',     color: '#7c3aed' },
-  { value: 'suministros',   label: 'Suministros',   color: '#0891b2' },
-  { value: 'software',      label: 'Software',      color: '#4f46e5' },
-  { value: 'alimentacion',  label: 'Alimentación',  color: '#16a34a' },
-  { value: 'transporte',    label: 'Transporte',    color: '#b45309' },
-  { value: 'otros',         label: 'Otros',         color: '#6b7280' },
+  { value: 'alquiler',        label: 'Alquiler',           color: '#b45309' },
+  { value: 'luz',             label: 'Luz',                color: '#d97706' },
+  { value: 'internet',        label: 'Internet',           color: '#2563eb' },
+  { value: 'seguro',          label: 'Seguro',             color: '#0891b2' },
+  { value: 'proteccion_datos',label: 'Protección de datos',color: '#4f46e5' },
+  { value: 'fotocopiadora',   label: 'Fotocopiadora',      color: '#7c3aed' },
+  { value: 'extintores',      label: 'Extintores',         color: '#dc2626' },
+  { value: 'agua',            label: 'Agua',               color: '#06b6d4' },
+  { value: 'publicidad',      label: 'Publicidad',         color: '#db2777' },
+  { value: 'cuota_autonomo',  label: 'Cuota autónomo',     color: '#7c3aed' },
+  { value: 'gestoria',        label: 'Gestoría',           color: '#475569' },
+  { value: 'material',        label: 'Material',           color: '#16a34a' },
+  { value: 'pagina_web',      label: 'Página web',         color: '#6366f1' },
+  { value: 'remesa_adeudos',  label: 'Remesa adeudos',     color: '#059669' },
+  { value: 'otros',           label: 'Otros',              color: '#6b7280' },
 ]
 
 const eur = (n) => Number(n ?? 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'
 
 function catInfo(value) {
   return CATEGORIAS.find(c => c.value === value) ?? CATEGORIAS.at(-1)
+}
+
+function catDisplay(g) {
+  const cat = catInfo(g.categoria)
+  if (g.categoria === 'otros' && g.subcategoria?.trim()) return g.subcategoria.trim()
+  return cat.label
 }
 
 function today() {
@@ -27,7 +40,7 @@ const MESES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct
 
 const FORM_INICIAL = {
   fecha: today(), proveedor: '', concepto: '', cif: '',
-  categoria: 'otros', importe: '', notas: '',
+  categoria: 'otros', subcategoria: '', importe: '', notas: '',
 }
 
 // ── Convierte imagen a JPEG via canvas ────────────────────────────
@@ -75,13 +88,13 @@ function NuevoGastoPanel({ onClose, onSaved }) {
       if (datos.error) throw new Error(datos.error)
       setForm(prev => ({
         ...prev,
-        ...(datos.fecha      ? { fecha: datos.fecha }           : {}),
-        ...(datos.proveedor  ? { proveedor: datos.proveedor }   : {}),
-        ...(datos.concepto   ? { concepto: datos.concepto }     : {}),
-        ...(datos.cif        ? { cif: datos.cif }               : {}),
-        ...(datos.categoria  ? { categoria: datos.categoria }   : {}),
-        ...(datos.importe    ? { importe: datos.importe }        : {}),
-        ...(datos.notas      ? { notas: datos.notas }           : {}),
+        ...(datos.fecha      ? { fecha: datos.fecha }         : {}),
+        ...(datos.proveedor  ? { proveedor: datos.proveedor } : {}),
+        ...(datos.concepto   ? { concepto: datos.concepto }   : {}),
+        ...(datos.cif        ? { cif: datos.cif }             : {}),
+        ...(datos.categoria  ? { categoria: datos.categoria, subcategoria: '' } : {}),
+        ...(datos.importe    ? { importe: datos.importe }     : {}),
+        ...(datos.notas      ? { notas: datos.notas }         : {}),
       }))
       setOcr({ procesando: false, msg: 'ok' })
     } catch (err) {
@@ -90,7 +103,8 @@ function NuevoGastoPanel({ onClose, onSaved }) {
     e.target.value = ''
   }
 
-  const valid = form.fecha && form.concepto.trim() && form.importe !== ''
+  const valid = form.fecha && form.concepto.trim() && form.importe !== '' &&
+    (form.categoria !== 'otros' || form.subcategoria.trim() !== '')
 
   const handleSave = async () => {
     if (!valid) return
@@ -98,13 +112,14 @@ function NuevoGastoPanel({ onClose, onSaved }) {
     setError(null)
     try {
       const { error: e } = await supabase.from('gastos').insert({
-        fecha:      form.fecha,
-        proveedor:  form.proveedor.trim(),
-        concepto:   form.concepto.trim(),
-        cif:        form.cif.trim() || null,
-        categoria:  form.categoria,
-        importe:    Number(form.importe),
-        notas:      form.notas.trim() || null,
+        fecha:        form.fecha,
+        proveedor:    form.proveedor.trim(),
+        concepto:     form.concepto.trim(),
+        cif:          form.cif.trim() || null,
+        categoria:    form.categoria,
+        subcategoria: form.categoria === 'otros' ? (form.subcategoria.trim() || null) : null,
+        importe:      Number(form.importe),
+        notas:        form.notas.trim() || null,
       })
       if (e) throw e
       onSaved()
@@ -178,6 +193,14 @@ function NuevoGastoPanel({ onClose, onSaved }) {
                 ))}
               </select>
             </label>
+            {form.categoria === 'otros' && (
+              <label className="panel__field">
+                <span className="panel__lbl">Especifica *</span>
+                <input className="panel__input" value={form.subcategoria}
+                  onChange={e => set('subcategoria', e.target.value)}
+                  placeholder="Describe el tipo de gasto" autoFocus />
+              </label>
+            )}
             <label className="panel__field">
               <span className="panel__lbl">Importe (€) *</span>
               <input className="panel__input" type="number" min="0" step="0.01"
@@ -220,6 +243,9 @@ export function Gastos() {
   const [filtroAnio, setFiltroAnio] = React.useState(anioActual)
   const [filtroMes, setFiltroMes] = React.useState(null)
 
+  const filtroAnioRef = React.useRef(filtroAnio)
+  React.useEffect(() => { filtroAnioRef.current = filtroAnio }, [filtroAnio])
+
   const cargar = React.useCallback(async (anio) => {
     setLoading(true)
     const { data, error: e } = await supabase
@@ -244,13 +270,9 @@ export function Gastos() {
 
   const gastosFiltrados = React.useMemo(() => {
     if (filtroMes === null) return gastos
-    return gastos.filter(g => {
-      const m = parseInt(g.fecha.split('-')[1], 10)
-      return m === filtroMes
-    })
+    return gastos.filter(g => parseInt(g.fecha.split('-')[1], 10) === filtroMes)
   }, [gastos, filtroMes])
 
-  // Totales por categoría
   const stats = React.useMemo(() => {
     const totales = {}
     for (const g of gastosFiltrados) {
@@ -346,6 +368,7 @@ export function Gastos() {
             <tbody>
               {gastosFiltrados.map(g => {
                 const cat = catInfo(g.categoria)
+                const displayLabel = catDisplay(g)
                 return (
                   <tr key={g.id} className="gastos-row">
                     <td className="gastos-row__fecha">
@@ -358,7 +381,7 @@ export function Gastos() {
                     </td>
                     <td>
                       <span className="gastos-badge" style={{ background: cat.color + '1a', color: cat.color, borderColor: cat.color + '44' }}>
-                        {cat.label}
+                        {displayLabel}
                       </span>
                     </td>
                     <td className="gastos-table__num gastos-row__importe">{eur(g.importe)}</td>
@@ -382,7 +405,7 @@ export function Gastos() {
       {showPanel && (
         <NuevoGastoPanel
           onClose={() => setShowPanel(false)}
-          onSaved={() => { setShowPanel(false); cargar() }}
+          onSaved={() => { setShowPanel(false); cargar(filtroAnioRef.current) }}
         />
       )}
     </>
