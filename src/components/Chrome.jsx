@@ -3,11 +3,17 @@
 
 function Sidebar({ activo = "horario", onNavigate }) {
   const [gastosBadge, setGastosBadge] = React.useState(0)
+  const [alumnosBadge, setAlumnosBadge] = React.useState(0)
 
   React.useEffect(() => {
     import('../lib/supabase.js').then(({ supabase }) => {
-      supabase.from('gastos_pendientes').select('id', { count: 'exact', head: true }).eq('procesado', false)
-        .then(({ count }) => setGastosBadge(count || 0))
+      Promise.all([
+        supabase.from('gastos_pendientes').select('id', { count: 'exact', head: true }).eq('tipo', 'gasto').eq('procesado', false),
+        supabase.from('gastos_pendientes').select('id', { count: 'exact', head: true }).eq('tipo', 'inscripcion').eq('procesado', false),
+      ]).then(([g, i]) => {
+        setGastosBadge(g.count || 0)
+        setAlumnosBadge(i.count || 0)
+      })
     })
   }, [])
 
@@ -17,7 +23,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "facturas",  label: "Facturas",        icon: <Icon.note /> },
     { id: "envio",     label: "Envío familias",  icon: <Icon.mail /> },
     { id: "ficha",     label: "Tarifas",         icon: <Icon.tag /> },
-    { id: "alumnos",   label: "Alumnos",         icon: <Icon.users /> },
+    { id: "alumnos",   label: "Alumnos",         icon: <Icon.users />, badge: alumnosBadge || null },
     { id: "pagos",     label: "Cobros",          icon: <Icon.euro /> },
     { id: "gastos",    label: "Gastos",          icon: <Icon.receipt />, badge: gastosBadge || null },
     { id: "documentos",label: "Documentos",      icon: <Icon.doc /> },

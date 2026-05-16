@@ -36,6 +36,52 @@ function slugify(nombre, curso) {
   return (nombre + '_' + curso).toUpperCase().replace(/\s+/g, '_').replace(/[^A-Z0-9_]/g, '')
 }
 
+async function ocrInscripcionDesdeUrl(url) {
+  const blob = await fetch(url).then(r => r.blob())
+  const base64 = await new Promise(resolve => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result.split(',')[1])
+    reader.readAsDataURL(blob)
+  })
+  const res = await fetch('https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/extraer-ficha', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ base64, mediaType: 'image/jpeg' }),
+  })
+  return res.json()
+}
+
+// ── Inscripciones pendientes ──────────────────────────────────────
+function InscripcionesPendientesSection({ pendientes, show, onToggle, onRevisar }) {
+  if (pendientes.length === 0) return null
+  return (
+    <div className="gastos-pendientes">
+      <div className="gastos-pendientes__banner">
+        <span>
+          {pendientes.length} {pendientes.length === 1 ? 'inscripción pendiente' : 'inscripciones pendientes'} de revisar
+        </span>
+        <button className="btn btn--ghost btn--sm" onClick={onToggle}>
+          {show ? 'Ocultar' : 'Ver'}
+        </button>
+      </div>
+      {show && (
+        <div className="gastos-pendientes__lista">
+          {pendientes.map(p => (
+            <div key={p.id} className="gastos-pendiente-item">
+              {p.foto_url && (
+                <img src={p.foto_url} alt="" className="gastos-pendiente-item__thumb" />
+              )}
+              <button className="btn btn--primary btn--sm" onClick={() => onRevisar(p)}>
+                Revisar
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── NuevoAlumnoPanel ──────────────────────────────────────────────
 
 const FORM_INICIAL = {
@@ -49,7 +95,7 @@ const FORM_INICIAL = {
   precio_bruto: '', descuento: 0,
 }
 
-function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
+function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null }) {
   const [form, setForm] = React.useState(FORM_INICIAL)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState(null)
@@ -57,6 +103,30 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
   const fileRef = React.useRef(null)
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  React.useEffect(() => {
+    if (!pendiente?.foto_url) return
+    setOcr({ procesando: true, msg: null })
+    ocrInscripcionDesdeUrl(pendiente.foto_url)
+      .then(datos => {
+        if (datos.error) throw new Error(datos.error)
+        setForm(prev => ({
+          ...prev,
+          ...(datos.nombre        ? { nombre: datos.nombre }                   : {}),
+          ...(datos.curso         ? { curso: datos.curso }                     : {}),
+          ...(datos.email         ? { fam_email: datos.email }                 : {}),
+          ...(datos.telefono      ? { fam_telefono: datos.telefono }           : {}),
+          ...(datos.dni           ? { fam_dni: datos.dni }                     : {}),
+          ...(datos.direccion     ? { fam_direccion: datos.direccion }         : {}),
+          ...(datos.ciudad        ? { fam_ciudad: datos.ciudad }               : {}),
+          ...(datos.codigo_postal ? { fam_cp: datos.codigo_postal }            : {}),
+          ...(datos.metodo_pago   ? { fam_metodo_pago: datos.metodo_pago }     : {}),
+          ...(datos.notas         ? { fam_notas: datos.notas }                 : {}),
+        }))
+        setOcr({ procesando: false, msg: 'ok' })
+      })
+      .catch(err => setOcr({ procesando: false, msg: 'error: ' + (err.message ?? 'Error al procesar') }))
+  }, [])
 
   const convertirAJpeg = (file) => new Promise((resolve) => {
     const img = new Image()
@@ -222,6 +292,9 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
         if (e4) throw e4
       }
 
+      if (pendiente?.id) {
+        await supabase.from('gastos_pendientes').update({ procesado: true }).eq('id', pendiente.id)
+      }
       onSaved()
     } catch (err) {
       setError(err.message ?? String(err))
@@ -1300,6 +1373,9 @@ export function Alumnos() {
   const [eliminando, setEliminando] = React.useState(null)
   const [detalleId, setDetalleId] = React.useState(null)
   const [detalleTab, setDetalleTab] = React.useState(null)
+  const [pendientes, setPendientes] = React.useState([])
+  const [showPendientes, setShowPendientes] = React.useState(false)
+  const [pendienteRevisando, setPendienteRevisando] = React.useState(null)
 
   const cargar = React.useCallback(() => {
     setLoading(true)
@@ -1322,7 +1398,13 @@ export function Alumnos() {
     })
   }, [filtro])
 
+  const cargarPendientes = React.useCallback(async () => {
+    const { data } = await supabase.from('gastos_pendientes').select('*').eq('tipo', 'inscripcion').eq('procesado', false).order('created_at', { ascending: false })
+    setPendientes(data ?? [])
+  }, [])
+
   React.useEffect(() => { cargar() }, [cargar])
+  React.useEffect(() => { cargarPendientes() }, [cargarPendientes])
 
   const archivar = async (alumno) => {
     const { error: e } = await supabase
@@ -1379,6 +1461,13 @@ export function Alumnos() {
 
   return (
     <>
+      <InscripcionesPendientesSection
+        pendientes={pendientes}
+        show={showPendientes}
+        onToggle={() => setShowPendientes(v => !v)}
+        onRevisar={(p) => { setPendienteRevisando(p); setShowPanel(true) }}
+      />
+
       <div className="alumnos-bar">
         <div className="alumnos-toggle">
           {['activos', 'archivados'].map(f => (
@@ -1469,8 +1558,9 @@ export function Alumnos() {
       {showPanel && (
         <NuevoAlumnoPanel
           familias={familias}
-          onClose={() => setShowPanel(false)}
-          onSaved={() => { setShowPanel(false); cargar() }}
+          pendiente={pendienteRevisando}
+          onClose={() => { setShowPanel(false); setPendienteRevisando(null) }}
+          onSaved={() => { setShowPanel(false); setPendienteRevisando(null); cargar(); cargarPendientes() }}
         />
       )}
 
