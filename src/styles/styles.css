@@ -2076,6 +2076,16 @@ button { font-family: inherit; }
   color: #fff;
 }
 
+.ocr-ok {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: oklch(0.96 0.06 145);
+  border: 1px solid oklch(0.82 0.1 145);
+  border-radius: 8px;
+  font-size: 13px;
+  color: oklch(0.38 0.12 145);
+}
+
 .panel__error {
   margin: 0 24px;
   padding: 10px 14px;

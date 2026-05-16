@@ -53,8 +53,48 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
   const [form, setForm] = React.useState(FORM_INICIAL)
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState(null)
+  const [ocr, setOcr] = React.useState({ procesando: false, msg: null })
+  const fileRef = React.useRef(null)
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  const handleOcr = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setOcr({ procesando: true, msg: null })
+    try {
+      const mediaType = file.type === 'application/pdf' ? 'application/pdf' : file.type
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result.split(',')[1])
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      const res = await fetch(
+        'https://hafjurzuvfglrtjmbbdu.supabase.co/functions/v1/extraer-ficha',
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base64, mediaType }) }
+      )
+      const datos = await res.json()
+      if (datos.error) throw new Error(datos.error)
+      setForm(prev => ({
+        ...prev,
+        ...(datos.nombre     ? { nombre: datos.nombre }                     : {}),
+        ...(datos.curso      ? { curso: datos.curso }                       : {}),
+        ...(datos.email      ? { fam_email: datos.email }                   : {}),
+        ...(datos.telefono   ? { fam_telefono: datos.telefono }             : {}),
+        ...(datos.dni        ? { fam_dni: datos.dni }                       : {}),
+        ...(datos.direccion  ? { fam_direccion: datos.direccion }           : {}),
+        ...(datos.ciudad     ? { fam_ciudad: datos.ciudad }                 : {}),
+        ...(datos.codigo_postal ? { fam_cp: datos.codigo_postal }           : {}),
+        ...(datos.metodo_pago   ? { fam_metodo_pago: datos.metodo_pago }    : {}),
+        ...(datos.notas      ? { fam_notas: datos.notas }                   : {}),
+      }))
+      setOcr({ procesando: false, msg: 'ok' })
+    } catch (err) {
+      setOcr({ procesando: false, msg: 'error: ' + (err.message ?? 'Error al procesar') })
+    }
+    e.target.value = ''
+  }
 
   const toggleSlot = (dia, hora_inicio) => {
     const existe = form.slots.some(s => s.dia === dia && s.hora_inicio === hora_inicio)
@@ -186,6 +226,29 @@ function NuevoAlumnoPanel({ familias, onClose, onSaved }) {
         </div>
 
         <div className="panel__body">
+
+          {/* ── OCR ── */}
+          <section className="panel__section" style={{ paddingBottom: 0 }}>
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf"
+              hidden onChange={handleOcr} />
+            <button
+              type="button"
+              className="btn btn--ghost"
+              style={{ width: '100%', justifyContent: 'center', gap: 8 }}
+              onClick={() => fileRef.current?.click()}
+              disabled={ocr.procesando}
+            >
+              {ocr.procesando
+                ? <><span className="alumnos-estado__spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Procesando ficha…</>
+                : <><Icon.doc /> Subir ficha de inscripción</>}
+            </button>
+            {ocr.msg === 'ok' && (
+              <div className="ocr-ok">Datos extraídos — revisa antes de guardar</div>
+            )}
+            {ocr.msg && ocr.msg !== 'ok' && (
+              <div className="panel__error" style={{ marginTop: 6 }}>{ocr.msg}</div>
+            )}
+          </section>
 
           {/* ── Datos del alumno ── */}
           <section className="panel__section">
