@@ -36,8 +36,8 @@ function today() {
 }
 
 const anioHoy = new Date().getFullYear()
-const ANIOS = [anioHoy - 1, anioHoy]
-const MESES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+const ANIOS = Array.from({ length: 5 }, (_, i) => anioHoy - 4 + i)
+const TRIMESTRES_MESES = { 1: [1,2,3], 2: [4,5,6], 3: [7,8,9], 4: [10,11,12] }
 
 const FORM_INICIAL = {
   fecha: today(), proveedor: '', concepto: '', cif: '',
@@ -659,7 +659,7 @@ export function Gastos() {
   const [showPanel, setShowPanel] = React.useState(false)
   const [gastoSel, setGastoSel]   = React.useState(null)
   const [filtroAnio, setFiltroAnio] = React.useState(anioHoy)
-  const [filtroMes, setFiltroMes]   = React.useState(null)
+  const [filtroTrimestre, setFiltroTrimestre] = React.useState(null)
 
   const filtroAnioRef = React.useRef(filtroAnio)
   React.useEffect(() => { filtroAnioRef.current = filtroAnio }, [filtroAnio])
@@ -680,9 +680,27 @@ export function Gastos() {
   React.useEffect(() => { cargar(filtroAnio) }, [cargar, filtroAnio])
 
   const gastosFiltrados = React.useMemo(() => {
-    if (filtroMes === null) return gastos
-    return gastos.filter(g => parseInt(g.fecha.split('-')[1], 10) === filtroMes)
-  }, [gastos, filtroMes])
+    if (filtroTrimestre === null) return gastos
+    const meses = TRIMESTRES_MESES[filtroTrimestre]
+    return gastos.filter(g => meses.includes(parseInt(g.fecha.split('-')[1], 10)))
+  }, [gastos, filtroTrimestre])
+
+  const descargarCsv = () => {
+    const csv = [
+      ['Fecha','Proveedor','Concepto','CIF','Categoría','Base imponible','IVA %','IVA importe','Retención %','Retención importe','Total'],
+      ...gastosFiltrados.map(g => [
+        g.fecha, g.proveedor, g.concepto, g.cif, g.categoria,
+        g.base_imponible, g.iva_pct, g.iva_importe,
+        g.retencion_pct, g.retencion_importe, g.importe
+      ])
+    ].map(r => r.join(';')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `Gastos_T${filtroTrimestre}_${filtroAnio}.csv`
+    a.click()
+  }
 
   const stats = React.useMemo(() => {
     const totales = {}
@@ -702,20 +720,20 @@ export function Gastos() {
           {ANIOS.map(a => (
             <button key={a}
               className={`gastos-filtro-btn${filtroAnio === a ? ' gastos-filtro-btn--on' : ''}`}
-              onClick={() => { setFiltroAnio(a); setFiltroMes(null) }}
+              onClick={() => { setFiltroAnio(a); setFiltroTrimestre(null) }}
             >{a}</button>
           ))}
         </div>
         <div className="gastos-filtros__meses">
           <button
-            className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroMes === null ? ' gastos-filtro-btn--on' : ''}`}
-            onClick={() => setFiltroMes(null)}
+            className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === null ? ' gastos-filtro-btn--on' : ''}`}
+            onClick={() => setFiltroTrimestre(null)}
           >Todos</button>
-          {MESES_LABELS.map((label, i) => (
-            <button key={i}
-              className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroMes === i + 1 ? ' gastos-filtro-btn--on' : ''}`}
-              onClick={() => setFiltroMes(filtroMes === i + 1 ? null : i + 1)}
-            >{label}</button>
+          {[1, 2, 3, 4].map(t => (
+            <button key={t}
+              className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === t ? ' gastos-filtro-btn--on' : ''}`}
+              onClick={() => setFiltroTrimestre(filtroTrimestre === t ? null : t)}
+            >T{t}</button>
           ))}
         </div>
       </div>
@@ -737,11 +755,16 @@ export function Gastos() {
         </div>
       )}
 
-      {/* Botón añadir */}
+      {/* Botón añadir + CSV */}
       <div className="gastos-bar">
         <button className="btn btn--primary" onClick={() => setShowPanel(true)}>
           <Icon.plus /> Añadir gasto
         </button>
+        {filtroTrimestre !== null && gastosFiltrados.length > 0 && (
+          <button className="btn btn--ghost" onClick={descargarCsv}>
+            Descargar CSV
+          </button>
+        )}
       </div>
 
       {/* Lista */}
