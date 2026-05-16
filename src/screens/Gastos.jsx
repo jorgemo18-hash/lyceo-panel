@@ -243,6 +243,10 @@ function NuevoGastoPanel({ onClose, onSaved }) {
         uploadPromise = subirFoto(converted.blob)
       }
 
+      console.log('Tipo archivo:', file.type)
+      console.log('Tamaño base64:', base64.length)
+      console.log('Primeros 100 chars base64:', base64.substring(0, 100))
+
       // Subir a Storage en paralelo con el OCR
       const [fotoUrl, res] = await Promise.all([
         uploadPromise,
