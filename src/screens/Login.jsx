@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js'
+import { supabase } from '../lib/supabase.js'
 
 export function Login() {
   const handleGoogle = async () => {

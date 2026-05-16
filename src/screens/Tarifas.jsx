@@ -4,7 +4,7 @@
 // Bloque 2: tabla de tarifas editable
 // Bloque 3: pie con teléfono y email
 
-import { supabase } from './supabase.js'
+import { supabase } from '../lib/supabase.js'
 
 const FF_BLOQUES = [
   "15:30 – 16:30",

@@ -1,4 +1,4 @@
-import { supabase } from './supabase.js'
+import { supabase } from '../lib/supabase.js'
 
 const FRANJAS = [
   { hora_inicio: '15:30', label: '15:30–16:30' },

@@ -1,5 +1,5 @@
 import React from 'react'
-import { supabase } from './supabase.js'
+import { supabase } from '../lib/supabase.js'
 
 const CAMPOS_EMISOR = [
   { key: 'emisor_nombre',    label: 'Nombre completo y NIF', placeholder: 'MORENO PARDO JORGE · 18042793Y' },

@@ -1,6 +1,6 @@
 import React from 'react'
-import { supabase } from './supabase.js'
-import { InformeSheet, rango, mesLabel } from './sheets.jsx'
+import { supabase } from '../lib/supabase.js'
+import { InformeSheet, rango, mesLabel } from '../lib/sheets.jsx'
 
 const MESES_CURSO = [
   { mes: 9,  anio: 2025, label: 'Septiembre 2025' },

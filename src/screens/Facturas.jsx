@@ -1,6 +1,6 @@
 import React from 'react'
-import { supabase } from './supabase.js'
-import { FacturaSheet, eur } from './sheets.jsx'
+import { supabase } from '../lib/supabase.js'
+import { FacturaSheet, eur } from '../lib/sheets.jsx'
 
 const MESES = [
   { label: 'Septiembre 2025', mes: 9,  anio: 2025 },

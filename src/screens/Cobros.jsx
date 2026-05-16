@@ -1,5 +1,5 @@
 import React from 'react'
-import { supabase } from './supabase.js'
+import { supabase } from '../lib/supabase.js'
 
 const MESES = [
   { label: 'Sep', mes: 9,  anio: 2025 },
@@ -62,7 +62,7 @@ function agrupar(alumnos) {
   })
 }
 
-export function Pagos() {
+export function Cobros() {
   const [grupos, setGrupos]     = React.useState([])
   const [pagos, setPagos]       = React.useState([])
   const [cargando, setCargando] = React.useState(true)

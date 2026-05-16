@@ -1,5 +1,5 @@
-import { supabase } from './supabase.js'
-import { InformeSheet, FacturaSheet, rango, mesLabel } from './sheets.jsx'
+import { supabase } from '../lib/supabase.js'
+import { InformeSheet, FacturaSheet, rango, mesLabel } from '../lib/sheets.jsx'
 
 const NIVEL_LABEL = { primaria: 'Primaria', eso: 'ESO', bachillerato: 'Bachillerato' }
 const HORAS = ['15:30', '16:30', '17:30', '18:30', '19:30']
