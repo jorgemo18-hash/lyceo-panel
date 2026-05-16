@@ -3615,11 +3615,45 @@ body.printing .no-print { display: none !important; }
 .hist-item__importe { font-weight: 600; margin-left: auto; }
 
 /* ── Gastos ──────────────────────────────────────────────────── */
+.gastos-filtros {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 0 8px;
+}
+.gastos-filtros__anios,
+.gastos-filtros__meses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.gastos-filtro-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--line-2);
+  background: var(--bg-elev);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all .15s;
+}
+.gastos-filtro-btn--sm {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+.gastos-filtro-btn:hover { background: var(--bg-soft); color: var(--ink); }
+.gastos-filtro-btn--on {
+  background: var(--lyceo);
+  border-color: var(--lyceo);
+  color: #fff;
+}
+
 .gastos-stats {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 0 4px;
+  padding: 4px 0 4px;
 }
 .gastos-stat {
   display: flex;

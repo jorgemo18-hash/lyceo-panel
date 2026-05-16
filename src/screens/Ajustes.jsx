@@ -41,7 +41,6 @@ export function Ajustes() {
         .from('festivos')
         .select('*')
         .order('fecha', { ascending: true })
-      console.log('festivos data:', data, 'error:', error)
       if (error) setErrorFestivos(error.message)
       setFestivos(data ?? [])
       setCargando(false)

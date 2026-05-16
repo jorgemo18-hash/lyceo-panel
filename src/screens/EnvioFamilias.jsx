@@ -87,13 +87,10 @@ export function EnvioFamilias() {
         )
         if (res.ok) comentario = (await res.json()).comentario ?? ''
       } catch {}
-      // Guardar inmediatamente en Supabase para que persista entre recargas
-      console.log('upsert informes — enviando:', { alumno_id: alumno.id, mes: m, anio: a, comentario: comentario.slice(0, 40) })
-      const { data: upsertData, error: upsertError } = await supabase.from('informes').upsert(
+      await supabase.from('informes').upsert(
         { alumno_id: alumno.id, mes: m, anio: a, comentario, generado_at: new Date().toISOString() },
         { onConflict: 'alumno_id,anio,mes' }
       )
-      console.log('upsert informes — resultado:', upsertData, upsertError)
     }
 
     const result = { sesiones: sesiones ?? [], festivos, comentario }

@@ -22,6 +22,9 @@ function today() {
   return new Date().toISOString().slice(0, 10)
 }
 
+const ANIOS = [2025, 2026]
+const MESES_LABELS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+
 const FORM_INICIAL = {
   fecha: today(), proveedor: '', concepto: '', cif: '',
   categoria: 'otros', importe: '', notas: '',
@@ -209,16 +212,21 @@ function NuevoGastoPanel({ onClose, onSaved }) {
 
 // ── Gastos ────────────────────────────────────────────────────────
 export function Gastos() {
+  const anioActual = new Date().getFullYear()
   const [gastos, setGastos] = React.useState([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState(null)
   const [showPanel, setShowPanel] = React.useState(false)
+  const [filtroAnio, setFiltroAnio] = React.useState(anioActual)
+  const [filtroMes, setFiltroMes] = React.useState(null)
 
-  const cargar = React.useCallback(async () => {
+  const cargar = React.useCallback(async (anio) => {
     setLoading(true)
     const { data, error: e } = await supabase
       .from('gastos')
       .select('*')
+      .gte('fecha', `${anio}-01-01`)
+      .lte('fecha', `${anio}-12-31`)
       .order('fecha', { ascending: false })
       .order('created_at', { ascending: false })
     if (e) setError(e.message)
@@ -226,7 +234,7 @@ export function Gastos() {
     setLoading(false)
   }, [])
 
-  React.useEffect(() => { cargar() }, [cargar])
+  React.useEffect(() => { cargar(filtroAnio) }, [cargar, filtroAnio])
 
   const eliminar = async (id) => {
     const { error: e } = await supabase.from('gastos').delete().eq('id', id)
@@ -234,21 +242,61 @@ export function Gastos() {
     else setGastos(prev => prev.filter(g => g.id !== id))
   }
 
+  const gastosFiltrados = React.useMemo(() => {
+    if (filtroMes === null) return gastos
+    return gastos.filter(g => {
+      const m = parseInt(g.fecha.split('-')[1], 10)
+      return m === filtroMes
+    })
+  }, [gastos, filtroMes])
+
   // Totales por categoría
   const stats = React.useMemo(() => {
     const totales = {}
-    for (const g of gastos) {
+    for (const g of gastosFiltrados) {
       totales[g.categoria] = (totales[g.categoria] ?? 0) + Number(g.importe)
     }
     return CATEGORIAS
       .map(c => ({ ...c, total: totales[c.value] ?? 0 }))
       .filter(c => c.total > 0)
-  }, [gastos])
+  }, [gastosFiltrados])
 
-  const totalGeneral = gastos.reduce((s, g) => s + Number(g.importe), 0)
+  const totalGeneral = gastosFiltrados.reduce((s, g) => s + Number(g.importe), 0)
 
   return (
     <>
+      {/* Filtros */}
+      <div className="gastos-filtros">
+        <div className="gastos-filtros__anios">
+          {ANIOS.map(a => (
+            <button
+              key={a}
+              className={`gastos-filtro-btn${filtroAnio === a ? ' gastos-filtro-btn--on' : ''}`}
+              onClick={() => { setFiltroAnio(a); setFiltroMes(null) }}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
+        <div className="gastos-filtros__meses">
+          <button
+            className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroMes === null ? ' gastos-filtro-btn--on' : ''}`}
+            onClick={() => setFiltroMes(null)}
+          >
+            Todos
+          </button>
+          {MESES_LABELS.map((label, i) => (
+            <button
+              key={i}
+              className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroMes === i + 1 ? ' gastos-filtro-btn--on' : ''}`}
+              onClick={() => setFiltroMes(filtroMes === i + 1 ? null : i + 1)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Stats */}
       {stats.length > 0 && (
         <div className="gastos-stats">
@@ -280,8 +328,8 @@ export function Gastos() {
         </div>
       ) : error ? (
         <div className="alumnos-estado alumnos-estado--error">Error: {error}</div>
-      ) : gastos.length === 0 ? (
-        <div className="alumnos-estado">Sin gastos registrados.</div>
+      ) : gastosFiltrados.length === 0 ? (
+        <div className="alumnos-estado">Sin gastos en este período.</div>
       ) : (
         <div className="gastos-table-wrap">
           <table className="gastos-table">
@@ -296,7 +344,7 @@ export function Gastos() {
               </tr>
             </thead>
             <tbody>
-              {gastos.map(g => {
+              {gastosFiltrados.map(g => {
                 const cat = catInfo(g.categoria)
                 return (
                   <tr key={g.id} className="gastos-row">
