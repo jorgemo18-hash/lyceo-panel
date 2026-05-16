@@ -314,7 +314,7 @@ function NuevoGastoPanel({ onClose, onSaved }) {
                 style={{ width: '100%', justifyContent: 'center', gap: 8 }}
                 onClick={() => fileRef.current?.click()}
               >
-                <Icon.receipt /> Subir foto de factura
+                <Icon.receipt /> Subir factura
               </button>
             )}
             {form.foto_url && (
@@ -500,7 +500,7 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
                         onClick={() => fileEditRef.current?.click()}
                         disabled={uploadingFoto}
                       >
-                        {uploadingFoto ? <><span className="gastos-foto-spinner__circle" /> Procesando…</> : 'Cambiar foto'}
+                        {uploadingFoto ? <><span className="gastos-foto-spinner__circle" /> Procesando…</> : 'Cambiar factura'}
                       </button>
                     )}
                   </div>
@@ -514,7 +514,7 @@ function DetalleGastoPanel({ gasto, onClose, onDeleted, onUpdated }) {
                       style={{ width: '100%', justifyContent: 'center', gap: 8 }}
                       onClick={() => fileEditRef.current?.click()}
                     >
-                      <Icon.receipt /> Añadir foto de factura
+                      <Icon.receipt /> Añadir factura
                     </button>
                   )}
                 </>
