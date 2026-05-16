@@ -87,6 +87,11 @@ export function EnvioFamilias() {
         )
         if (res.ok) comentario = (await res.json()).comentario ?? ''
       } catch {}
+      // Guardar inmediatamente en Supabase para que persista entre recargas
+      supabase.from('informes').upsert(
+        { alumno_id: alumno.id, mes: m, anio: a, comentario, generado_at: new Date().toISOString() },
+        { onConflict: 'alumno_id,anio,mes' }
+      )
     }
 
     const result = { sesiones: sesiones ?? [], festivos, comentario }
