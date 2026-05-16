@@ -43,7 +43,7 @@ function filaInfo(item) {
   const { dow, sesion, festivo } = item
   if (dow === 6) return { cls: 'inf-tr--weekend', asig: 'Sábado',  tema: '' }
   if (dow === 0) return { cls: 'inf-tr--weekend', asig: 'Domingo', tema: '' }
-  if (festivo)   return { cls: 'inf-tr--festivo', asig: festivo.nombre ?? 'Festivo', tema: '' }
+  if (festivo)   return { cls: 'inf-tr--festivo', asig: festivo.descripcion ?? festivo.nombre ?? 'Festivo', tema: '' }
   if (sesion?.tipo === 'ausencia') return { cls: 'inf-tr--ausencia', asig: 'NO', tema: 'NO' }
   if (sesion)    return { cls: '', asig: sesion.asignatura ?? '', tema: sesion.tema ?? '' }
   return { cls: 'inf-tr--empty', asig: '', tema: '' }
