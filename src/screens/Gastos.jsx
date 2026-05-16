@@ -764,6 +764,7 @@ export function Gastos() {
           onUpdated={(updated) => {
             setGastos(prev => prev.map(g => g.id === updated.id ? updated : g))
             setGastoSel(updated)
+            cargar(filtroAnioRef.current)
           }}
         />
       )}
