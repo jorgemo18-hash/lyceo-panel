@@ -197,6 +197,30 @@ export function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null 
   const valid = form.nombre.trim() && form.curso &&
     (form.sin_familia || (form.familia_nueva ? form.fam_nombre.trim() : form.familia_id))
 
+  const reejecutarOcr = () => {
+    if (!pendiente?.foto_url || ocr.procesando) return
+    setOcr({ procesando: true, msg: null })
+    ocrInscripcionDesdeUrl(pendiente.foto_url)
+      .then(datos => {
+        if (datos.error) throw new Error(datos.error)
+        setForm(prev => ({
+          ...prev,
+          ...(datos.nombre        ? { nombre: datos.nombre }               : {}),
+          ...(datos.curso         ? { curso: datos.curso }                 : {}),
+          ...(datos.email         ? { fam_email: datos.email }             : {}),
+          ...(datos.telefono      ? { fam_telefono: datos.telefono }       : {}),
+          ...(datos.dni           ? { fam_dni: datos.dni }                 : {}),
+          ...(datos.direccion     ? { fam_direccion: datos.direccion }     : {}),
+          ...(datos.ciudad        ? { fam_ciudad: datos.ciudad }           : {}),
+          ...(datos.codigo_postal ? { fam_cp: datos.codigo_postal }        : {}),
+          ...(datos.metodo_pago   ? { fam_metodo_pago: datos.metodo_pago } : {}),
+          ...(datos.notas         ? { fam_notas: datos.notas }             : {}),
+        }))
+        setOcr({ procesando: false, msg: 'ok' })
+      })
+      .catch(err => setOcr({ procesando: false, msg: 'error: ' + (err.message ?? 'Error al procesar') }))
+  }
+
   const handleBorrador = async () => {
     try {
       await supabase.from('gastos_pendientes').insert({
@@ -340,6 +364,14 @@ export function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null 
                 ? <><span className="alumnos-estado__spinner" style={{ width: 14, height: 14, borderWidth: 2 }} /> Procesando ficha…</>
                 : <><Icon.doc /> Subir ficha de inscripción</>}
             </button>
+            {pendiente?.foto_url && !form.nombre.trim() && !ocr.procesando && (
+              <button type="button" className="btn btn--ghost"
+                style={{ width: '100%', justifyContent: 'center', gap: 8, marginTop: 6 }}
+                onClick={reejecutarOcr}
+              >
+                <Icon.doc /> Volver a extraer datos
+              </button>
+            )}
             {ocr.msg === 'ok' && (
               <div className="ocr-ok">Datos extraídos — revisa antes de guardar</div>
             )}
@@ -553,7 +585,9 @@ export function NuevoAlumnoPanel({ familias, onClose, onSaved, pendiente = null 
           <button className="btn btn--ghost" onClick={onClose} disabled={saving}>Cancelar</button>
           {borradorGuardado
             ? <span className="panel__saved">Guardado como borrador</span>
-            : <button className="btn btn--ghost" onClick={handleBorrador} disabled={saving}>Borrador</button>}
+            : <button className="btn btn--ghost" onClick={handleBorrador} disabled={saving || ocr.procesando}>
+                {ocr.procesando ? 'Procesando…' : 'Borrador'}
+              </button>}
           <button className="btn btn--primary" onClick={handleSave} disabled={saving || !valid}>
             {saving ? 'Guardando…' : 'Guardar alumno'}
           </button>
