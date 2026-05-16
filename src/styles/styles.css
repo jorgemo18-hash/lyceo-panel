@@ -3941,3 +3941,77 @@ body.printing .no-print { display: none !important; }
 /* ── Botón danger ── */
 .btn--danger { color: #8B0000; }
 .btn--danger:hover { background: #fff5f5; border-color: #8B0000; }
+
+/* ── Borradores tab ── */
+.borradores-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.borrador-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg);
+  cursor: default;
+}
+.borrador-item__media { flex-shrink: 0; }
+.borrador-item__thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+}
+.borrador-item__thumb--pdf,
+.borrador-item__thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-elev);
+  color: var(--ink-3);
+  font-size: 11px;
+  font-weight: 600;
+}
+.borrador-item__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.borrador-item__proveedor {
+  font-weight: 600;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.borrador-item__concepto {
+  font-size: 12.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.borrador-item__meta {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-top: 2px;
+}
+.borrador-item__importe {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.borrador-item__fecha {
+  font-size: 11.5px;
+  color: var(--ink-3);
+}

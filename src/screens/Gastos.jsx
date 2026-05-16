@@ -268,7 +268,10 @@ function PendientesSection({ pendientes, show, onToggle, onRevisar }) {
 
 // ── Panel nuevo gasto ─────────────────────────────────────────────
 export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
-  const [form, setForm] = React.useState(() => ({ ...FORM_INICIAL, foto_url: pendiente?.foto_url ?? '' }))
+  const [form, setForm] = React.useState(() => {
+    if (pendiente?.datos_json) return { ...FORM_INICIAL, ...pendiente.datos_json, foto_url: pendiente.datos_json.foto_url ?? pendiente.foto_url ?? '' }
+    return { ...FORM_INICIAL, foto_url: pendiente?.foto_url ?? '' }
+  })
   const [saving, setSaving] = React.useState(false)
   const [error, setError] = React.useState(null)
   const [ocr, setOcr] = React.useState({ procesando: false, msg: null })
@@ -278,6 +281,7 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
 
   React.useEffect(() => {
     if (!pendiente?.foto_url) return
+    if (pendiente?.datos_json) return  // borrador: datos ya cargados, sin OCR
     setOcr({ procesando: true, msg: null })
     ocrDesdeUrl(pendiente.foto_url)
       .then(datos => {
@@ -377,12 +381,20 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
   }
 
   const handleBorrador = async () => {
+    const datos_json = { ...form }
     try {
-      await supabase.from('gastos_pendientes').insert({
-        foto_url: form.foto_url || null,
-        tipo: 'gasto',
-        procesado: false,
-      })
+      if (pendiente?.id && pendiente?.datos_json != null) {
+        await supabase.from('gastos_pendientes')
+          .update({ foto_url: form.foto_url || null, datos_json })
+          .eq('id', pendiente.id)
+      } else {
+        await supabase.from('gastos_pendientes').insert({
+          foto_url: form.foto_url || null,
+          tipo: 'gasto',
+          procesado: false,
+          datos_json,
+        })
+      }
       setBorradorGuardado(true)
     } catch {}
   }
@@ -744,6 +756,62 @@ function GastoCampo({ label, value }) {
   )
 }
 
+// ── Tab borradores ────────────────────────────────────────────────
+function BorradoresTab({ onContinuar, refreshKey }) {
+  const [borradores, setBorradores] = React.useState([])
+  const [loading, setLoading] = React.useState(true)
+
+  React.useEffect(() => {
+    setLoading(true)
+    supabase.from('gastos_pendientes')
+      .select('*')
+      .eq('tipo', 'gasto')
+      .eq('procesado', false)
+      .not('datos_json', 'is', null)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => { setBorradores(data ?? []); setLoading(false) })
+  }, [refreshKey])
+
+  if (loading) return (
+    <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando borradores…</div>
+  )
+  if (borradores.length === 0) return (
+    <div className="alumnos-estado">No hay borradores guardados.</div>
+  )
+
+  return (
+    <div className="borradores-lista">
+      {borradores.map(b => {
+        const d = b.datos_json ?? {}
+        const fecha = new Date(b.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+        return (
+          <div key={b.id} className="borrador-item">
+            <div className="borrador-item__media">
+              {b.foto_url
+                ? b.foto_url.toLowerCase().endsWith('.pdf')
+                  ? <div className="borrador-item__thumb borrador-item__thumb--pdf">PDF</div>
+                  : <img src={b.foto_url} alt="" className="borrador-item__thumb" />
+                : <div className="borrador-item__thumb borrador-item__thumb--empty">—</div>
+              }
+            </div>
+            <div className="borrador-item__info">
+              <div className="borrador-item__proveedor">{d.proveedor || 'Sin proveedor'}</div>
+              {d.concepto && <div className="borrador-item__concepto">{d.concepto}</div>}
+              <div className="borrador-item__meta">
+                {d.importe ? <span className="borrador-item__importe">{eur(d.importe)}</span> : null}
+                <span className="borrador-item__fecha">{fecha}</span>
+              </div>
+            </div>
+            <button className="btn btn--primary btn--sm" onClick={() => onContinuar(b)}>
+              Continuar
+            </button>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 // ── Gastos ────────────────────────────────────────────────────────
 export function Gastos() {
   const [gastos, setGastos]       = React.useState([])
@@ -756,6 +824,8 @@ export function Gastos() {
   const [pendientes, setPendientes] = React.useState([])
   const [showPendientes, setShowPendientes] = React.useState(false)
   const [pendienteRevisando, setPendienteRevisando] = React.useState(null)
+  const [vista, setVista] = React.useState('gastos')
+  const [borradorRefreshKey, setBorradorRefreshKey] = React.useState(0)
 
   const filtroAnioRef = React.useRef(filtroAnio)
   React.useEffect(() => { filtroAnioRef.current = filtroAnio }, [filtroAnio])
@@ -774,7 +844,9 @@ export function Gastos() {
   }, [])
 
   const cargarPendientes = React.useCallback(async () => {
-    const { data } = await supabase.from('gastos_pendientes').select('*').eq('procesado', false).order('created_at', { ascending: false })
+    const { data } = await supabase.from('gastos_pendientes').select('*')
+      .eq('tipo', 'gasto').eq('procesado', false).is('datos_json', null)
+      .order('created_at', { ascending: false })
     setPendientes(data ?? [])
   }, [])
 
@@ -828,113 +900,129 @@ export function Gastos() {
         <div className="gastos-filtros__anios">
           {ANIOS.map(a => (
             <button key={a}
-              className={`gastos-filtro-btn${filtroAnio === a ? ' gastos-filtro-btn--on' : ''}`}
-              onClick={() => { setFiltroAnio(a); setFiltroTrimestre(null) }}
+              className={`gastos-filtro-btn${vista === 'gastos' && filtroAnio === a ? ' gastos-filtro-btn--on' : ''}`}
+              onClick={() => { setVista('gastos'); setFiltroAnio(a); setFiltroTrimestre(null) }}
             >{a}</button>
           ))}
-        </div>
-        <div className="gastos-filtros__meses">
           <button
-            className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === null ? ' gastos-filtro-btn--on' : ''}`}
-            onClick={() => setFiltroTrimestre(null)}
-          >Todos</button>
-          {[1, 2, 3, 4].map(t => (
-            <button key={t}
-              className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === t ? ' gastos-filtro-btn--on' : ''}`}
-              onClick={() => setFiltroTrimestre(filtroTrimestre === t ? null : t)}
-            >T{t}</button>
-          ))}
+            className={`gastos-filtro-btn${vista === 'borradores' ? ' gastos-filtro-btn--on' : ''}`}
+            onClick={() => setVista('borradores')}
+          >Borradores</button>
         </div>
-      </div>
-
-      {/* Stats */}
-      {stats.length > 0 && (
-        <div className="gastos-stats">
-          {stats.map(c => (
-            <div key={c.value} className="gastos-stat">
-              <span className="gastos-stat__dot" style={{ background: c.color }} />
-              <span className="gastos-stat__label">{c.label}</span>
-              <span className="gastos-stat__val">{eur(c.total)}</span>
-            </div>
-          ))}
-          <div className="gastos-stat gastos-stat--total">
-            <span className="gastos-stat__label">Total</span>
-            <span className="gastos-stat__val">{eur(totalGeneral)}</span>
+        {vista === 'gastos' && (
+          <div className="gastos-filtros__meses">
+            <button
+              className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === null ? ' gastos-filtro-btn--on' : ''}`}
+              onClick={() => setFiltroTrimestre(null)}
+            >Todos</button>
+            {[1, 2, 3, 4].map(t => (
+              <button key={t}
+                className={`gastos-filtro-btn gastos-filtro-btn--sm${filtroTrimestre === t ? ' gastos-filtro-btn--on' : ''}`}
+                onClick={() => setFiltroTrimestre(filtroTrimestre === t ? null : t)}
+              >T{t}</button>
+            ))}
           </div>
-        </div>
-      )}
-
-      {/* Botón añadir + CSV */}
-      <div className="gastos-bar">
-        <button className="btn btn--primary" onClick={() => setShowPanel(true)}>
-          <Icon.plus /> Añadir gasto
-        </button>
-        {filtroTrimestre !== null && gastosFiltrados.length > 0 && (
-          <button className="btn btn--ghost" onClick={descargarCsv}>
-            Descargar CSV
-          </button>
         )}
       </div>
 
-      {/* Lista */}
-      {loading ? (
-        <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando gastos…</div>
-      ) : error ? (
-        <div className="alumnos-estado alumnos-estado--error">Error: {error}</div>
-      ) : gastosFiltrados.length === 0 ? (
-        <div className="alumnos-estado">Sin gastos en este período.</div>
+      {vista === 'borradores' ? (
+        <BorradoresTab
+          key={borradorRefreshKey}
+          refreshKey={borradorRefreshKey}
+          onContinuar={(b) => { setPendienteRevisando(b); setShowPanel(true) }}
+        />
       ) : (
-        <div className="gastos-table-wrap">
-          <table className="gastos-table">
-            <thead>
-              <tr>
-                <th>Fecha</th>
-                <th>Proveedor</th>
-                <th>Categoría</th>
-                <th className="gastos-table__num">Importe</th>
-              </tr>
-            </thead>
-            <tbody>
-              {gastosFiltrados.map(g => {
-                const cat = catInfo(g.categoria)
-                return (
-                  <tr key={g.id} className="gastos-row gastos-row--clickable"
-                    onClick={() => setGastoSel(g)}>
-                    <td className="gastos-row__fecha">
-                      {new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
-                    </td>
-                    <td className="gastos-row__proveedor">
-                      {g.proveedor || '—'}
-                      {g.concepto && <span className="gastos-row__notas"> · {g.concepto}</span>}
-                    </td>
-                    <td>
-                      <span className="gastos-badge" style={{ background: cat.color + '1a', color: cat.color, borderColor: cat.color + '44' }}>
-                        {catDisplay(g)}
-                      </span>
-                    </td>
-                    <td className="gastos-table__num gastos-row__importe">
-                      {eur(g.importe)}
-                      {g.base_imponible != null && (
-                        <div className="gastos-row__desglose">
-                          {eur(g.base_imponible)}
-                          {g.iva_importe     != null && <> + {eur(g.iva_importe)} IVA</>}
-                          {g.retencion_importe != null && <> − {eur(g.retencion_importe)} ret.</>}
-                        </div>
-                      )}
-                    </td>
+        <>
+          {/* Stats */}
+          {stats.length > 0 && (
+            <div className="gastos-stats">
+              {stats.map(c => (
+                <div key={c.value} className="gastos-stat">
+                  <span className="gastos-stat__dot" style={{ background: c.color }} />
+                  <span className="gastos-stat__label">{c.label}</span>
+                  <span className="gastos-stat__val">{eur(c.total)}</span>
+                </div>
+              ))}
+              <div className="gastos-stat gastos-stat--total">
+                <span className="gastos-stat__label">Total</span>
+                <span className="gastos-stat__val">{eur(totalGeneral)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Botón añadir + CSV */}
+          <div className="gastos-bar">
+            <button className="btn btn--primary" onClick={() => setShowPanel(true)}>
+              <Icon.plus /> Añadir gasto
+            </button>
+            {filtroTrimestre !== null && gastosFiltrados.length > 0 && (
+              <button className="btn btn--ghost" onClick={descargarCsv}>
+                Descargar CSV
+              </button>
+            )}
+          </div>
+
+          {/* Lista */}
+          {loading ? (
+            <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando gastos…</div>
+          ) : error ? (
+            <div className="alumnos-estado alumnos-estado--error">Error: {error}</div>
+          ) : gastosFiltrados.length === 0 ? (
+            <div className="alumnos-estado">Sin gastos en este período.</div>
+          ) : (
+            <div className="gastos-table-wrap">
+              <table className="gastos-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Proveedor</th>
+                    <th>Categoría</th>
+                    <th className="gastos-table__num">Importe</th>
                   </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+                </thead>
+                <tbody>
+                  {gastosFiltrados.map(g => {
+                    const cat = catInfo(g.categoria)
+                    return (
+                      <tr key={g.id} className="gastos-row gastos-row--clickable"
+                        onClick={() => setGastoSel(g)}>
+                        <td className="gastos-row__fecha">
+                          {new Date(g.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </td>
+                        <td className="gastos-row__proveedor">
+                          {g.proveedor || '—'}
+                          {g.concepto && <span className="gastos-row__notas"> · {g.concepto}</span>}
+                        </td>
+                        <td>
+                          <span className="gastos-badge" style={{ background: cat.color + '1a', color: cat.color, borderColor: cat.color + '44' }}>
+                            {catDisplay(g)}
+                          </span>
+                        </td>
+                        <td className="gastos-table__num gastos-row__importe">
+                          {eur(g.importe)}
+                          {g.base_imponible != null && (
+                            <div className="gastos-row__desglose">
+                              {eur(g.base_imponible)}
+                              {g.iva_importe     != null && <> + {eur(g.iva_importe)} IVA</>}
+                              {g.retencion_importe != null && <> − {eur(g.retencion_importe)} ret.</>}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
       )}
 
       {showPanel && (
         <NuevoGastoPanel
           pendiente={pendienteRevisando}
           onClose={() => { setShowPanel(false); setPendienteRevisando(null) }}
-          onSaved={() => { setShowPanel(false); setPendienteRevisando(null); cargar(filtroAnioRef.current); cargarPendientes() }}
+          onSaved={() => { setShowPanel(false); setPendienteRevisando(null); cargar(filtroAnioRef.current); cargarPendientes(); setBorradorRefreshKey(k => k + 1) }}
         />
       )}
 
