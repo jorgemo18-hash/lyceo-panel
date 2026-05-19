@@ -26,6 +26,12 @@ export function DiarioScreen({ mobile }) {
   const [buscando, setBuscando] = React.useState(false)
   const busquedaTimer = React.useRef(null)
 
+  // Refs para acceder al estado más reciente desde el cleanup de unmount
+  const registrosRef = React.useRef({})
+  const sesionesRef = React.useRef([])
+  React.useEffect(() => { registrosRef.current = registros }, [registros])
+  React.useEffect(() => { sesionesRef.current = sesiones }, [sesiones])
+
   React.useEffect(() => {
     if (!modalOpen) return
     const onKey = (e) => { if (e.key === 'Escape') cerrarModal() }
@@ -82,6 +88,24 @@ export function DiarioScreen({ mobile }) {
     }))
     cerrarModal()
   }
+
+  // Guardar registros sucios al cambiar de pestaña (unmount)
+  React.useEffect(() => {
+    return () => {
+      Object.values(timers.current).forEach(clearTimeout)
+      const regs = registrosRef.current
+      const sess = sesionesRef.current
+      Object.entries(regs).forEach(([id, registro]) => {
+        if (!registro._dirty) return
+        const sesion = sess.find(s => s.id === id)
+        const debeGuardar = sesion && (
+          (registro.asignatura && registro.tema?.trim()) ||
+          registro.estado === 'absent'
+        )
+        if (debeGuardar) guardarSesion(sesion, registro)
+      })
+    }
+  }, [])
 
   React.useEffect(() => {
     cargarSesionesHoy()
