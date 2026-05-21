@@ -118,14 +118,13 @@ export async function cargarSesionesHoy() {
 
 // ── Guardar sesión en Supabase ────────────────────────────────────
 export async function guardarSesion(sesion, registro) {
-  // sesion.alumno.id es el alumno_id real; sesion.id es el id del horario
   const alumno_id = sesion.alumno?.id
   if (!alumno_id) {
     console.error('guardarSesion: alumno_id undefined — objeto sesion:', sesion)
-    return
+    return new Error('alumno_id undefined')
   }
   const esAusente = registro.estado === 'absent'
-  const { data, error } = await supabase.from('sesiones').upsert({
+  const { error } = await supabase.from('sesiones').upsert({
     alumno_id,
     fecha: new Date().toISOString().split('T')[0],
     tipo: esAusente ? 'ausencia' : 'sesion',
@@ -133,7 +132,8 @@ export async function guardarSesion(sesion, registro) {
     tema: esAusente ? null : (registro.tema?.trim() || null),
     comentario: esAusente ? null : (registro.comentario?.trim() || null),
   }, { onConflict: 'alumno_id,fecha', ignoreDuplicates: false })
-  console.log('guardarSesion result:', data, error)
+  if (error) console.error('guardarSesion error:', error)
+  return error ?? null
 }
 
 // ── Globales para componentes que usan window.X ───────────────────

@@ -127,22 +127,25 @@ export function DiarioScreen({ mobile }) {
     setRegistros((prev) => {
       clearTimeout(timers.current[id])
       const next = { ...prev, [id]: { ...prev[id], ...patch, _dirty: true } }
-      registrosRef.current = next  // actualización síncrona para que el cleanup de unmount siempre vea el estado más reciente
-      timers.current[id] = setTimeout(() => {
-        setRegistros((p) => {
-          const registro = p[id]
-          const sesion = sesionesRef.current.find(s => s.id === id)
-          const debeGuardar = sesion && (
-            (registro.asignatura && registro.tema?.trim()) ||
-            registro.estado === 'absent'
-          )
-          if (debeGuardar) guardarSesion(sesion, registro)
+      registrosRef.current = next
+      timers.current[id] = setTimeout(async () => {
+        const registro = registrosRef.current[id]
+        const sesion = sesionesRef.current.find(s => s.id === id)
+        const debeGuardar = sesion && (
+          (registro.asignatura && registro.tema?.trim()) ||
+          registro.estado === 'absent'
+        )
+        if (!debeGuardar) return
+        const error = await guardarSesion(sesion, registro)
+        if (!error) {
           const now = new Date()
           const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-          const updated = { ...p, [id]: { ...p[id], lastSavedAt: ts, _dirty: false } }
-          registrosRef.current = updated
-          return updated
-        })
+          setRegistros(p => {
+            const updated = { ...p, [id]: { ...p[id], lastSavedAt: ts, _dirty: false } }
+            registrosRef.current = updated
+            return updated
+          })
+        }
       }, 1200)
       return next
     })
