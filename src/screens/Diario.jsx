@@ -80,7 +80,11 @@ export function DiarioScreen({ mobile }) {
       historial: [],
       racha: 0,
     }
-    setSesiones(prev => [...prev, nuevaSesion])
+    setSesiones(prev => {
+      const next = [...prev, nuevaSesion]
+      sesionesRef.current = next
+      return next
+    })
     setRegistros(prev => ({
       ...prev,
       [id]: { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
@@ -117,14 +121,17 @@ export function DiarioScreen({ mobile }) {
   React.useEffect(() => {
     cargarSesionesHoy()
       .then(({ sesiones: s, hoy: h, registrosIniciales }) => {
+        sesionesRef.current = s
         setSesiones(s)
         setHoy(h)
-        setRegistros(registrosIniciales ?? Object.fromEntries(
+        const regsInicial = registrosIniciales ?? Object.fromEntries(
           s.map((ses) => [
             ses.id,
             { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
           ])
-        ))
+        )
+        registrosRef.current = regsInicial
+        setRegistros(regsInicial)
         setCargando(false)
       })
       .catch(() => setCargando(false))
