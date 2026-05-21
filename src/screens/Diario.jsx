@@ -95,13 +95,16 @@ export function DiarioScreen({ mobile }) {
       Object.values(timers.current).forEach(clearTimeout)
       const regs = registrosRef.current
       const sess = sesionesRef.current
+      console.log('[Diario unmount] sesiones en ref:', sess.length, '| registros:', Object.keys(regs).length)
       Object.entries(regs).forEach(([id, registro]) => {
+        console.log('[Diario unmount] id:', id, '| _dirty:', registro._dirty, '| asignatura:', registro.asignatura, '| tema:', registro.tema, '| estado:', registro.estado)
         if (!registro._dirty) return
         const sesion = sess.find(s => s.id === id)
         const debeGuardar = sesion && (
           (registro.asignatura && registro.tema?.trim()) ||
           registro.estado === 'absent'
         )
+        console.log('[Diario unmount] sesion encontrada:', !!sesion, '| debeGuardar:', debeGuardar)
         if (debeGuardar) guardarSesion(sesion, registro)
       })
     }
@@ -139,6 +142,7 @@ export function DiarioScreen({ mobile }) {
         (registro.asignatura && registro.tema?.trim()) ||
         registro.estado === 'absent'
       )
+      console.log('[Diario debounce] id:', id, '| asignatura:', registro.asignatura, '| tema:', registro.tema, '| debeGuardar:', debeGuardar)
       if (!debeGuardar) return
       const error = await guardarSesion(sesion, registro)
       if (!error) {
