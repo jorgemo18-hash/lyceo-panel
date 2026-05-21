@@ -16,21 +16,7 @@ const DIAS = [
   { id: 'viernes',   label: 'Viernes' },
 ]
 
-function abreviar(nombre) {
-  return nombre.trim().split(' ')[0]
-}
 
-function HorarioChip({ alumno }) {
-  return (
-    <div
-      className={`hor-chip hor-chip--${alumno.nivel}`}
-      title={`${alumno.nombre} · ${alumno.curso}`}
-    >
-      <span className="hor-chip__dot" />
-      <span className="hor-chip__name">{abreviar(alumno.nombre)}</span>
-    </div>
-  )
-}
 
 function Horario() {
   const [rows, setRows] = React.useState([])
@@ -113,54 +99,68 @@ function Horario() {
         </div>
       </div>
 
-      <div className="hor-grid" style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 250px)', minHeight: 300 }}>
-        <div className="hor-grid__head" style={{ flexShrink: 0 }}>
-          <div className="hor-cell hor-cell--corner">Hora</div>
-          {DIAS.map(d => (
-            <div key={d.id} className="hor-cell hor-cell--day">
-              <span className="hor-day__name">{d.label}</span>
-              <span className="hor-day__short">{d.label.slice(0, 3).toUpperCase()}</span>
-            </div>
-          ))}
-        </div>
+      <div className="hc-cards">
+        {DIAS.map((d) => {
+          const bloques = FRANJAS.map((f) => ({
+            h: f.hora_inicio,
+            label: f.label,
+            arr: getAlumnos(f.hora_inicio, d.id),
+          })).filter((b) => b.arr.length > 0)
 
-        {FRANJAS.map(franja => (
-          <div key={franja.hora_inicio} className="hor-grid__row" style={{ flex: 1, minHeight: 0 }}>
-            <div className="hor-cell hor-cell--time">
-              <span className="hor-time__major" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
-                {franja.label}
-              </span>
+          const total = bloques.reduce((s, b) => s + b.arr.length, 0)
+
+          return (
+            <div key={d.id} className="hc-card">
+              <div className="hc-card__head">
+                <span className="hc-card__day">{d.label}</span>
+                <span className="hc-card__count">
+                  {total} {total === 1 ? 'alumno' : 'alumnos'}
+                </span>
+              </div>
+              <div className="hc-card__body">
+                {bloques.length === 0 ? (
+                  <span className="hc-empty">Sin clases</span>
+                ) : (
+                  bloques.map(({ h, arr }) => {
+                    const heat = Math.min(arr.length, 6)
+                    return (
+                      <div key={h} className={`hc-block hc-block--h${heat}`}>
+                        <div className="hc-block__head">
+                          <span className="hc-time">{h}</span>
+                          <span className="hc-tally">{arr.length}</span>
+                        </div>
+                        <div className="hc-names">
+                          {arr.map((a, i) => (
+                            <div
+                              key={i}
+                              className="hc-name"
+                              title={`${a.nombre} · ${a.curso}`}
+                            >
+                              <span className={`hc-dot hc-dot--${a.nivel}`} />
+                              <span className="hc-nm">{a.nombre.trim().split(' ')[0]}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
             </div>
-            {DIAS.map(dia => {
-              const alumnos = getAlumnos(franja.hora_inicio, dia.id)
-              const llena = alumnos.length >= 6
-              return (
-                <div
-                  key={dia.id}
-                  className={`hor-cell hor-cell--slot${llena ? ' hor-cell--full' : ''}`}
-                >
-                  {alumnos.map((a, i) => (
-                    <HorarioChip key={i} alumno={a} />
-                  ))}
-                </div>
-              )
-            })}
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <div className="hor-legend">
         <span className="hor-legend__item">
-          <span className="hor-legend__dot hor-chip--primaria" /> Primaria
+          <span className="hc-dot hc-dot--primaria" /> Primaria
         </span>
         <span className="hor-legend__item">
-          <span className="hor-legend__dot hor-chip--eso" /> ESO
+          <span className="hc-dot hc-dot--eso" /> ESO
         </span>
         <span className="hor-legend__item">
-          <span className="hor-legend__dot hor-chip--bachillerato" /> Bachillerato
+          <span className="hc-dot hc-dot--bachillerato" /> Bachillerato
         </span>
-        <span className="hor-legend__sep">·</span>
-        <span className="hor-legend__hint">Las celdas en rojo tienen 6 o más alumnos</span>
       </div>
     </>
   )

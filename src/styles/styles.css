@@ -4071,3 +4071,104 @@ body.printing .no-print { display: none !important; }
   font-size: 11.5px;
   color: var(--ink-3);
 }
+
+/* ── Horario cuaderno + calor ─────────────────────────── */
+.hc-cards {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 16px 0 24px;
+  overflow-x: auto;
+}
+.hc-card {
+  flex: 1 1 0;
+  min-width: 160px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.hc-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border);
+}
+.hc-card__day {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.hc-card__count {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.hc-card__body {
+  padding: 8px 0;
+}
+.hc-empty {
+  display: block;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.hc-block {
+  padding: 6px 12px;
+  margin: 2px 6px;
+  border-radius: 6px;
+}
+.hc-block--h0 { background: transparent; }
+.hc-block--h1 { background: #fdf8f0; }
+.hc-block--h2 { background: #faefd8; }
+.hc-block--h3 { background: #f5e0b0; }
+.hc-block--h4 { background: #edca80; }
+.hc-block--h5 { background: #e0b050; }
+.hc-block--h6 { background: #cc8f20; }
+.hc-block__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.hc-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: #8B0000;
+}
+.hc-tally {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.hc-names {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.hc-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.hc-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.hc-dot--primaria     { background: #f59e0b; }
+.hc-dot--eso          { background: #3b82f6; }
+.hc-dot--bachillerato { background: #10b981; }
+.hc-nm {
+  font-size: 12px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .hc-cards { flex-direction: column; }
+  .hc-card  { min-width: 0; }
+}
