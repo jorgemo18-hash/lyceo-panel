@@ -26,7 +26,6 @@ export function DiarioScreen({ mobile }) {
   const [buscando, setBuscando] = React.useState(false)
   const busquedaTimer = React.useRef(null)
 
-  // Refs para acceder al estado más reciente desde el cleanup de unmount
   const registrosRef = React.useRef({})
   const sesionesRef = React.useRef([])
   React.useEffect(() => { registrosRef.current = registros }, [registros])
@@ -63,9 +62,9 @@ export function DiarioScreen({ mobile }) {
     setHoraElegida('16:30')
   }
 
-  const añadirAlumno = () => {
+  const añadirAlumno = async () => {
     if (!alumnoElegido) return
-    const id = `extra-${alumnoElegido.id}-${Date.now()}`
+    const id = `extra-${alumnoElegido.id}`
     const nuevaSesion = {
       id,
       hora: horaElegida,
@@ -87,24 +86,29 @@ export function DiarioScreen({ mobile }) {
       [id]: { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
     }))
     cerrarModal()
+    await supabase.from('sesiones').upsert({
+      alumno_id: alumnoElegido.id,
+      fecha: new Date().toISOString().split('T')[0],
+      hora: horaElegida,
+      tipo: 'sesion',
+      asignatura: null,
+      tema: null,
+      comentario: null,
+    }, { onConflict: 'alumno_id,fecha', ignoreDuplicates: true })
   }
 
-  // Guardar registros sucios al cambiar de pestaña (unmount)
   React.useEffect(() => {
     return () => {
       Object.values(timers.current).forEach(clearTimeout)
       const regs = registrosRef.current
       const sess = sesionesRef.current
-      console.log('[Diario unmount] sesiones en ref:', sess.length, '| registros:', Object.keys(regs).length)
       Object.entries(regs).forEach(([id, registro]) => {
-        console.log('[Diario unmount] id:', id, '| _dirty:', registro._dirty, '| asignatura:', registro.asignatura, '| tema:', registro.tema, '| estado:', registro.estado)
         if (!registro._dirty) return
         const sesion = sess.find(s => s.id === id)
         const debeGuardar = sesion && (
           (registro.asignatura && registro.tema?.trim()) ||
           registro.estado === 'absent'
         )
-        console.log('[Diario unmount] sesion encontrada:', !!sesion, '| debeGuardar:', debeGuardar)
         if (debeGuardar) guardarSesion(sesion, registro)
       })
     }
@@ -142,7 +146,6 @@ export function DiarioScreen({ mobile }) {
         (registro.asignatura && registro.tema?.trim()) ||
         registro.estado === 'absent'
       )
-      console.log('[Diario debounce] id:', id, '| asignatura:', registro.asignatura, '| tema:', registro.tema, '| debeGuardar:', debeGuardar)
       if (!debeGuardar) return
       const error = await guardarSesion(sesion, registro)
       if (!error) {
