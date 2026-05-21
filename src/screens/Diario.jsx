@@ -124,31 +124,33 @@ export function DiarioScreen({ mobile }) {
   }, [])
 
   const onChange = (id, patch) => {
-    setRegistros((prev) => {
-      clearTimeout(timers.current[id])
+    clearTimeout(timers.current[id])
+
+    setRegistros(prev => {
       const next = { ...prev, [id]: { ...prev[id], ...patch, _dirty: true } }
       registrosRef.current = next
-      timers.current[id] = setTimeout(async () => {
-        const registro = registrosRef.current[id]
-        const sesion = sesionesRef.current.find(s => s.id === id)
-        const debeGuardar = sesion && (
-          (registro.asignatura && registro.tema?.trim()) ||
-          registro.estado === 'absent'
-        )
-        if (!debeGuardar) return
-        const error = await guardarSesion(sesion, registro)
-        if (!error) {
-          const now = new Date()
-          const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-          setRegistros(p => {
-            const updated = { ...p, [id]: { ...p[id], lastSavedAt: ts, _dirty: false } }
-            registrosRef.current = updated
-            return updated
-          })
-        }
-      }, 1200)
       return next
     })
+
+    timers.current[id] = setTimeout(async () => {
+      const registro = registrosRef.current[id]
+      const sesion = sesionesRef.current.find(s => s.id === id)
+      const debeGuardar = sesion && (
+        (registro.asignatura && registro.tema?.trim()) ||
+        registro.estado === 'absent'
+      )
+      if (!debeGuardar) return
+      const error = await guardarSesion(sesion, registro)
+      if (!error) {
+        const now = new Date()
+        const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
+        setRegistros(p => {
+          const updated = { ...p, [id]: { ...p[id], lastSavedAt: ts, _dirty: false } }
+          registrosRef.current = updated
+          return updated
+        })
+      }
+    }, 1200)
   }
 
   const vals = Object.values(registros)
