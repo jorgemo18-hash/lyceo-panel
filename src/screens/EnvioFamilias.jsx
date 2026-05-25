@@ -1,19 +1,12 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
 import { InformeSheet, FacturaSheet, eur, rango } from '../lib/sheets.jsx'
+import { mesesCursoActual } from '../lib/data.jsx'
 
-const MESES_CURSO = [
-  { mes: 9,  anio: 2025, label: 'Septiembre 2025' },
-  { mes: 10, anio: 2025, label: 'Octubre 2025'    },
-  { mes: 11, anio: 2025, label: 'Noviembre 2025'  },
-  { mes: 12, anio: 2025, label: 'Diciembre 2025'  },
-  { mes: 1,  anio: 2026, label: 'Enero 2026'      },
-  { mes: 2,  anio: 2026, label: 'Febrero 2026'    },
-  { mes: 3,  anio: 2026, label: 'Marzo 2026'      },
-  { mes: 4,  anio: 2026, label: 'Abril 2026'      },
-  { mes: 5,  anio: 2026, label: 'Mayo 2026'       },
-  { mes: 6,  anio: 2026, label: 'Junio 2026'      },
-]
+const NOMBRES_MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+const MESES_CURSO = mesesCursoActual().map(({ mes, anio }) => ({
+  mes, anio, label: `${NOMBRES_MES[mes - 1]} ${anio}`,
+}))
 
 function defaultMesIdx() {
   const now = new Date()

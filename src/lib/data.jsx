@@ -1,5 +1,15 @@
 import { supabase } from './supabase.js'
 
+// ── Curso académico ──────────────────────────────────────────────
+export function mesesCursoActual() {
+  const now = new Date()
+  const anioInicio = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
+  const meses = []
+  for (let m = 9; m <= 12; m++) meses.push({ mes: m, anio: anioInicio })
+  for (let m = 1; m <= 6;  m++) meses.push({ mes: m, anio: anioInicio + 1 })
+  return meses
+}
+
 // ── Asignaturas y temas ──────────────────────────────────────────
 const ASIGNATURAS_POR_NIVEL = {
   primaria:     ['Matemáticas', 'Lengua', 'Inglés', 'Ciencias', 'Lectura'],
@@ -151,6 +161,12 @@ export async function cargarSesionesHoy() {
 // ── Guardar sesión en Supabase ────────────────────────────────────
 export async function guardarSesion(sesion, registro) {
   const alumno_id = sesion.alumno?.id
+  if (!alumno_id && sesion.id?.startsWith('extra-')) {
+    // Fallback para alumnos extraídos de la sesión directamente
+    const parts = sesion.id.split('-');
+    sesion.alumno = { id: parts[parts.length - 1] };
+  }
+  
   if (!alumno_id) {
     console.error('guardarSesion: alumno_id undefined — objeto sesion:', sesion)
     return new Error('alumno_id undefined')

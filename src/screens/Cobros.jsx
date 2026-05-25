@@ -1,18 +1,11 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
+import { mesesCursoActual } from '../lib/data.jsx'
 
-const MESES = [
-  { label: 'Sep', mes: 9,  anio: 2025 },
-  { label: 'Oct', mes: 10, anio: 2025 },
-  { label: 'Nov', mes: 11, anio: 2025 },
-  { label: 'Dic', mes: 12, anio: 2025 },
-  { label: 'Ene', mes: 1,  anio: 2026 },
-  { label: 'Feb', mes: 2,  anio: 2026 },
-  { label: 'Mar', mes: 3,  anio: 2026 },
-  { label: 'Abr', mes: 4,  anio: 2026 },
-  { label: 'May', mes: 5,  anio: 2026 },
-  { label: 'Jun', mes: 6,  anio: 2026 },
-]
+const ABREV_MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+const MESES = mesesCursoActual().map(({ mes, anio }) => ({
+  mes, anio, label: ABREV_MES[mes - 1],
+}))
 
 const METODOS = {
   bizum:         { label: 'Bizum',         cls: 'pag-badge--bizum' },
@@ -83,7 +76,7 @@ export function Cobros() {
         familiaIds.length > 0
           ? supabase.from('tarifas').select('familia_id, precio_neto').in('familia_id', familiaIds)
           : Promise.resolve({ data: [] }),
-        supabase.from('pagos').select('*').gte('anio', 2025),
+        supabase.from('pagos').select('*').gte('anio', MESES[0].anio),
       ])
 
       const alumnosConTarifa = (a ?? []).map(x => ({
