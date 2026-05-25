@@ -41,6 +41,7 @@ export function EnvioFamilias() {
   const [comentarioEdit, setComentarioEdit]         = React.useState('')
   const [facturaSel, setFacturaSel]   = React.useState(null)
   const [tarifaSel, setTarifaSel]     = React.useState(null)
+  const [emisor, setEmisor]           = React.useState(null)
   const [tabActiva, setTabActiva]     = React.useState('informe')
   const [editandoImporte, setEditandoImporte]   = React.useState(false)
   const [importeEditVal, setImporteEditVal]     = React.useState('')
@@ -134,6 +135,23 @@ export function EnvioFamilias() {
       .eq('activo', true)
       .order('nombre')
       .then(({ data }) => { setAlumnos(data ?? []); setCargando(false) })
+  }, [])
+
+  React.useEffect(() => {
+    supabase
+      .from('configuracion')
+      .select('clave, valor')
+      .in('clave', ['emisor_nombre', 'emisor_direccion', 'emisor_telefono', 'emisor_email'])
+      .then(({ data }) => {
+        if (!data) return
+        const m = Object.fromEntries(data.map(r => [r.clave, r.valor]))
+        setEmisor({
+          nombre:    m.emisor_nombre    ?? '',
+          direccion: m.emisor_direccion ?? '',
+          telefono:  m.emisor_telefono  ?? '',
+          email:     m.emisor_email     ?? '',
+        })
+      })
   }, [])
 
   React.useEffect(() => {
@@ -596,6 +614,7 @@ export function EnvioFamilias() {
                 <FacturaSheet
                   alumno={alumnoSel}
                   familia={alumnoSel.familias}
+                  emisor={emisor}
                   tarifa={(() => {
                     const neto  = facturaSel.importe ?? 0
                     const desc  = facturaSel.descuento_pct ?? 0

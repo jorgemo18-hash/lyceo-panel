@@ -105,13 +105,6 @@ export function InformeSheet({ alumno, mes, anio, informe }) {
 }
 
 // ── FacturaSheet ──────────────────────────────────────────────────
-const EMISOR = {
-  nombre:    'MORENO PARDO JORGE',
-  dni:       '18042793Y',
-  direccion: 'C/ Alvarado 4, 22100 Sangarrén (Huesca)',
-  telefono:  '675 32 41 28',
-  email:     'info@lyceoacademia.es',
-}
 
 const MESES_NOMBRE = [
   'enero','febrero','marzo','abril','mayo','junio',
@@ -125,7 +118,7 @@ const METODOS_LABEL = {
   sepa:          'Domiciliación bancaria (SEPA)',
 }
 
-export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
+export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio, emisor }) {
   const precioBruto = tarifa?.precio_bruto ?? 0
   const descPct     = tarifa?.descuento_pct ?? 0
   const descImporte = Math.round(precioBruto * descPct / 100 * 100) / 100
@@ -145,10 +138,10 @@ export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
     <div className="fac-sheet">
       <div className="fac-head">
         <div className="fac-head__left">
-          <div className="fac-head__emisor-name">{EMISOR.nombre} · {EMISOR.dni}</div>
-          <div className="fac-head__emisor-line">{EMISOR.direccion}</div>
-          <div className="fac-head__emisor-line">Teléfono: {EMISOR.telefono}</div>
-          <div className="fac-head__emisor-line">Email: {EMISOR.email}</div>
+          <div className="fac-head__emisor-name">{emisor?.nombre}</div>
+          <div className="fac-head__emisor-line">{emisor?.direccion}</div>
+          <div className="fac-head__emisor-line">Teléfono: {emisor?.telefono}</div>
+          <div className="fac-head__emisor-line">Email: {emisor?.email}</div>
         </div>
         <div className="fac-head__right">
           <img src="logo.png" alt="Lyceo" className="fac-head__logo" />
