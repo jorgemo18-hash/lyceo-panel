@@ -201,7 +201,7 @@ export function DiarioScreen({ mobile }) {
 
   return (
     <>
-      <Topbar eyebrow="Hoy" title={hoy} allSavedAt={lastSaved} mobile={mobile} rightExtra={btnAñadir} />
+      <Topbar eyebrow="Hoy" title={hoy} allSavedAt={lastSaved} showSearch={false} mobile={mobile} rightExtra={btnAñadir} />
       <div className="content">
         <ProgressBar
           done={done}
