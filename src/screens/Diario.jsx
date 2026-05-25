@@ -40,19 +40,25 @@ export function DiarioScreen({ mobile }) {
 
   React.useEffect(() => {
     if (!busqueda.trim()) { setResultadosBusqueda([]); setBuscando(false); return }
+    if (alumnoElegido) return
     setBuscando(true)
     clearTimeout(busquedaTimer.current)
     busquedaTimer.current = setTimeout(async () => {
-      const { data } = await supabase
-        .from('alumnos')
-        .select('id, nombre, curso, nivel')
-        .ilike('nombre', `%${busqueda}%`)
-        .eq('activo', true)
-        .limit(10)
-      setResultadosBusqueda(data ?? [])
-      setBuscando(false)
+      try {
+        const { data, error } = await supabase
+          .from('alumnos')
+          .select('id, nombre, curso, nivel')
+          .ilike('nombre', `%${busqueda}%`)
+          .eq('activo', true)
+          .limit(10)
+        if (error) console.error('Búsqueda alumnos:', error)
+        setResultadosBusqueda(data ?? [])
+      } finally {
+        setBuscando(false)
+      }
     }, 250)
-  }, [busqueda])
+    return () => clearTimeout(busquedaTimer.current)
+  }, [busqueda, alumnoElegido])
 
   const cerrarModal = () => {
     setModalOpen(false)
@@ -253,7 +259,7 @@ export function DiarioScreen({ mobile }) {
                 type="text"
                 placeholder="Buscar alumno…"
                 value={busqueda}
-                onChange={e => { setBusqueda(e.target.value); setAlumnoElegido(null) }}
+                onChange={e => { setBusqueda(e.target.value); if (alumnoElegido) setAlumnoElegido(null) }}
                 autoFocus
               />
               {buscando && <div className="modal__hint">Buscando…</div>}
