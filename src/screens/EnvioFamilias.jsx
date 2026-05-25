@@ -1,6 +1,6 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
-import { InformeSheet, rango } from '../lib/sheets.jsx'
+import { InformeSheet, FacturaSheet, eur, rango } from '../lib/sheets.jsx'
 
 const MESES_CURSO = [
   { mes: 9,  anio: 2025, label: 'Septiembre 2025' },
@@ -39,11 +39,39 @@ export function EnvioFamilias() {
   const [envioStatus, setEnvioStatus]     = React.useState(null)
   const [editandoComentario, setEditandoComentario] = React.useState(false)
   const [comentarioEdit, setComentarioEdit]         = React.useState('')
+  const [facturaSel, setFacturaSel]   = React.useState(null)
+  const [tarifaSel, setTarifaSel]     = React.useState(null)
+  const [tabActiva, setTabActiva]     = React.useState('informe')
+  const [editandoImporte, setEditandoImporte] = React.useState(false)
+  const [importeEditVal, setImporteEditVal]   = React.useState('')
 
   const informesCache = React.useRef({})
   const festivosCache = React.useRef({})
 
   const { mes, anio } = MESES_CURSO[mesIdx]
+
+  const cargarFactura = React.useCallback(async (alumno) => {
+    const familiaId = alumno.familia_id
+    if (!familiaId) { setTarifaSel(null); setFacturaSel(null); return { tarifa: null, factura: null } }
+    const [{ data: tArr }, { data: fArr }] = await Promise.all([
+      supabase.from('tarifas').select('*').eq('familia_id', familiaId).order('fecha_inicio', { ascending: false }).limit(1),
+      supabase.from('facturas').select('*').eq('alumno_id', alumno.id).eq('anio', anio).eq('mes', mes).limit(1),
+    ])
+    const tarifa = tArr?.[0] ?? null
+    let factura = fArr?.[0] ?? null
+    if (!factura) {
+      const { count } = await supabase.from('facturas').select('id', { count: 'exact', head: true }).eq('anio', anio)
+      const numero = `Lyceo-${anio}-${String((count ?? 0) + 1).padStart(3, '0')}`
+      const { data: nf } = await supabase
+        .from('facturas')
+        .insert({ familia_id: familiaId, alumno_id: alumno.id, anio, mes, importe: tarifa?.precio_neto ?? 0, numero_factura: numero })
+        .select().single()
+      factura = nf
+    }
+    setTarifaSel(tarifa)
+    setFacturaSel(factura)
+    return { tarifa, factura }
+  }, [mes, anio])
 
   const cargarFestivos = React.useCallback(async (m, a) => {
     const key = `${m}-${a}`
@@ -121,12 +149,17 @@ export function EnvioFamilias() {
     if (!alumnoSel) return
     setEnvioStatus(null)
     setEditandoComentario(false)
+    setTabActiva('informe')
+    setFacturaSel(null)
+    setTarifaSel(null)
+    setEditandoImporte(false)
 
     const key = `${alumnoSel.id}-${mes}-${anio}`
     const cached = informesCache.current[key]
     if (cached) {
       setInforme(cached)
       setComentarioEdit(cached.comentario ?? '')
+      cargarFactura(alumnoSel)
       return
     }
 
@@ -140,46 +173,16 @@ export function EnvioFamilias() {
           setInforme(result)
           setGenerando(false)
           setComentarioEdit(result.comentario ?? '')
+          cargarFactura(alumnoSel)
         }
       })
       .catch(() => { if (!aborted) setGenerando(false) })
 
     return () => { aborted = true }
-  }, [alumnoSel, mes, anio, cargarInforme])
+  }, [alumnoSel, mes, anio, cargarInforme, cargarFactura])
 
   const buildPayload = async (alumno, informeData) => {
-    const familiaId = alumno.familia_id
-
-    let tarifa = null
-    if (familiaId) {
-      const { data: tArr } = await supabase
-        .from('tarifas').select('*')
-        .eq('familia_id', familiaId)
-        .order('fecha_inicio', { ascending: false })
-        .limit(1)
-      tarifa = tArr?.[0] ?? null
-    }
-
-    let factura = null
-    if (familiaId) {
-      const { data: fArr } = await supabase
-        .from('facturas').select('*')
-        .eq('alumno_id', alumno.id).eq('anio', anio).eq('mes', mes)
-        .limit(1)
-      if (fArr?.[0]) {
-        factura = fArr[0]
-      } else {
-        const { count } = await supabase
-          .from('facturas').select('id', { count: 'exact', head: true })
-          .eq('anio', anio)
-        const numero = `Lyceo-${anio}-${String((count ?? 0) + 1).padStart(3, '0')}`
-        const { data: nf } = await supabase
-          .from('facturas')
-          .insert({ familia_id: familiaId, alumno_id: alumno.id, anio, mes, importe: tarifa?.precio_neto ?? 0, numero_factura: numero })
-          .select().single()
-        factura = nf
-      }
-    }
+    const { tarifa, factura } = await cargarFactura(alumno)
 
     const diasMes = []
     for (const s of informeData.sesiones ?? []) {
@@ -310,6 +313,14 @@ export function EnvioFamilias() {
     }
   }
 
+  const guardarImporte = async () => {
+    const val = parseFloat(importeEditVal)
+    if (isNaN(val) || !facturaSel) return
+    await supabase.from('facturas').update({ importe: val }).eq('id', facturaSel.id)
+    setFacturaSel(prev => ({ ...prev, importe: val }))
+    setEditandoImporte(false)
+  }
+
   const guardarComentario = () => {
     const updated = { ...informe, comentario: comentarioEdit }
     setInforme(updated)
@@ -326,6 +337,10 @@ export function EnvioFamilias() {
     setMesIdx(idx)
     setAlumnoSel(null)
     setInforme(null)
+    setFacturaSel(null)
+    setTarifaSel(null)
+    setTabActiva('informe')
+    setEditandoImporte(false)
     setResumen(null)
     setProgreso(null)
     setEnvioStatus(null)
@@ -450,6 +465,16 @@ export function EnvioFamilias() {
         {alumnoSel && !generando && informe && (
           <>
             <div className="inf-toolbar no-print">
+              <div className="inf-tabs">
+                <button
+                  className={`inf-tab${tabActiva === 'informe' ? ' inf-tab--on' : ''}`}
+                  onClick={() => setTabActiva('informe')}
+                >Informe</button>
+                <button
+                  className={`inf-tab${tabActiva === 'recibo' ? ' inf-tab--on' : ''}`}
+                  onClick={() => setTabActiva('recibo')}
+                >Recibo</button>
+              </div>
               <span title={!email ? 'Sin email registrado' : undefined}>
                 <button
                   className="btn btn--primary"
@@ -463,36 +488,85 @@ export function EnvioFamilias() {
                 </button>
               </span>
             </div>
+
             {envioStatus && (
               <div className={`envio-status ${envioStatus.ok ? 'envio-status--ok' : 'envio-status--err'}`}>
                 {envioStatus.msg}
               </div>
             )}
-            <div className="comentario-edit no-print">
-              {editandoComentario ? (
-                <>
-                  <textarea
-                    className="comentario-edit__area"
-                    value={comentarioEdit}
-                    onChange={e => setComentarioEdit(e.target.value)}
-                    rows={5}
-                    autoFocus
-                  />
-                  <div className="comentario-edit__actions">
-                    <button className="btn btn--primary btn--sm" onClick={guardarComentario}>Guardar</button>
-                    <button className="btn btn--ghost btn--sm" onClick={() => setEditandoComentario(false)}>Cancelar</button>
-                  </div>
-                </>
-              ) : (
-                <button
-                  className="btn btn--ghost btn--sm"
-                  onClick={() => { setComentarioEdit(informe.comentario ?? ''); setEditandoComentario(true) }}
-                >
-                  Editar informe
-                </button>
-              )}
-            </div>
-            <InformeSheet alumno={alumnoSel} mes={mes} anio={anio} informe={informe} />
+
+            {tabActiva === 'informe' && (
+              <>
+                <div className="comentario-edit no-print">
+                  {editandoComentario ? (
+                    <>
+                      <textarea
+                        className="comentario-edit__area"
+                        value={comentarioEdit}
+                        onChange={e => setComentarioEdit(e.target.value)}
+                        rows={5}
+                        autoFocus
+                      />
+                      <div className="comentario-edit__actions">
+                        <button className="btn btn--primary btn--sm" onClick={guardarComentario}>Guardar</button>
+                        <button className="btn btn--ghost btn--sm" onClick={() => setEditandoComentario(false)}>Cancelar</button>
+                      </div>
+                    </>
+                  ) : (
+                    <button
+                      className="btn btn--ghost btn--sm"
+                      onClick={() => { setComentarioEdit(informe.comentario ?? ''); setEditandoComentario(true) }}
+                    >
+                      Editar informe
+                    </button>
+                  )}
+                </div>
+                <InformeSheet alumno={alumnoSel} mes={mes} anio={anio} informe={informe} />
+              </>
+            )}
+
+            {tabActiva === 'recibo' && !facturaSel && (
+              <div className="alumnos-estado">Sin tarifa ni factura para este mes.</div>
+            )}
+
+            {tabActiva === 'recibo' && facturaSel && (
+              <>
+                <div className="recibo-importe-bar no-print">
+                  <span className="recibo-importe-label">Importe</span>
+                  {editandoImporte ? (
+                    <>
+                      <input
+                        className="recibo-importe-input"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={importeEditVal}
+                        onChange={e => setImporteEditVal(e.target.value)}
+                        autoFocus
+                      />
+                      <button className="btn btn--primary btn--sm" onClick={guardarImporte}>Guardar</button>
+                      <button className="btn btn--ghost btn--sm" onClick={() => setEditandoImporte(false)}>Cancelar</button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="recibo-importe-val">{eur(facturaSel.importe)}</span>
+                      <button
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => { setImporteEditVal(String(facturaSel.importe ?? '')); setEditandoImporte(true) }}
+                      >Editar</button>
+                    </>
+                  )}
+                </div>
+                <FacturaSheet
+                  alumno={alumnoSel}
+                  familia={alumnoSel.familias}
+                  tarifa={tarifaSel}
+                  factura={facturaSel}
+                  mes={mes}
+                  anio={anio}
+                />
+              </>
+            )}
           </>
         )}
       </div>

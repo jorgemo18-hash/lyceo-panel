@@ -15,7 +15,6 @@ import { Cobros } from './screens/Cobros.jsx';
 import { Gastos } from './screens/Gastos.jsx';
 import { CapturaScreen } from './screens/Captura.jsx';
 import { EnvioFamilias } from './screens/EnvioFamilias.jsx';
-import { Facturas } from './screens/Facturas.jsx';
 import { Ajustes } from './screens/Ajustes.jsx';
 import { Login } from './screens/Login.jsx';
 
@@ -112,17 +111,6 @@ const PANTALLAS = {
         <Topbar eyebrow="Gestión" title="Envío familias" showSearch={false} mobile={mobile} />
         <div className="content content--wide">
           <EnvioFamilias />
-        </div>
-      </>
-    );
-  },
-  facturas: ({ mobile }) => {
-    const Topbar = window.Topbar;
-    return (
-      <>
-        <Topbar eyebrow="Gestión" title="Facturas" showSearch={false} mobile={mobile} />
-        <div className="content content--wide">
-          <Facturas />
         </div>
       </>
     );

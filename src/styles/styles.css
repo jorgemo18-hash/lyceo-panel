@@ -1132,7 +1132,57 @@ button { font-family: inherit; }
 .inf-alumno__curso  { font-size: 11px; color: var(--ink-3); }
 
 .inf-main { flex-grow: 1; min-width: 0; }
-.inf-toolbar { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+.inf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+.inf-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+}
+.inf-tab {
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.inf-tab:hover { color: var(--ink); }
+.inf-tab--on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+.recibo-importe-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.recibo-importe-label { font-size: 13px; color: var(--ink-3); font-weight: 500; }
+.recibo-importe-val { font-size: 15px; font-weight: 600; color: var(--ink); }
+.recibo-importe-input {
+  width: 90px;
+  padding: 4px 8px;
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--bg-elev);
+}
+.recibo-importe-input:focus { outline: none; border-color: var(--lyceo-soft); }
 
 /* Hoja A4 */
 .inf-sheet {
