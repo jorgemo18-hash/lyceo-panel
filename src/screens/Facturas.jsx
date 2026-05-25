@@ -72,7 +72,7 @@ export function Facturas() {
   const generarNumero = async (year) => {
     const { count } = await supabase
       .from('facturas').select('id', { count: 'exact', head: true }).eq('anio', year)
-    return `Lyceo-${year}-${String((count ?? 0) + 1).padStart(3, '0')}`
+    return `REC-${year}-${String((count ?? 0) + 1).padStart(3, '0')}`
   }
 
   const generarFactura = async (alumno) => {

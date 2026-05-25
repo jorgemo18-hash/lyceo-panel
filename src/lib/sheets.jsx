@@ -156,7 +156,7 @@ export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
       </div>
 
       <div className="fac-divider" />
-      <div className="fac-title">Factura {factura?.numero_factura}</div>
+      <div className="fac-title">Recibo informativo {factura?.numero_factura?.replace(/^Lyceo-/, 'REC-')}</div>
 
       <div className="fac-sections">
         <div className="fac-section">
@@ -224,24 +224,9 @@ export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
           )}
         </tbody>
         <tfoot>
-          <tr>
-            <td colSpan={3} />
-            <td className="fac-tfoot-lbl">Subtotal</td>
-            <td className="fac-tfoot-val">{eur(precioNeto)}</td>
-          </tr>
-          <tr>
-            <td colSpan={3} />
-            <td className="fac-tfoot-lbl">Base IVA 0%</td>
-            <td className="fac-tfoot-val">{eur(precioNeto)}</td>
-          </tr>
-          <tr>
-            <td colSpan={3} />
-            <td className="fac-tfoot-lbl">IVA 0%</td>
-            <td className="fac-tfoot-val">0,00 €</td>
-          </tr>
           <tr className="fac-tfoot-total">
             <td colSpan={3} />
-            <td className="fac-tfoot-lbl fac-tfoot-lbl--total">Total Factura</td>
+            <td className="fac-tfoot-lbl fac-tfoot-lbl--total">Total</td>
             <td className="fac-tfoot-val fac-tfoot-val--total">{eur(precioNeto)}</td>
           </tr>
         </tfoot>
@@ -250,9 +235,9 @@ export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
       <p className="fac-footnote">
         Operación exenta de IVA según Art. 20.Uno.9º de la Ley 37/1992.
       </p>
-      <p className="fac-footnote fac-footnote--aviso">
-        Este documento es un recibo informativo. Para factura oficial a efectos fiscales (IRPF), solicítela en info@lyceoacademia.es
-      </p>
+      <div className="fac-aviso-legal">
+        Documento informativo sin validez fiscal. La factura oficial a efectos fiscales puede solicitarse por email.
+      </div>
     </div>
   )
 }

@@ -3333,9 +3333,15 @@ body.printing .no-print { display: none !important; }
   margin: 16px 0 0;
   line-height: 1.5;
 }
-.fac-footnote--aviso {
-  font-size: 10px;
-  margin-top: 6px;
+.fac-aviso-legal {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  line-height: 1.5;
 }
 
 /* ── Print facturas ── */
