@@ -42,8 +42,9 @@ export function EnvioFamilias() {
   const [facturaSel, setFacturaSel]   = React.useState(null)
   const [tarifaSel, setTarifaSel]     = React.useState(null)
   const [tabActiva, setTabActiva]     = React.useState('informe')
-  const [editandoImporte, setEditandoImporte] = React.useState(false)
-  const [importeEditVal, setImporteEditVal]   = React.useState('')
+  const [editandoImporte, setEditandoImporte]   = React.useState(false)
+  const [importeEditVal, setImporteEditVal]     = React.useState('')
+  const [descuentoEditVal, setDescuentoEditVal] = React.useState('')
 
   const informesCache = React.useRef({})
   const festivosCache = React.useRef({})
@@ -64,7 +65,7 @@ export function EnvioFamilias() {
       const numero = `Lyceo-${anio}-${String((count ?? 0) + 1).padStart(3, '0')}`
       const { data: nf } = await supabase
         .from('facturas')
-        .insert({ familia_id: familiaId, alumno_id: alumno.id, anio, mes, importe: tarifa?.precio_neto ?? 0, numero_factura: numero })
+        .insert({ familia_id: familiaId, alumno_id: alumno.id, anio, mes, importe: tarifa?.precio_neto ?? 0, descuento_pct: tarifa?.descuento_pct ?? 0, numero_factura: numero })
         .select().single()
       factura = nf
     }
@@ -153,6 +154,7 @@ export function EnvioFamilias() {
     setFacturaSel(null)
     setTarifaSel(null)
     setEditandoImporte(false)
+    setDescuentoEditVal('')
 
     const key = `${alumnoSel.id}-${mes}-${anio}`
     const cached = informesCache.current[key]
@@ -314,10 +316,12 @@ export function EnvioFamilias() {
   }
 
   const guardarImporte = async () => {
-    const val = parseFloat(importeEditVal)
-    if (isNaN(val) || !facturaSel) return
-    await supabase.from('facturas').update({ importe: val }).eq('id', facturaSel.id)
-    setFacturaSel(prev => ({ ...prev, importe: val }))
+    const bruto = parseFloat(importeEditVal)
+    const desc  = parseFloat(descuentoEditVal)
+    if (isNaN(bruto) || isNaN(desc) || !facturaSel) return
+    const neto = Math.round(bruto * (1 - desc / 100) * 100) / 100
+    await supabase.from('facturas').update({ importe: neto, descuento_pct: desc }).eq('id', facturaSel.id)
+    setFacturaSel(prev => ({ ...prev, importe: neto, descuento_pct: desc }))
     setEditandoImporte(false)
   }
 
@@ -341,6 +345,7 @@ export function EnvioFamilias() {
     setTarifaSel(null)
     setTabActiva('informe')
     setEditandoImporte(false)
+    setDescuentoEditVal('')
     setResumen(null)
     setProgreso(null)
     setEnvioStatus(null)
@@ -532,27 +537,53 @@ export function EnvioFamilias() {
             {tabActiva === 'recibo' && facturaSel && (
               <>
                 <div className="recibo-importe-bar no-print">
-                  <span className="recibo-importe-label">Importe</span>
-                  {editandoImporte ? (
+                  {editandoImporte ? (() => {
+                    const bruto = parseFloat(importeEditVal || '0')
+                    const desc  = parseFloat(descuentoEditVal || '0')
+                    const neto  = (!isNaN(bruto) && !isNaN(desc))
+                      ? Math.round(bruto * (1 - desc / 100) * 100) / 100
+                      : null
+                    return (
+                      <>
+                        <span className="recibo-importe-label">Bruto</span>
+                        <input
+                          className="recibo-importe-input"
+                          type="number" step="0.01" min="0"
+                          value={importeEditVal}
+                          onChange={e => setImporteEditVal(e.target.value)}
+                          autoFocus
+                        />
+                        <span className="recibo-importe-label" style={{ marginLeft: 8 }}>Dto. %</span>
+                        <input
+                          className="recibo-importe-input recibo-importe-input--sm"
+                          type="number" step="1" min="0" max="100"
+                          value={descuentoEditVal}
+                          onChange={e => setDescuentoEditVal(e.target.value)}
+                        />
+                        {neto !== null && (
+                          <span className="recibo-importe-neto">= {eur(neto)}</span>
+                        )}
+                        <button className="btn btn--primary btn--sm" onClick={guardarImporte}>Guardar</button>
+                        <button className="btn btn--ghost btn--sm" onClick={() => setEditandoImporte(false)}>Cancelar</button>
+                      </>
+                    )
+                  })() : (
                     <>
-                      <input
-                        className="recibo-importe-input"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={importeEditVal}
-                        onChange={e => setImporteEditVal(e.target.value)}
-                        autoFocus
-                      />
-                      <button className="btn btn--primary btn--sm" onClick={guardarImporte}>Guardar</button>
-                      <button className="btn btn--ghost btn--sm" onClick={() => setEditandoImporte(false)}>Cancelar</button>
-                    </>
-                  ) : (
-                    <>
+                      <span className="recibo-importe-label">Neto</span>
                       <span className="recibo-importe-val">{eur(facturaSel.importe)}</span>
+                      {(facturaSel.descuento_pct ?? 0) > 0 && (
+                        <span className="recibo-importe-badge">−{facturaSel.descuento_pct}%</span>
+                      )}
                       <button
                         className="btn btn--ghost btn--sm"
-                        onClick={() => { setImporteEditVal(String(facturaSel.importe ?? '')); setEditandoImporte(true) }}
+                        onClick={() => {
+                          const desc = facturaSel.descuento_pct ?? 0
+                          const bruto = tarifaSel?.precio_bruto
+                            ?? (desc > 0 ? Math.round(facturaSel.importe / (1 - desc / 100) * 100) / 100 : facturaSel.importe)
+                          setImporteEditVal(String(bruto))
+                          setDescuentoEditVal(String(desc))
+                          setEditandoImporte(true)
+                        }}
                       >Editar</button>
                     </>
                   )}

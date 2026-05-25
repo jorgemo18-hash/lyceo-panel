@@ -1182,7 +1182,22 @@ button { font-family: inherit; }
   color: var(--ink);
   background: var(--bg-elev);
 }
+.recibo-importe-input--sm { width: 60px; }
 .recibo-importe-input:focus { outline: none; border-color: var(--lyceo-soft); }
+.recibo-importe-neto {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 4px;
+}
+.recibo-importe-badge {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8B0000;
+  background: #f4cccc;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
 
 /* Hoja A4 */
 .inf-sheet {
