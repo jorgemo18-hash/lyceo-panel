@@ -236,7 +236,7 @@ export function FacturaSheet({ alumno, familia, tarifa, factura, mes, anio }) {
         Operación exenta de IVA según Art. 20.Uno.9º de la Ley 37/1992.
       </p>
       <div className="fac-aviso-legal">
-        Documento informativo sin validez fiscal. La factura oficial a efectos fiscales puede solicitarse por email.
+        Documento informativo sin validez fiscal. La factura oficial a efectos fiscales puede solicitarse en info@lyceoacademia.es
       </div>
     </div>
   )
