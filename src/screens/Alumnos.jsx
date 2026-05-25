@@ -1414,6 +1414,7 @@ export function Alumnos() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState(null)
   const [filtro, setFiltro] = React.useState('activos')
+  const [busqueda, setBusqueda] = React.useState(() => window._lyceoSearchQuery ?? '')
   const [showPanel, setShowPanel] = React.useState(false)
   const [archivando, setArchivando] = React.useState(null)
   const [eliminando, setEliminando] = React.useState(null)
@@ -1451,6 +1452,13 @@ export function Alumnos() {
 
   React.useEffect(() => { cargar() }, [cargar])
   React.useEffect(() => { cargarPendientes() }, [cargarPendientes])
+
+  React.useEffect(() => {
+    window._lyceoSearchQuery = ''
+    const handler = (e) => setBusqueda(e.detail ?? '')
+    window.addEventListener('lyceo-topbar-search', handler)
+    return () => window.removeEventListener('lyceo-topbar-search', handler)
+  }, [])
 
   const archivar = async (alumno) => {
     const { error: e } = await supabase
@@ -1505,6 +1513,10 @@ export function Alumnos() {
     else cargar()
   }
 
+  const alumnosFiltrados = busqueda.trim()
+    ? alumnos.filter(a => a.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()))
+    : alumnos
+
   return (
     <>
       <InscripcionesPendientesSection
@@ -1535,13 +1547,15 @@ export function Alumnos() {
         </div>
       ) : error ? (
         <div className="alumnos-estado alumnos-estado--error">Error: {error}</div>
-      ) : alumnos.length === 0 ? (
+      ) : alumnosFiltrados.length === 0 ? (
         <div className="alumnos-estado">
-          No hay alumnos {filtro === 'archivados' ? 'archivados' : 'activos'}.
+          {busqueda.trim()
+            ? `Sin resultados para "${busqueda}"`
+            : `No hay alumnos ${filtro === 'archivados' ? 'archivados' : 'activos'}.`}
         </div>
       ) : (
         <div className="alumnos-list">
-          {alumnos.map(a => (
+          {alumnosFiltrados.map(a => (
             <div key={a.id} className={`alumno-card alumno-card--${a.nivel}`}
               onClick={() => setDetalleId(a.id)} style={{ cursor: 'pointer' }}>
               <div className="alumno-card__main">

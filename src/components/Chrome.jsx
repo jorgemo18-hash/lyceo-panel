@@ -155,6 +155,13 @@ function BottomNav({ activo = "horario", onNavigate }) {
 }
 
 function Topbar({ eyebrow, title, allSavedAt, mobile, rightExtra, showSearch = true }) {
+  const [query, setQuery] = React.useState('')
+
+  const handleChange = (val) => {
+    setQuery(val)
+    window.dispatchEvent(new CustomEvent('lyceo-topbar-search', { detail: val }))
+  }
+
   return (
     <header className="topbar">
       {mobile && (
@@ -173,10 +180,19 @@ function Topbar({ eyebrow, title, allSavedAt, mobile, rightExtra, showSearch = t
         {rightExtra}
         {allSavedAt !== undefined && <GlobalSaveStatus savedAt={allSavedAt} />}
         {!mobile && showSearch && (
-          <div className="search">
+          <div className={`search${query ? ' search--active' : ''}`}>
             <Icon.search />
-            <input type="text" placeholder="Buscar alumno…" />
-            <kbd>⌘K</kbd>
+            <input
+              type="text"
+              placeholder="Buscar alumno…"
+              value={query}
+              onChange={e => handleChange(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Escape') { handleChange(''); e.target.blur() } }}
+            />
+            {query
+              ? <button className="search__clear" onClick={() => handleChange('')}>✕</button>
+              : <kbd>⌘K</kbd>
+            }
           </div>
         )}
       </div>

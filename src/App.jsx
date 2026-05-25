@@ -170,6 +170,15 @@ export default function App() {
     () => window.matchMedia('(max-width: 768px)').matches ? 'captura' : 'horario'
   );
   const [session, setSession]   = React.useState(null);
+
+  React.useEffect(() => {
+    const handler = (e) => {
+      window._lyceoSearchQuery = e.detail
+      if (e.detail) setPantalla('alumnos')
+    }
+    window.addEventListener('lyceo-topbar-search', handler)
+    return () => window.removeEventListener('lyceo-topbar-search', handler)
+  }, [])
   const [loadingAuth, setLoadingAuth] = React.useState(true);
   const [accessDenied, setAccessDenied] = React.useState(false);
   const mobile = useMobile();
