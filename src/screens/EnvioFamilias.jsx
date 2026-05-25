@@ -55,8 +55,8 @@ export function EnvioFamilias() {
     const tarifa = tArr?.[0] ?? null
     let factura = fArr?.[0] ?? null
     if (!factura) {
-      const { count } = await supabase.from('facturas').select('id', { count: 'exact', head: true }).eq('anio', anio)
-      const numero = `Lyceo-${anio}-${String((count ?? 0) + 1).padStart(3, '0')}`
+      const { data: n } = await supabase.rpc('siguiente_numero_factura', { p_anio: anio })
+      const numero = `Lyceo-${anio}-${String(n).padStart(3, '0')}`
       const { data: nf } = await supabase
         .from('facturas')
         .insert({ familia_id: familiaId, alumno_id: alumno.id, anio, mes, importe: tarifa?.precio_neto ?? 0, descuento_pct: tarifa?.descuento_pct ?? 0, numero_factura: numero })
