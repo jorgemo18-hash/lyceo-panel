@@ -74,8 +74,8 @@ React.useEffect(() => {
             <div className="stat__lbl">alumnos en cuadro</div>
           </div>
           <div className="stat">
-            <div className="stat__num">{stats.franjas}</div>
-            <div className="stat__lbl">franjas ocupadas</div>
+            <div className="stat__num">{stats.franjas}/23</div>
+            <div className="stat__lbl">franjas llenas</div>
           </div>
         </div>
         <div className="hor-filter">

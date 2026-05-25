@@ -108,11 +108,17 @@ function FichaHorario({ grid, setGrid }) {
           {FF_BLOQUES.map((b) => (
             <tr key={b}>
               <th className="ff-time">{b}</th>
-              {FF_DIAS.map((d) => (
-                <td key={d} className="ff-td">
-                  <FichaCellEditor cell={grid[b][d]} onChange={(v) => setCell(b, d, v)} />
-                </td>
-              ))}
+              {FF_DIAS.map((d) => {
+                const bloqueada = d === 'Viernes' && (b === '18:30 – 19:30' || b === '19:30 – 20:30')
+                return (
+                  <td key={d} className={`ff-td${bloqueada ? ' ff-td--bloqueada' : ''}`}>
+                    {bloqueada
+                      ? <span className="ff-bloqueada">✕</span>
+                      : <FichaCellEditor cell={grid[b][d]} onChange={(v) => setCell(b, d, v)} />
+                    }
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>

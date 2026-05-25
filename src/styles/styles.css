@@ -1484,6 +1484,16 @@ button { font-family: inherit; }
   vertical-align: middle;
   position: relative;
 }
+.ff-td--bloqueada { background: #8B0000; }
+.ff-bloqueada {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%; height: 100%;
+  color: rgba(255,255,255,0.7);
+  font-size: 7pt;
+  font-weight: 700;
+}
 .ff-cell {
   width: 100%; height: 100%;
   display: flex; flex-direction: column;
