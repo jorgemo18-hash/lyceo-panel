@@ -184,7 +184,7 @@ export function EnvioFamilias() {
   }, [alumnoSel, mes, anio, cargarInforme, cargarFactura])
 
   const buildPayload = async (alumno, informeData) => {
-    const { tarifa, factura } = await cargarFactura(alumno)
+    const { factura } = await cargarFactura(alumno)
 
     const diasMes = []
     for (const s of informeData.sesiones ?? []) {
@@ -205,13 +205,18 @@ export function EnvioFamilias() {
       anio,
       diasMes,
       comentario: informeData.comentario || '',
-      factura: factura ? {
-        numeroFactura: factura.numero_factura,
-        familia: alumno.familias,
-        precioBruto: tarifa?.precio_bruto ?? factura.importe,
-        descuentoPct: tarifa?.descuento_pct ?? 0,
-        precioNeto: tarifa?.precio_neto ?? factura.importe,
-      } : null,
+      factura: factura ? (() => {
+        const desc  = factura.descuento_pct ?? 0
+        const neto  = factura.importe ?? 0
+        const bruto = desc > 0 ? Math.round(neto / (1 - desc / 100) * 100) / 100 : neto
+        return {
+          numeroFactura: factura.numero_factura,
+          familia: alumno.familias,
+          precioBruto: bruto,
+          descuentoPct: desc,
+          precioNeto: neto,
+        }
+      })() : null,
     }
   }
 
@@ -591,7 +596,12 @@ export function EnvioFamilias() {
                 <FacturaSheet
                   alumno={alumnoSel}
                   familia={alumnoSel.familias}
-                  tarifa={tarifaSel}
+                  tarifa={(() => {
+                    const neto  = facturaSel.importe ?? 0
+                    const desc  = facturaSel.descuento_pct ?? 0
+                    const bruto = desc > 0 ? Math.round(neto / (1 - desc / 100) * 100) / 100 : neto
+                    return { precio_bruto: bruto, descuento_pct: desc, precio_neto: neto }
+                  })()}
                   factura={facturaSel}
                   mes={mes}
                   anio={anio}
