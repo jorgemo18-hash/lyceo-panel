@@ -24,6 +24,12 @@ function Horario() {
   const [error, setError] = React.useState(null)
   const [filtroNivel, setFiltroNivel] = React.useState('todos')
 
+  const onPrint = () => {
+    document.body.classList.add('printing-horario')
+    window.print()
+    setTimeout(() => document.body.classList.remove('printing-horario'), 300)
+  }
+
   React.useEffect(() => {
     supabase
       .from('horario')
@@ -96,6 +102,9 @@ function Horario() {
               </button>
             ))}
           </div>
+          <button className="btn btn--ghost btn--sm" onClick={onPrint}>
+            <Icon.printer /> Imprimir horario
+          </button>
         </div>
       </div>
 
@@ -150,6 +159,26 @@ function Horario() {
           )
         })}
       </div>
+
+      <table className="hor-print">
+        <thead>
+          <tr>
+            <th>Hora</th>
+            {DIAS.map(d => <th key={d.id}>{d.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {FRANJAS.map(f => (
+            <tr key={f.hora_inicio}>
+              <td>{f.hora_inicio}</td>
+              {DIAS.map(d => {
+                const alumnos = getAlumnos(f.hora_inicio, d.id)
+                return <td key={d.id}>{alumnos.map(a => a.nombre).join(' / ')}</td>
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
 
       <div className="hor-legend">
         <span className="hor-legend__item">
