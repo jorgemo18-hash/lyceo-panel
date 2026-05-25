@@ -48,10 +48,10 @@ React.useEffect(() => {
     rows.forEach(r => DIAS.forEach(d => { if (r[d.id]) ids.add(r.alumno_id) }))
     let franjas = 0
     FRANJAS.forEach(f => DIAS.forEach(d => {
-      if (rows.some(r => r.hora_inicio === f.hora_inicio && r[d.id])) franjas++
+      if (getAlumnos(f.hora_inicio, d.id).length >= 6) franjas++
     }))
     return { alumnos: ids.size, franjas }
-  }, [rows])
+  }, [rows, filtroNivel])
 
   if (loading) {
     return (
