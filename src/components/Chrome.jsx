@@ -29,7 +29,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "envio",     label: "Envío familias",  icon: <Icon.mail /> },
     { id: "ficha",     label: "Tarifas",         icon: <Icon.tag /> },
     { id: "alumnos",   label: "Alumnos",         icon: <Icon.users />, badge: alumnosBadge || null },
-    { id: "pagos",     label: "Cobros",          icon: <Icon.euro /> },
+    { id: "pagos",     label: "Ingresos",        icon: <Icon.euro /> },
     { id: "gastos",    label: "Gastos",          icon: <Icon.receipt />, badge: gastosBadge || null },
     { id: "documentos",label: "Documentos",      icon: <Icon.doc /> },
   ];
@@ -94,7 +94,7 @@ function BottomNav({ activo = "horario", onNavigate }) {
     { id: "horario", label: "Horario", icon: <Icon.grid /> },
     { id: "alumnos", label: "Alumnos", icon: <Icon.users /> },
     { id: "gastos",  label: "Gastos",  icon: <Icon.receipt /> },
-    { id: "pagos",   label: "Cobros",  icon: <Icon.euro /> },
+    { id: "pagos",   label: "Ingresos", icon: <Icon.euro /> },
   ]
 
   const mas = [
