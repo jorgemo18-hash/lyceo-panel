@@ -21,6 +21,7 @@ export function EnvioFamilias() {
   const [alumnoSel, setAlumnoSel]         = React.useState(null)
   const [informe, setInforme]             = React.useState(null)
   const [cargando, setCargando]           = React.useState(true)
+  const [regenerando, setRegenerando]         = React.useState(false)
   const [generando, setGenerando]           = React.useState(false)
   const [generandoTodos, setGenerandoTodos] = React.useState(false)
   const [todosGenerados, setTodosGenerados] = React.useState(false)
@@ -353,6 +354,23 @@ export function EnvioFamilias() {
     )
   }
 
+  const regenerar = async () => {
+    if (!alumnoSel) return
+    setRegenerando(true)
+    setInforme(null)
+    setEditandoComentario(false)
+    await supabase.from('informes').delete()
+      .eq('alumno_id', alumnoSel.id).eq('mes', mes).eq('anio', anio)
+    const key = `${alumnoSel.id}-${mes}-${anio}`
+    delete informesCache.current[key]
+    try {
+      const result = await cargarInforme(alumnoSel, mes, anio)
+      setInforme(result)
+      setComentarioEdit(result.comentario ?? '')
+    } catch {}
+    setRegenerando(false)
+  }
+
   const cambiarMes = (idx) => {
     setMesIdx(idx)
     setAlumnoSel(null)
@@ -496,18 +514,30 @@ export function EnvioFamilias() {
                   onClick={() => setTabActiva('recibo')}
                 >Recibo</button>
               </div>
-              <span title={!email ? 'Sin email registrado' : undefined}>
-                <button
-                  className="btn btn--primary"
-                  onClick={enviar}
-                  disabled={!email || enviando}
-                  style={!email ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
-                >
-                  {enviando
-                    ? <><span className="btn-spinner" /> Enviando…</>
-                    : <><Icon.mail /> Enviar a {email ?? 'sin email'}</>}
-                </button>
-              </span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                {tabActiva === 'informe' && (
+                  <button
+                    className="btn btn--ghost"
+                    onClick={regenerar}
+                    disabled={regenerando || generando}
+                    title="Borra el comentario guardado y regenera el informe con IA"
+                  >
+                    {regenerando ? <><span className="btn-spinner" /> Regenerando…</> : 'Regenerar informe'}
+                  </button>
+                )}
+                <span title={!email ? 'Sin email registrado' : undefined}>
+                  <button
+                    className="btn btn--primary"
+                    onClick={enviar}
+                    disabled={!email || enviando}
+                    style={!email ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                  >
+                    {enviando
+                      ? <><span className="btn-spinner" /> Enviando…</>
+                      : <><Icon.mail /> Enviar a {email ?? 'sin email'}</>}
+                  </button>
+                </span>
+              </div>
             </div>
 
             {envioStatus && (

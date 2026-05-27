@@ -1,15 +1,32 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
-import { cargarSesionesHoy, groupByHora, guardarSesion } from '../lib/data.jsx'
+import { cargarSesionesFecha, groupByHora, guardarSesion } from '../lib/data.jsx'
 
 const PRIMARY = '#8B0000'
 const HORAS_EXTRA = ['15:30', '16:30', '17:30', '18:30', '19:30']
 const toIniciales = n => n.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
+function getFechaHoy() {
+  return new Date().toISOString().split('T')[0]
+}
+
+function getFechaMin() {
+  const d = new Date()
+  d.setDate(1)
+  d.setMonth(d.getMonth() - 1)
+  return d.toISOString().split('T')[0]
+}
+
 export function DiarioScreen({ mobile }) {
   const Topbar = window.Topbar
   const ProgressBar = window.ProgressBar
   const SessionCard = window.SessionCard
+
+  const fechaHoy = React.useMemo(getFechaHoy, [])
+  const fechaMin  = React.useMemo(getFechaMin, [])
+
+  const [fechaSel, setFechaSel] = React.useState(fechaHoy)
+  const fechaRef = React.useRef(fechaSel)
 
   const [sesiones, setSesiones] = React.useState([])
   const [hoy, setHoy] = React.useState('')
@@ -27,9 +44,9 @@ export function DiarioScreen({ mobile }) {
   const busquedaTimer = React.useRef(null)
 
   const registrosRef = React.useRef({})
-  const sesionesRef = React.useRef([])
+  const sesionesRef  = React.useRef([])
   React.useEffect(() => { registrosRef.current = registros }, [registros])
-  React.useEffect(() => { sesionesRef.current = sesiones }, [sesiones])
+  React.useEffect(() => { sesionesRef.current  = sesiones  }, [sesiones])
 
   React.useEffect(() => {
     if (!modalOpen) return
@@ -60,6 +77,72 @@ export function DiarioScreen({ mobile }) {
     return () => clearTimeout(busquedaTimer.current)
   }, [busqueda, alumnoElegido])
 
+  const flushPendingGuardados = (fecha) => {
+    Object.values(timers.current).forEach(clearTimeout)
+    timers.current = {}
+    const regs = registrosRef.current
+    const sess = sesionesRef.current
+    Object.entries(regs).forEach(([id, registro]) => {
+      if (!registro._dirty) return
+      const sesion = sess.find(s => s.id === id)
+      const debeGuardar = sesion && (
+        (registro.asignatura && registro.tema?.trim()) ||
+        registro.estado === 'absent'
+      )
+      if (debeGuardar) guardarSesion(sesion, registro, fecha)
+    })
+  }
+
+  const cambiarFecha = (nueva) => {
+    if (nueva === fechaRef.current) return
+    flushPendingGuardados(fechaRef.current)
+    fechaRef.current = nueva
+    setFechaSel(nueva)
+    setExpandido(null)
+  }
+
+  const irAntes = () => {
+    const d = new Date(fechaRef.current + 'T12:00:00')
+    d.setDate(d.getDate() - 1)
+    const nueva = d.toISOString().split('T')[0]
+    if (nueva >= fechaMin) cambiarFecha(nueva)
+  }
+
+  const irDespues = () => {
+    const d = new Date(fechaRef.current + 'T12:00:00')
+    d.setDate(d.getDate() + 1)
+    const nueva = d.toISOString().split('T')[0]
+    if (nueva <= fechaHoy) cambiarFecha(nueva)
+  }
+
+  // Cleanup on unmount: flush any remaining dirty records
+  React.useEffect(() => {
+    return () => {
+      flushPendingGuardados(fechaRef.current)
+    }
+  }, [])
+
+  // Load sessions whenever fechaSel changes
+  React.useEffect(() => {
+    setCargando(true)
+    cargarSesionesFecha(fechaSel)
+      .then(({ sesiones: s, hoy: h, registrosIniciales }) => {
+        sesionesRef.current = s
+        setSesiones(s)
+        setHoy(h)
+        const regsInicial = registrosIniciales ?? Object.fromEntries(
+          s.map((ses) => [
+            ses.id,
+            { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
+          ])
+        )
+        registrosRef.current = regsInicial
+        setRegistros(regsInicial)
+        setCargando(false)
+      })
+      .catch(() => setCargando(false))
+  }, [fechaSel])
+
   const cerrarModal = () => {
     setModalOpen(false)
     setBusqueda('')
@@ -70,6 +153,7 @@ export function DiarioScreen({ mobile }) {
 
   const añadirAlumno = async () => {
     if (!alumnoElegido) return
+    const fecha = fechaRef.current
     const id = `extra-${alumnoElegido.id}`
     const nuevaSesion = {
       id,
@@ -98,7 +182,7 @@ export function DiarioScreen({ mobile }) {
     cerrarModal()
     await supabase.from('sesiones').upsert({
       alumno_id: alumnoElegido.id,
-      fecha: new Date().toISOString().split('T')[0],
+      fecha,
       hora: horaElegida,
       tipo: 'sesion',
       asignatura: null,
@@ -107,44 +191,9 @@ export function DiarioScreen({ mobile }) {
     }, { onConflict: 'alumno_id,fecha', ignoreDuplicates: true })
   }
 
-  React.useEffect(() => {
-    return () => {
-      Object.values(timers.current).forEach(clearTimeout)
-      const regs = registrosRef.current
-      const sess = sesionesRef.current
-      Object.entries(regs).forEach(([id, registro]) => {
-        if (!registro._dirty) return
-        const sesion = sess.find(s => s.id === id)
-        const debeGuardar = sesion && (
-          (registro.asignatura && registro.tema?.trim()) ||
-          registro.estado === 'absent'
-        )
-        if (debeGuardar) guardarSesion(sesion, registro)
-      })
-    }
-  }, [])
-
-  React.useEffect(() => {
-    cargarSesionesHoy()
-      .then(({ sesiones: s, hoy: h, registrosIniciales }) => {
-        sesionesRef.current = s
-        setSesiones(s)
-        setHoy(h)
-        const regsInicial = registrosIniciales ?? Object.fromEntries(
-          s.map((ses) => [
-            ses.id,
-            { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
-          ])
-        )
-        registrosRef.current = regsInicial
-        setRegistros(regsInicial)
-        setCargando(false)
-      })
-      .catch(() => setCargando(false))
-  }, [])
-
   const onChange = (id, patch) => {
     clearTimeout(timers.current[id])
+    const fechaEdit = fechaRef.current  // captured at call time
 
     setRegistros(prev => {
       const next = { ...prev, [id]: { ...prev[id], ...patch, _dirty: true } }
@@ -154,13 +203,13 @@ export function DiarioScreen({ mobile }) {
 
     timers.current[id] = setTimeout(async () => {
       const registro = registrosRef.current[id]
-      const sesion = sesionesRef.current.find(s => s.id === id)
+      const sesion   = sesionesRef.current.find(s => s.id === id)
       const debeGuardar = sesion && (
         (registro.asignatura && registro.tema?.trim()) ||
         registro.estado === 'absent'
       )
       if (!debeGuardar) return
-      const error = await guardarSesion(sesion, registro)
+      const error = await guardarSesion(sesion, registro, fechaEdit)
       if (!error) {
         const now = new Date()
         const ts = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
@@ -174,22 +223,60 @@ export function DiarioScreen({ mobile }) {
   }
 
   const vals = Object.values(registros)
-  const done = vals.filter((r) => r.asignatura && r.tema?.trim()).length
-  const absent = vals.filter((r) => r.estado === 'absent').length
+  const done    = vals.filter((r) => r.asignatura && r.tema?.trim()).length
+  const absent  = vals.filter((r) => r.estado === 'absent').length
   const lastSaved = vals.map((r) => r.lastSavedAt).filter(Boolean).sort().at(-1) ?? null
   const groups = groupByHora(sesiones)
   const todoCompleto = sesiones.length > 0 && vals.every((r) => (r.asignatura && r.tema?.trim()) || r.estado === 'absent')
 
+  const esHoy = fechaSel === fechaHoy
+
+  const dateNav = (
+    <div className="diario-nav">
+      <button
+        className="diario-nav__btn"
+        onClick={irAntes}
+        disabled={fechaSel <= fechaMin}
+        title="Día anterior"
+      >
+        <Icon.chevron style={{ transform: 'rotate(180deg)' }} />
+      </button>
+      <input
+        type="date"
+        className="diario-nav__date"
+        value={fechaSel}
+        min={fechaMin}
+        max={fechaHoy}
+        onChange={e => e.target.value && cambiarFecha(e.target.value)}
+      />
+      <button
+        className="diario-nav__btn"
+        onClick={irDespues}
+        disabled={fechaSel >= fechaHoy}
+        title="Día siguiente"
+      >
+        <Icon.chevron />
+      </button>
+    </div>
+  )
+
   const btnAñadir = (
     <button className="btn btn--ghost btn--sm" onClick={() => setModalOpen(true)}>
-      <Icon.plus /> Añadir alumno hoy
+      <Icon.plus /> {esHoy ? 'Añadir alumno hoy' : 'Añadir alumno'}
     </button>
+  )
+
+  const rightExtra = (
+    <div className="diario-topbar-right">
+      {dateNav}
+      {btnAñadir}
+    </div>
   )
 
   if (cargando) {
     return (
       <>
-        <Topbar eyebrow="Hoy" title="Cargando…" showSearch={false} mobile={mobile} rightExtra={btnAñadir} />
+        <Topbar eyebrow={esHoy ? 'Hoy' : ''} title="Cargando…" showSearch={false} mobile={mobile} rightExtra={rightExtra} />
         <div className="content">
           <div className="alumnos-estado">
             <div className="alumnos-estado__spinner" /> Cargando sesiones…
@@ -201,7 +288,7 @@ export function DiarioScreen({ mobile }) {
 
   return (
     <>
-      <Topbar eyebrow="Hoy" title={hoy} allSavedAt={lastSaved} showSearch={false} mobile={mobile} rightExtra={btnAñadir} />
+      <Topbar eyebrow={esHoy ? 'Hoy' : ''} title={hoy} allSavedAt={lastSaved} showSearch={false} mobile={mobile} rightExtra={rightExtra} />
       <div className="content">
         <ProgressBar
           done={done}
@@ -233,7 +320,7 @@ export function DiarioScreen({ mobile }) {
         ))}
         {sesiones.length === 0 && (
           <div className="placeholder">
-            <div className="placeholder__title">Sin sesiones hoy</div>
+            <div className="placeholder__title">Sin sesiones</div>
             <p>No hay alumnos con clase este día.</p>
           </div>
         )}
@@ -249,7 +336,7 @@ export function DiarioScreen({ mobile }) {
         <div className="modal-backdrop" onClick={cerrarModal}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal__header">
-              <span className="modal__title">Añadir alumno hoy</span>
+              <span className="modal__title">Añadir alumno</span>
               <button className="modal__close" onClick={cerrarModal}>✕</button>
             </div>
             <div className="modal__body">

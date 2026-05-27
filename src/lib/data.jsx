@@ -49,12 +49,6 @@ function iniciales(nombre) {
   return nombre.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 
-function formatHoy() {
-  return new Date()
-    .toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
-    .replace(/^\w/, c => c.toUpperCase())
-}
-
 export function groupByHora(sesiones) {
   const map = {}
   const orden = []
@@ -65,13 +59,15 @@ export function groupByHora(sesiones) {
   return orden.map(hora => ({ hora, items: map[hora] }))
 }
 
-// ── Carga sesiones del día desde Supabase ─────────────────────────
-export async function cargarSesionesHoy() {
-  const diaCol = DIA_COLUMNA[new Date().getDay()]
-  const hoy = formatHoy()
-  const fechaHoy = new Date().toISOString().split('T')[0]
+// ── Carga sesiones de un día desde Supabase ──────────────────────
+export async function cargarSesionesFecha(fechaISO) {
+  const date = new Date(fechaISO + 'T12:00:00')
+  const diaCol = DIA_COLUMNA[date.getDay()]
+  const label = date
+    .toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })
+    .replace(/^\w/, c => c.toUpperCase())
 
-  if (!diaCol) return { sesiones: [], hoy, registrosIniciales: {} }
+  if (!diaCol) return { sesiones: [], hoy: label, registrosIniciales: {} }
 
   const { data, error } = await supabase
     .from('horario')
@@ -100,14 +96,12 @@ export async function cargarSesionesHoy() {
       racha: 0,
     }))
 
-  // Cargar todas las sesiones guardadas hoy
-  const { data: todasHoy } = await supabase
+  const { data: todasEseDia } = await supabase
     .from('sesiones')
     .select('alumno_id, tipo, asignatura, tema, comentario, hora')
-    .eq('fecha', fechaHoy)
-  const guardadas = todasHoy ?? []
+    .eq('fecha', fechaISO)
+  const guardadas = todasEseDia ?? []
 
-  // Alumnos extras: guardados hoy pero no en el horario del día
   const horarioIds = new Set(sesiones.map(s => s.alumno.id))
   const extrasGuardadas = guardadas.filter(g => !horarioIds.has(g.alumno_id))
 
@@ -128,14 +122,8 @@ export async function cargarSesionesHoy() {
           id: `extra-${g.alumno_id}`,
           hora: g.hora ?? '15:30',
           duracion: 60,
-          alumno: {
-            id: g.alumno_id,
-            nombre: a.nombre,
-            iniciales: iniciales(a.nombre),
-            curso: a.curso,
-            nivel: a.nivel,
-            familia: null,
-          },
+          alumno: { id: g.alumno_id, nombre: a.nombre, iniciales: iniciales(a.nombre),
+            curso: a.curso, nivel: a.nivel, familia: null },
           historial: [],
           racha: 0,
         }
@@ -143,7 +131,6 @@ export async function cargarSesionesHoy() {
   }
 
   const todasSesiones = [...sesiones, ...sesionesExtra]
-
   const registrosIniciales = Object.fromEntries(
     todasSesiones.map(s => {
       const g = guardadas.find(r => r.alumno_id === s.alumno.id)
@@ -159,11 +146,15 @@ export async function cargarSesionesHoy() {
     })
   )
 
-  return { sesiones: todasSesiones, hoy, registrosIniciales }
+  return { sesiones: todasSesiones, hoy: label, registrosIniciales }
+}
+
+export async function cargarSesionesHoy() {
+  return cargarSesionesFecha(new Date().toISOString().split('T')[0])
 }
 
 // ── Guardar sesión en Supabase ────────────────────────────────────
-export async function guardarSesion(sesion, registro) {
+export async function guardarSesion(sesion, registro, fecha = new Date().toISOString().split('T')[0]) {
   const alumno_id = sesion.alumno?.id
   if (!alumno_id && sesion.id?.startsWith('extra-')) {
     // Fallback para alumnos extraídos de la sesión directamente
@@ -178,7 +169,7 @@ export async function guardarSesion(sesion, registro) {
   const esAusente = registro.estado === 'absent'
   const payload = {
     alumno_id,
-    fecha: new Date().toISOString().split('T')[0],
+    fecha,
     tipo: esAusente ? 'ausencia' : 'sesion',
     asignatura: esAusente ? null : (registro.asignatura || null),
     tema: esAusente ? null : (registro.tema?.trim() || null),

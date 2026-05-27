@@ -4289,3 +4289,56 @@ body.printing .no-print { display: none !important; }
   .hc-cards { flex-direction: column; }
   .hc-card  { min-width: 0; }
 }
+
+/* ── Diario date navigation ── */
+.diario-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.diario-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--surface-2, #f0eded);
+  border-radius: 8px;
+  padding: 2px;
+}
+.diario-nav__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.diario-nav__btn:hover:not(:disabled) {
+  background: var(--bg-elev, #fff);
+  color: var(--lyceo);
+}
+.diario-nav__btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.diario-nav__date {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 3px 4px;
+  border-radius: 6px;
+  outline: none;
+  width: 128px;
+  text-align: center;
+}
+.diario-nav__date:focus {
+  background: var(--bg-elev, #fff);
+}
