@@ -6,15 +6,19 @@ const PRIMARY = '#8B0000'
 const HORAS_EXTRA = ['15:30', '16:30', '17:30', '18:30', '19:30']
 const toIniciales = n => n.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
+function localISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 function getFechaHoy() {
-  return new Date().toISOString().split('T')[0]
+  return localISO(new Date())
 }
 
 function getFechaMin() {
   const d = new Date()
   d.setDate(1)
   d.setMonth(d.getMonth() - 1)
-  return d.toISOString().split('T')[0]
+  return localISO(d)
 }
 
 export function DiarioScreen({ mobile }) {
