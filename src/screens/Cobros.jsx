@@ -1,3 +1,4 @@
+// Cobros — gestión de pagos mensuales por familia
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
 import { mesesCursoActual } from '../lib/data.jsx'
