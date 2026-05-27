@@ -1,9 +1,13 @@
 import { supabase } from './supabase.js'
 
 // ── Curso académico ──────────────────────────────────────────────
-export function mesesCursoActual() {
+export function anioInicioCurso() {
   const now = new Date()
-  const anioInicio = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
+  return now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
+}
+
+export function mesesCursoActual() {
+  const anioInicio = anioInicioCurso()
   const meses = []
   for (let m = 9; m <= 12; m++) meses.push({ mes: m, anio: anioInicio })
   for (let m = 1; m <= 6;  m++) meses.push({ mes: m, anio: anioInicio + 1 })

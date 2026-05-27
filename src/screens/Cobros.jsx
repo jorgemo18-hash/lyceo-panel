@@ -1,7 +1,7 @@
 // Cobros — gestión de pagos mensuales por familia
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
-import { mesesCursoActual } from '../lib/data.jsx'
+import { mesesCursoActual, anioInicioCurso } from '../lib/data.jsx'
 
 const ABREV_MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 const MESES = mesesCursoActual().map(({ mes, anio }) => ({
@@ -88,7 +88,7 @@ export function Cobros() {
       familiaIds.length > 0
         ? supabase.from('tarifas').select('familia_id, precio_neto').in('familia_id', familiaIds)
         : Promise.resolve({ data: [], error: null }),
-      supabase.from('pagos').select('*').gte('anio', MESES[0].anio),
+      supabase.from('pagos').select('*').gte('anio', anioInicioCurso()),
     ])
 
     if (errT) console.error('[Cobros] Error al cargar tarifas:', errT)
