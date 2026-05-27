@@ -147,10 +147,9 @@ export async function cargarSesionesFecha(fechaISO) {
     (recupOrigen ?? []).map(r => [r.alumno_id, r])
   )
 
-  // Añadir sesiones de recuperación que ocurren hoy y no están ya en el horario normal
-  const alumnoIdsExistentes = new Set([...sesiones, ...sesionesExtra].map(s => s.alumno.id))
+  // Añadir sesiones de recuperación que ocurren hoy (siempre, aunque el alumno tenga sesión normal ese día)
   const sesionesRecup = (recupHoy ?? [])
-    .filter(r => r.alumnos && !alumnoIdsExistentes.has(r.alumno_id))
+    .filter(r => r.alumnos)
     .map(r => ({
       id: `recup-${r.id}`,
       hora: r.hora_inicio,
