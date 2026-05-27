@@ -130,7 +130,46 @@ export async function cargarSesionesFecha(fechaISO) {
       })
   }
 
-  const todasSesiones = [...sesiones, ...sesionesExtra]
+  // Recuperaciones programadas PARA esta fecha (sesiones de recuperación que ocurren hoy)
+  const { data: recupHoy } = await supabase
+    .from('recuperaciones')
+    .select('*, alumnos(nombre, curso, nivel)')
+    .eq('fecha_recuperacion', fechaISO)
+    .eq('completada', false)
+
+  // Recuperaciones donde esta fecha es la fecha original (para mostrar estado en la tarjeta ausente)
+  const { data: recupOrigen } = await supabase
+    .from('recuperaciones')
+    .select('*')
+    .eq('fecha_original', fechaISO)
+
+  const recuperacionesPorAlumno = Object.fromEntries(
+    (recupOrigen ?? []).map(r => [r.alumno_id, r])
+  )
+
+  // Añadir sesiones de recuperación que ocurren hoy y no están ya en el horario normal
+  const alumnoIdsExistentes = new Set([...sesiones, ...sesionesExtra].map(s => s.alumno.id))
+  const sesionesRecup = (recupHoy ?? [])
+    .filter(r => r.alumnos && !alumnoIdsExistentes.has(r.alumno_id))
+    .map(r => ({
+      id: `recup-${r.id}`,
+      hora: r.hora_inicio,
+      duracion: 60,
+      esRecuperacion: true,
+      recuperacionId: r.id,
+      alumno: {
+        id: r.alumno_id,
+        nombre: r.alumnos.nombre,
+        iniciales: iniciales(r.alumnos.nombre),
+        curso: r.alumnos.curso,
+        nivel: r.alumnos.nivel,
+        familia: null,
+      },
+      historial: [],
+      racha: 0,
+    }))
+
+  const todasSesiones = [...sesiones, ...sesionesExtra, ...sesionesRecup]
   const registrosIniciales = Object.fromEntries(
     todasSesiones.map(s => {
       const g = guardadas.find(r => r.alumno_id === s.alumno.id)
@@ -146,7 +185,7 @@ export async function cargarSesionesFecha(fechaISO) {
     })
   )
 
-  return { sesiones: todasSesiones, hoy: label, registrosIniciales }
+  return { sesiones: todasSesiones, hoy: label, registrosIniciales, recuperacionesPorAlumno }
 }
 
 export async function cargarSesionesHoy() {
@@ -182,6 +221,21 @@ export async function guardarSesion(sesion, registro, fecha = new Date().toISOSt
   )
   if (error) console.error('guardarSesion error:', error)
   return error ?? null
+}
+
+// ── Recuperaciones ────────────────────────────────────────────────
+export async function guardarRecuperacion({ id, alumno_id, fecha_original, fecha_recuperacion, hora_inicio, genera_cobro }) {
+  const payload = { alumno_id, fecha_original, fecha_recuperacion, hora_inicio, genera_cobro }
+  const result = id
+    ? await supabase.from('recuperaciones').update(payload).eq('id', id).select().single()
+    : await supabase.from('recuperaciones').insert(payload).select().single()
+  if (result.error) console.error('guardarRecuperacion error:', result.error)
+  return result
+}
+
+export async function marcarRecuperacionCompletada(recuperacionId) {
+  const { error } = await supabase.from('recuperaciones').update({ completada: true }).eq('id', recuperacionId)
+  if (error) console.error('marcarRecuperacionCompletada error:', error)
 }
 
 // ── Globales para componentes que usan window.X ───────────────────

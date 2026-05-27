@@ -2700,6 +2700,10 @@ body.printing .no-print { display: none !important; }
 .scard__pill--done { background: var(--ok-bg); color: var(--ok); }
 .scard__pill--absent { background: var(--lyceo-tint); color: var(--lyceo); }
 .scard__pill--progress { background: var(--lyceo); color: #fff; }
+.scard__pill--recup {
+  background: oklch(0.94 0.04 250);
+  color: oklch(0.38 0.12 250);
+}
 .scard__pill--pending {
   background: transparent;
   color: var(--ink-3);
@@ -4341,4 +4345,105 @@ body.printing .no-print { display: none !important; }
 }
 .diario-nav__date:focus {
   background: var(--bg-elev, #fff);
+}
+
+/* ── Recuperación de clases ── */
+.scard__recup-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 7px 14px;
+  border: 1px solid oklch(0.80 0.06 250);
+  border-radius: var(--radius-sm);
+  background: oklch(0.97 0.02 250);
+  color: oklch(0.38 0.12 250);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.scard__recup-btn:hover {
+  background: oklch(0.94 0.04 250);
+  border-color: oklch(0.70 0.09 250);
+}
+
+.scard__recup-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: oklch(0.97 0.02 250);
+  border: 1px solid oklch(0.85 0.05 250);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: oklch(0.35 0.10 250);
+}
+.scard__recup-cobro-badge {
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: oklch(0.90 0.06 150);
+  color: oklch(0.38 0.12 150);
+  font-weight: 600;
+}
+.scard__recup-edit-btn {
+  margin-left: auto;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 12.5px;
+  color: oklch(0.45 0.10 250);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.scard__recup-form {
+  margin-top: 12px;
+  padding: 12px;
+  background: oklch(0.975 0.015 250);
+  border: 1px solid oklch(0.85 0.05 250);
+  border-radius: var(--radius-sm);
+}
+.scard__recup-form__title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: oklch(0.38 0.12 250);
+  margin-bottom: 10px;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+.scard__recup-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.scard__recup-field .field__label {
+  font-size: 11.5px;
+  margin-bottom: 4px;
+  display: block;
+}
+.scard__recup-cobro {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+.scard__recup-cobro input[type="checkbox"] {
+  accent-color: oklch(0.38 0.12 250);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.scard__recup-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
 }

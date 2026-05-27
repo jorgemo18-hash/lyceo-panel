@@ -91,6 +91,15 @@ export function EnvioFamilias() {
       cargarFestivos(m, a),
     ])
 
+    const { data: recupData } = await supabase
+      .from('recuperaciones')
+      .select('fecha_original, fecha_recuperacion')
+      .eq('alumno_id', alumno.id)
+      .eq('completada', true)
+      .gte('fecha_recuperacion', primero)
+      .lte('fecha_recuperacion', ultimo)
+    const recuperaciones = recupData ?? []
+
     let comentario = ''
     const { data: savedInforme } = await supabase
       .from('informes').select('comentario')
@@ -106,7 +115,7 @@ export function EnvioFamilias() {
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ alumno: alumno.nombre, curso: alumno.curso, sesiones }),
+            body: JSON.stringify({ alumno: alumno.nombre, curso: alumno.curso, sesiones, recuperaciones }),
           }
         )
         if (res.ok) comentario = (await res.json()).comentario ?? ''
@@ -117,7 +126,7 @@ export function EnvioFamilias() {
       )
     }
 
-    const result = { sesiones: sesiones ?? [], festivos, comentario }
+    const result = { sesiones: sesiones ?? [], festivos, comentario, recuperaciones }
     informesCache.current[key] = result
     return result
   }, [cargarFestivos])

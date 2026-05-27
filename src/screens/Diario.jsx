@@ -1,6 +1,6 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
-import { cargarSesionesFecha, groupByHora, guardarSesion } from '../lib/data.jsx'
+import { cargarSesionesFecha, groupByHora, guardarSesion, guardarRecuperacion, marcarRecuperacionCompletada } from '../lib/data.jsx'
 
 const PRIMARY = '#8B0000'
 const HORAS_EXTRA = ['15:30', '16:30', '17:30', '18:30', '19:30']
@@ -33,6 +33,7 @@ export function DiarioScreen({ mobile }) {
   const [cargando, setCargando] = React.useState(true)
   const [registros, setRegistros] = React.useState({})
   const [expandido, setExpandido] = React.useState(null)
+  const [recuperacionesPorAlumno, setRecuperacionesPorAlumno] = React.useState({})
   const timers = React.useRef({})
 
   const [modalOpen, setModalOpen] = React.useState(false)
@@ -126,10 +127,11 @@ export function DiarioScreen({ mobile }) {
   React.useEffect(() => {
     setCargando(true)
     cargarSesionesFecha(fechaSel)
-      .then(({ sesiones: s, hoy: h, registrosIniciales }) => {
+      .then(({ sesiones: s, hoy: h, registrosIniciales, recuperacionesPorAlumno: recup }) => {
         sesionesRef.current = s
         setSesiones(s)
         setHoy(h)
+        setRecuperacionesPorAlumno(recup ?? {})
         const regsInicial = registrosIniciales ?? Object.fromEntries(
           s.map((ses) => [
             ses.id,
@@ -191,6 +193,13 @@ export function DiarioScreen({ mobile }) {
     }, { onConflict: 'alumno_id,fecha', ignoreDuplicates: true })
   }
 
+  const onGuardarRecuperacion = async (data) => {
+    const { data: saved, error } = await guardarRecuperacion(data)
+    if (!error && saved) {
+      setRecuperacionesPorAlumno(prev => ({ ...prev, [data.alumno_id]: saved }))
+    }
+  }
+
   const onChange = (id, patch) => {
     clearTimeout(timers.current[id])
     const fechaEdit = fechaRef.current  // captured at call time
@@ -218,6 +227,9 @@ export function DiarioScreen({ mobile }) {
           registrosRef.current = updated
           return updated
         })
+        if (sesion.esRecuperacion && sesion.recuperacionId && registro.asignatura && registro.tema?.trim()) {
+          marcarRecuperacionCompletada(sesion.recuperacionId)
+        }
       }
     }, 1200)
   }
@@ -314,6 +326,9 @@ export function DiarioScreen({ mobile }) {
                 onToggle={() => setExpandido((p) => (p === s.id ? null : s.id))}
                 expandido={expandido === s.id}
                 primaryColor={PRIMARY}
+                recuperacion={recuperacionesPorAlumno[s.alumno.id] ?? null}
+                onGuardarRecuperacion={onGuardarRecuperacion}
+                fechaOriginal={fechaSel}
               />
             ))}
           </div>

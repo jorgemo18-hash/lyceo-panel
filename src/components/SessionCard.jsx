@@ -2,7 +2,7 @@
 // Acordeón: tap para expandir, dentro tiene SubjectPicker + TopicInput + nota privada
 // Estados: pending | in-progress | done | absent
 
-function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryColor }) {
+function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryColor, recuperacion = null, onGuardarRecuperacion = null, fechaOriginal = '' }) {
   const { alumno, hora, duracion, historial, racha } = sesion;
   const completo = registro.asignatura && registro.tema && registro.tema.trim().length > 0;
   const ausente = registro.estado === "absent";
@@ -39,6 +39,11 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
         </div>
 
         <div className="scard__status">
+          {sesion.esRecuperacion && (
+            <span className="scard__pill scard__pill--recup">
+              <Icon.refresh /> Recuperación
+            </span>
+          )}
           {estado === "done" && (
             <span className="scard__pill scard__pill--done">
               <Icon.check /> Hecho
@@ -52,7 +57,7 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
           {estado === "progress" && (
             <span className="scard__pill scard__pill--progress">En curso</span>
           )}
-          {estado === "pending" && (
+          {estado === "pending" && !sesion.esRecuperacion && (
             <span className="scard__pill scard__pill--pending">Pendiente</span>
           )}
           <span className="scard__chevron"><Icon.chevron /></span>
@@ -114,6 +119,14 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
           <button className="scard__undo" onClick={() => onChange({ estado: null })}>
             Deshacer ausencia
           </button>
+          {onGuardarRecuperacion && (
+            <RecuperacionPanel
+              alumnoId={alumno.id}
+              fechaOriginal={fechaOriginal}
+              recuperacion={recuperacion}
+              onGuardar={onGuardarRecuperacion}
+            />
+          )}
         </div>
       )}
     </article>
@@ -282,6 +295,101 @@ function SaveStatus({ savedAt, dirty }) {
     );
   }
   return <span className="save save--idle">Sin guardar</span>;
+}
+
+// ── RecuperacionPanel ─────────────────────────────────────────────
+const HORAS_RECUP = ['15:30', '16:30', '17:30', '18:30', '19:30', '20:30']
+
+function RecuperacionPanel({ alumnoId, fechaOriginal, recuperacion, onGuardar }) {
+  const [editando, setEditando] = React.useState(false)
+  const [fecha, setFecha] = React.useState('')
+  const [hora, setHora] = React.useState('16:30')
+  const [generaCobro, setGeneraCobro] = React.useState(false)
+  const [guardando, setGuardando] = React.useState(false)
+
+  const abrirForm = () => {
+    setFecha(recuperacion ? recuperacion.fecha_recuperacion : '')
+    setHora(recuperacion ? recuperacion.hora_inicio : '16:30')
+    setGeneraCobro(recuperacion ? recuperacion.genera_cobro : false)
+    setEditando(true)
+  }
+
+  const guardar = async () => {
+    if (!fecha) return
+    setGuardando(true)
+    await onGuardar({
+      id: recuperacion?.id ?? null,
+      alumno_id: alumnoId,
+      fecha_original: fechaOriginal,
+      fecha_recuperacion: fecha,
+      hora_inicio: hora,
+      genera_cobro: generaCobro,
+    })
+    setGuardando(false)
+    setEditando(false)
+  }
+
+  const fmtFecha = (iso) => {
+    const [y, m, d] = iso.split('-').map(Number)
+    return new Date(y, m - 1, d).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+  }
+
+  if (editando) {
+    return (
+      <div className="scard__recup-form">
+        <div className="scard__recup-form__title">
+          {recuperacion ? 'Editar recuperación' : 'Programar recuperación'}
+        </div>
+        <div className="scard__recup-fields">
+          <div className="scard__recup-field">
+            <label className="field__label">Fecha</label>
+            <input
+              type="date"
+              className="topic__input"
+              value={fecha}
+              onChange={e => setFecha(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div className="scard__recup-field">
+            <label className="field__label">Hora</label>
+            <select className="topic__input" value={hora} onChange={e => setHora(e.target.value)}>
+              {HORAS_RECUP.map(h => <option key={h} value={h}>{h}</option>)}
+            </select>
+          </div>
+        </div>
+        <label className="scard__recup-cobro">
+          <input type="checkbox" checked={generaCobro} onChange={e => setGeneraCobro(e.target.checked)} />
+          <span>Genera cobro adicional</span>
+        </label>
+        <div className="scard__recup-actions">
+          <button className="btn btn--ghost btn--sm" onClick={() => setEditando(false)} disabled={guardando}>
+            Cancelar
+          </button>
+          <button className="btn btn--primary btn--sm" onClick={guardar} disabled={!fecha || guardando}>
+            {guardando ? 'Guardando…' : 'Guardar'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (recuperacion) {
+    return (
+      <div className="scard__recup-info">
+        <Icon.refresh />
+        <span>Recuperación: {fmtFecha(recuperacion.fecha_recuperacion)} · {recuperacion.hora_inicio}</span>
+        {recuperacion.genera_cobro && <span className="scard__recup-cobro-badge">+cobro</span>}
+        <button className="scard__recup-edit-btn" onClick={abrirForm}>Editar</button>
+      </div>
+    )
+  }
+
+  return (
+    <button className="scard__recup-btn" onClick={abrirForm}>
+      <Icon.refresh /> Programar recuperación
+    </button>
+  )
 }
 
 Object.assign(window, { SessionCard });
