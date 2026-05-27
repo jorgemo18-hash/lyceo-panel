@@ -58,38 +58,57 @@ function agrupar(alumnos) {
 export function Cobros() {
   const [grupos, setGrupos]     = React.useState([])
   const [pagos, setPagos]       = React.useState([])
-  const [cargando, setCargando] = React.useState(true)
+  const [cargando, setCargando]         = React.useState(true)
+  const [errorCarga, setErrorCarga]     = React.useState(null)
+  const [errorGuardado, setErrorGuardado] = React.useState(null)
   const [vista, setVista]       = React.useState('pendientes')
   const [mesIdx, setMesIdx]     = React.useState(defaultMesIdx)
   const [saliendo, setSaliendo] = React.useState(new Set())
 
-  React.useEffect(() => {
-    const cargar = async () => {
-      const { data: a } = await supabase
-        .from('alumnos')
-        .select('id, nombre, familia_id, familias(nombre, metodo_pago)')
-        .eq('activo', true)
-        .order('nombre')
+  const cargar = React.useCallback(async () => {
+    setCargando(true)
+    setErrorCarga(null)
 
-      const familiaIds = (a ?? []).map(x => x.familia_id).filter(Boolean)
-      const [{ data: t }, { data: p }] = await Promise.all([
-        familiaIds.length > 0
-          ? supabase.from('tarifas').select('familia_id, precio_neto').in('familia_id', familiaIds)
-          : Promise.resolve({ data: [] }),
-        supabase.from('pagos').select('*').gte('anio', MESES[0].anio),
-      ])
+    const { data: a, error: errA } = await supabase
+      .from('alumnos')
+      .select('id, nombre, familia_id, familias(nombre, metodo_pago)')
+      .eq('activo', true)
+      .order('nombre')
 
-      const alumnosConTarifa = (a ?? []).map(x => ({
-        ...x,
-        precio_neto: t?.find(tar => tar.familia_id === x.familia_id)?.precio_neto ?? 0,
-      }))
-
-      setGrupos(agrupar(alumnosConTarifa))
-      setPagos(p ?? [])
+    if (errA) {
+      console.error('[Cobros] Error al cargar alumnos:', errA)
+      setErrorCarga('No se pudieron cargar los alumnos. Comprueba tu conexión.')
       setCargando(false)
+      return
     }
-    cargar().catch(() => setCargando(false))
+
+    const familiaIds = (a ?? []).map(x => x.familia_id).filter(Boolean)
+    const [{ data: t, error: errT }, { data: p, error: errP }] = await Promise.all([
+      familiaIds.length > 0
+        ? supabase.from('tarifas').select('familia_id, precio_neto').in('familia_id', familiaIds)
+        : Promise.resolve({ data: [], error: null }),
+      supabase.from('pagos').select('*').gte('anio', MESES[0].anio),
+    ])
+
+    if (errT) console.error('[Cobros] Error al cargar tarifas:', errT)
+    if (errP) {
+      console.error('[Cobros] Error al cargar pagos:', errP)
+      setErrorCarga('No se pudieron cargar los pagos. Comprueba tu conexión.')
+      setCargando(false)
+      return
+    }
+
+    const alumnosConTarifa = (a ?? []).map(x => ({
+      ...x,
+      precio_neto: t?.find(tar => tar.familia_id === x.familia_id)?.precio_neto ?? 0,
+    }))
+
+    setGrupos(agrupar(alumnosConTarifa))
+    setPagos(p ?? [])
+    setCargando(false)
   }, [])
+
+  React.useEffect(() => { cargar() }, [cargar])
 
   const getPago = (familia_id, mes, anio) =>
     pagos.find(p => p.familia_id === familia_id && p.mes === mes && p.anio === anio)
@@ -101,23 +120,33 @@ export function Cobros() {
     const fecha_pago = pagado ? new Date().toISOString().split('T')[0] : null
     const importe = grupo.precio_total
 
+    // Snapshot para rollback si falla el upsert
+    const snapshot = pagos
+
+    // Actualización optimista
     setPagos(prev => [
       ...prev.filter(p => !(p.familia_id === grupo.familia_id && p.mes === mes && p.anio === anio)),
       { familia_id: grupo.familia_id, anio, mes, importe, pagado, fecha_pago },
     ])
 
-    await supabase.from('pagos').upsert(
+    const { error: errUpsert } = await supabase.from('pagos').upsert(
       { familia_id: grupo.familia_id, anio, mes, importe, pagado, fecha_pago },
       { onConflict: 'familia_id,anio,mes' }
     )
+
+    if (errUpsert) {
+      console.error('[Cobros] Error al guardar pago:', errUpsert)
+      setPagos(snapshot) // Revertir la actualización optimista
+      setErrorGuardado('No se pudo guardar el pago. Inténtalo de nuevo.')
+    }
   }
 
   const marcarPagado = (grupo) => {
     const { mes, anio } = MESES[mesIdx]
     setSaliendo(prev => new Set([...prev, grupo.key]))
     setTimeout(() => {
-      toggle(grupo, mes, anio)
       setSaliendo(prev => { const s = new Set(prev); s.delete(grupo.key); return s })
+      toggle(grupo, mes, anio)
     }, 320)
   }
 
@@ -125,6 +154,17 @@ export function Cobros() {
     return (
       <div className="alumnos-estado">
         <div className="alumnos-estado__spinner" /> Cargando cobros…
+      </div>
+    )
+  }
+
+  if (errorCarga) {
+    return (
+      <div className="alumnos-estado alumnos-estado--error">
+        <span>⚠️ {errorCarga}</span>
+        <button className="alumnos-estado__retry" onClick={cargar}>
+          Reintentar
+        </button>
       </div>
     )
   }
@@ -149,6 +189,14 @@ export function Cobros() {
 
   return (
     <div className="pag-root">
+
+      {/* Banner de error de guardado */}
+      {errorGuardado && (
+        <div className="pag-error-banner" role="alert">
+          ⚠️ {errorGuardado}
+          <button className="pag-error-banner__close" onClick={() => setErrorGuardado(null)}>✕</button>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="pag-stats">
