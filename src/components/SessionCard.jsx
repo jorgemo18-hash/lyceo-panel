@@ -347,6 +347,7 @@ function RecuperacionPanel({ alumnoId, fechaOriginal, recuperacion, onGuardar })
               type="date"
               className="topic__input"
               value={fecha}
+              min={new Date().toISOString().split('T')[0]}
               onChange={e => setFecha(e.target.value)}
               autoFocus
             />
