@@ -47,7 +47,7 @@ function agrupar(alumnos) {
     } else {
       const g = map.get(key)
       g.nombres.push(a.nombre)
-      g.precio_total += a.precio_neto ?? 0
+      // La tarifa es por familia — no sumar: el precio ya está fijado por el primer alumno
     }
   })
   return [...map.values()].sort((a, b) => {
