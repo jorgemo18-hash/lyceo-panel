@@ -28,8 +28,9 @@ function Sidebar({ activo = "horario", onNavigate }) {
     { id: "diario",    label: "Diario",          icon: <Icon.calendar /> },
     { id: "envio",     label: "Envío familias",  icon: <Icon.mail /> },
     { id: "ficha",     label: "Tarifas",         icon: <Icon.tag /> },
-    { id: "alumnos",   label: "Alumnos",         icon: <Icon.users />, badge: alumnosBadge || null },
-    { id: "pagos",     label: "Ingresos",        icon: <Icon.euro /> },
+    { id: "alumnos",      label: "Alumnos",         icon: <Icon.users />, badge: alumnosBadge || null },
+    { id: "lista_espera", label: "Lista de espera", icon: <Icon.clock /> },
+    { id: "pagos",        label: "Ingresos",        icon: <Icon.euro /> },
     { id: "gastos",    label: "Gastos",          icon: <Icon.receipt />, badge: gastosBadge || null },
     { id: "documentos",label: "Documentos",      icon: <Icon.doc /> },
   ];
@@ -98,12 +99,13 @@ function BottomNav({ activo = "horario", onNavigate }) {
   ]
 
   const mas = [
-    { id: "diario",    label: "Diario",         icon: <Icon.calendar /> },
-    { id: "facturas",  label: "Facturas",       icon: <Icon.note /> },
-    { id: "envio",     label: "Envío familias", icon: <Icon.mail /> },
-    { id: "ficha",     label: "Tarifas",        icon: <Icon.tag /> },
-    { id: "documentos",label: "Documentos",     icon: <Icon.doc /> },
-    { id: "ajustes",   label: "Ajustes",        icon: <Icon.settings /> },
+    { id: "diario",       label: "Diario",           icon: <Icon.calendar /> },
+    { id: "facturas",     label: "Facturas",         icon: <Icon.note /> },
+    { id: "envio",        label: "Envío familias",   icon: <Icon.mail /> },
+    { id: "ficha",        label: "Tarifas",          icon: <Icon.tag /> },
+    { id: "lista_espera", label: "Lista de espera",  icon: <Icon.clock /> },
+    { id: "documentos",   label: "Documentos",       icon: <Icon.doc /> },
+    { id: "ajustes",      label: "Ajustes",          icon: <Icon.settings /> },
   ]
 
   const handleNav = (id) => { setMasOpen(false); onNavigate && onNavigate(id) }

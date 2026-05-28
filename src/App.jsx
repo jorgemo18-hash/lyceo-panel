@@ -17,6 +17,7 @@ import { CapturaScreen } from './screens/Captura.jsx';
 import { EnvioFamilias } from './screens/EnvioFamilias.jsx';
 import { Ajustes } from './screens/Ajustes.jsx';
 import { Login } from './screens/Login.jsx';
+import { ListaEspera } from './screens/ListaEspera.jsx';
 
 function useMobile() {
   const [mobile, setMobile] = React.useState(
@@ -111,6 +112,17 @@ const PANTALLAS = {
         <Topbar eyebrow="Gestión" title="Envío familias" showSearch={false} mobile={mobile} />
         <div className="content content--wide">
           <EnvioFamilias />
+        </div>
+      </>
+    );
+  },
+  lista_espera: ({ mobile }) => {
+    const Topbar = window.Topbar;
+    return (
+      <>
+        <Topbar eyebrow="Gestión" title="Lista de espera" showSearch={false} mobile={mobile} />
+        <div className="content">
+          <ListaEspera />
         </div>
       </>
     );
