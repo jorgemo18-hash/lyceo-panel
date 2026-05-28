@@ -27,10 +27,10 @@ function Sidebar({ activo = "horario", onNavigate }) {
     [
       { id: "horario",      label: "Horario",          icon: <Icon.grid /> },
       { id: "diario",       label: "Diario",            icon: <Icon.calendar /> },
-      { id: "lista_espera", label: "Lista de espera",   icon: <Icon.clock /> },
       { id: "alumnos",      label: "Alumnos",           icon: <Icon.users />, badge: alumnosBadge || null },
-      { id: "documentos",   label: "Documentos",        icon: <Icon.doc /> },
+      { id: "lista_espera", label: "Lista de espera",   icon: <Icon.clock /> },
       { id: "ficha",        label: "Tarifas",           icon: <Icon.tag /> },
+      { id: "documentos",   label: "Documentos",        icon: <Icon.doc /> },
     ],
     [
       { id: "envio",        label: "Envío familias",    icon: <Icon.mail /> },
