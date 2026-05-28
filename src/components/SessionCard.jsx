@@ -125,20 +125,13 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
               Motivo de ausencia <span className="field__hint">— se incluye en el email a la familia</span>
             </label>
             <textarea
-              className="nota__area"
+              className="nota__area scard__absent-motivo"
               rows="2"
               value={registro.motivoAusencia || ""}
               placeholder="Ej: enfermedad, viaje, cambio de día…"
               onChange={(e) => onChange({ motivoAusencia: e.target.value })}
             />
           </div>
-          <textarea
-            className="nota__area scard__absent-motivo"
-            rows="2"
-            value={registro.comentario || ""}
-            placeholder="Motivo (opcional) — ej: cambio de día, enfermedad…"
-            onChange={(e) => onChange({ comentario: e.target.value })}
-          />
           <button className="scard__undo" onClick={() => onChange({ estado: null })}>
             Deshacer ausencia
           </button>
