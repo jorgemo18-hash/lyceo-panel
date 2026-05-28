@@ -47,8 +47,9 @@ function Tab130({ anio, trimestre }) {
   const [ingresos, setIngresos]   = React.useState(0)
   const [gastos, setGastos]       = React.useState(0)
   const [cargando, setCargando]   = React.useState(true)
-  const [guardando, setGuardando] = React.useState(false)
-  const [guardado, setGuardado]   = React.useState(false)
+  const [guardando, setGuardando]   = React.useState(false)
+  const [guardado, setGuardado]     = React.useState(false)
+  const [yaGuardado, setYaGuardado] = React.useState(false)
   const [edit, setEdit] = React.useState({ c06:'', c13:'', c15:'', c16:'', c18:'' })
 
   const setF = (k, v) => setEdit(prev => ({ ...prev, [k]: v }))
@@ -66,7 +67,8 @@ function Tab130({ anio, trimestre }) {
         ? supabase.from('configuracion').select('valor').in('clave', prevKeys)
         : Promise.resolve({ data: [] }),
       supabase.from('configuracion').select('clave, valor').in('clave', editKeys),
-    ]).then(([p, g, prev, saved]) => {
+      supabase.from('configuracion').select('clave').eq('clave', `m130_aingresar_${anio}_q${trimestre}`).maybeSingle(),
+    ]).then(([p, g, prev, saved, yaG]) => {
       setIngresos(sumImporte(p.data))
       setGastos(sumImporte(g.data))
       const pagosAntAuto = (prev.data ?? []).reduce((s, r) => s + Number(r.valor || 0), 0)
@@ -78,6 +80,7 @@ function Tab130({ anio, trimestre }) {
         c16: m['16'] ?? (pagosAntAuto > 0 ? String(pagosAntAuto) : ''),
         c18: m['18'] ?? '',
       })
+      setYaGuardado(!!yaG.data)
       setCargando(false)
     })
   }, [anio, trimestre])
@@ -87,6 +90,12 @@ function Tab130({ anio, trimestre }) {
       { clave: `m130_${casilla}_${anio}_q${trimestre}`, valor: String(parseFloat(value) || 0) },
       { onConflict: 'clave' }
     )
+
+  const deshacerGuardado = async () => {
+    await supabase.from('configuracion').delete().eq('clave', `m130_aingresar_${anio}_q${trimestre}`)
+    setGuardado(false)
+    setYaGuardado(false)
+  }
 
   const guardarCalculo = async () => {
     const c03 = ingresos - gastos
@@ -156,10 +165,18 @@ function Tab130({ anio, trimestre }) {
       </div>
 
       <div className="fiscal__guardar-row">
-        <button className="btn btn--ghost btn--sm" onClick={guardarCalculo} disabled={guardando || guardado}>
-          {guardando ? 'Guardando…' : guardado ? 'Guardado' : 'Guardar cálculo'}
-        </button>
-        {guardado && <span className="fiscal__guardado"><Icon.check /> Este trimestre queda descontado en los siguientes</span>}
+        {!(guardado || yaGuardado) ? (
+          <button className="btn btn--ghost btn--sm" onClick={guardarCalculo} disabled={guardando}>
+            {guardando ? 'Guardando…' : 'Guardar cálculo'}
+          </button>
+        ) : (
+          <>
+            <span className="fiscal__guardado"><Icon.check /> Guardado — queda descontado en los trimestres siguientes</span>
+            <button className="btn btn--ghost btn--sm" onClick={deshacerGuardado}>
+              Deshacer guardado
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
