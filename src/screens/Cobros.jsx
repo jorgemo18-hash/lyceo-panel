@@ -2,6 +2,7 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
 import { mesesCursoActual, anioInicioCurso } from '../lib/data.jsx'
+import { OtrosIngresos } from './OtrosIngresos.jsx'
 
 const ABREV_MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
 const MESES = mesesCursoActual().map(({ mes, anio }) => ({
@@ -22,7 +23,7 @@ const COLUMNAS = [
   { key: 'bizum',         label: 'Bizum',        cls: 'pag-badge--bizum',         always: true },
   { key: 'transferencia', label: 'Transferencia', cls: 'pag-badge--transferencia', always: true },
   { key: 'efectivo',      label: 'Efectivo',      cls: 'pag-badge--efectivo',      always: true },
-  { key: 'sepa',          label: 'Domiciliado',   cls: 'pag-badge--sepa',          always: false },
+  { key: 'sepa',          label: 'Domiciliado',   cls: 'pag-badge--sepa',          always: true },
 ]
 
 function defaultMesIdx() {
@@ -362,6 +363,8 @@ export function Cobros() {
           </table>
         </div>
       )}
+
+      <OtrosIngresos />
 
     </div>
   )

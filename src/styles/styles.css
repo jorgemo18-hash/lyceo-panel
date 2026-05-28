@@ -4862,3 +4862,72 @@ body.printing .no-print { display: none !important; }
   border-color: var(--lyceo-soft);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--lyceo) 12%, transparent);
 }
+
+/* ── Otros ingresos ──────────────────────────────────────────────── */
+.otros-ing {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.otros-ing__head {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+
+.otros-ing__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.otros-ing__concepto-input { flex: 1; min-width: 160px; }
+.otros-ing__imp-input      { width: 90px; }
+
+.otros-ing__empty {
+  font-size: 13px;
+  color: var(--ink-4);
+  margin: 0;
+}
+
+.otros-ing__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.otros-ing__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.otros-ing__fecha   { font-size: 13px; color: var(--ink-3); white-space: nowrap; min-width: 90px; }
+.otros-ing__concepto { flex: 1; color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.otros-ing__importe { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; flex-shrink: 0; }
+
+.otros-ing__del {
+  background: none;
+  border: none;
+  color: var(--ink-4);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.otros-ing__del:hover { background: #fee2e2; color: #8B0000; }

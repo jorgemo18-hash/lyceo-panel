@@ -68,8 +68,9 @@ function Tab130({ anio, trimestre }) {
         : Promise.resolve({ data: [] }),
       supabase.from('configuracion').select('clave, valor').in('clave', editKeys),
       supabase.from('configuracion').select('clave').eq('clave', `m130_aingresar_${anio}_q${trimestre}`).maybeSingle(),
-    ]).then(([p, g, prev, saved, yaG]) => {
-      setIngresos(sumImporte(p.data))
+      supabase.from('otros_ingresos').select('importe').gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}${FIN_T[trimestre]}`),
+    ]).then(([p, g, prev, saved, yaG, oi]) => {
+      setIngresos(sumImporte(p.data) + sumImporte(oi.data))
       setGastos(sumImporte(g.data))
       const pagosAntAuto = (prev.data ?? []).reduce((s, r) => s + Number(r.valor || 0), 0)
       const m = Object.fromEntries((saved.data ?? []).map(r => [r.clave.split('_')[1], r.valor]))
@@ -311,9 +312,11 @@ function TabResumen({ anio }) {
       supabase.from('gastos').select('fecha, importe').gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}-12-31`),
       supabase.from('configuracion').select('clave, valor').like('clave', `m130_aingresar_${anio}_%`),
       supabase.from('configuracion').select('valor').eq('clave', 'alquiler_base').maybeSingle(),
-    ]).then(([p, g, m130, alqRes]) => {
+      supabase.from('otros_ingresos').select('fecha, importe').gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}-12-31`),
+    ]).then(([p, g, m130, alqRes, oi]) => {
       const ing = Array(12).fill(0)
       ;(p.data ?? []).forEach(r => { ing[r.mes - 1] += Number(r.importe) })
+      ;(oi.data ?? []).forEach(r => { ing[parseInt(r.fecha.split('-')[1]) - 1] += Number(r.importe) })
       const gast = Array(12).fill(0)
       ;(g.data ?? []).forEach(r => { gast[parseInt(r.fecha.split('-')[1]) - 1] += Number(r.importe) })
       setIngMes(ing)
