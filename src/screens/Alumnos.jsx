@@ -1513,8 +1513,14 @@ export function Alumnos() {
     else cargar()
   }
 
+  const conteoFamilia = React.useMemo(() => {
+    const c = {}
+    alumnos.forEach(a => { if (a.familia_id) c[a.familia_id] = (c[a.familia_id] ?? 0) + 1 })
+    return c
+  }, [alumnos])
+
   const alumnosFiltrados = alumnos
-    .filter(a => filtro !== 'familias' || a.familia_id !== null)
+    .filter(a => filtro !== 'familias' || (a.familia_id && conteoFamilia[a.familia_id] > 1))
     .filter(a => !busqueda.trim() || a.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()))
 
   return (
