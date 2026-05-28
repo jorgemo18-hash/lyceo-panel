@@ -139,7 +139,7 @@ export function DiarioScreen({ mobile }) {
         const regsInicial = registrosIniciales ?? Object.fromEntries(
           s.map((ses) => [
             ses.id,
-            { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
+            { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false, avisoEnviado: false },
           ])
         )
         registrosRef.current = regsInicial
@@ -201,6 +201,54 @@ export function DiarioScreen({ mobile }) {
     const { data: saved, error } = await guardarRecuperacion(data)
     if (!error && saved) {
       setRecuperacionesPorAlumno(prev => ({ ...prev, [data.alumno_id]: saved }))
+    }
+  }
+
+  const handleAvisarFamilia = async (sesionId) => {
+    const sesion = sesionesRef.current.find(s => s.id === sesionId)
+    if (!sesion) return { ok: false, msg: 'Sesión no encontrada' }
+
+    const { data: alumnoData } = await supabase
+      .from('alumnos')
+      .select('familias(email)')
+      .eq('id', sesion.alumno.id)
+      .single()
+
+    const email = alumnoData?.familias?.email
+    if (!email) return { ok: false, msg: 'Sin email registrado para esta familia' }
+
+    const registro = registrosRef.current[sesionId]
+
+    try {
+      const res = await fetch('https://lyceo-pdf-service.onrender.com/avisar-ausencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailDestino: email,
+          nombreAlumno: sesion.alumno.nombre,
+          hora: sesion.hora,
+          fechaLabel: hoy,
+          motivo: registro?.comentario?.trim() || null,
+        }),
+      })
+
+      if (res.ok) {
+        await supabase.from('sesiones')
+          .update({ aviso_enviado: true })
+          .eq('alumno_id', sesion.alumno.id)
+          .eq('fecha', fechaRef.current)
+
+        setRegistros(prev => {
+          const updated = { ...prev, [sesionId]: { ...prev[sesionId], avisoEnviado: true } }
+          registrosRef.current = updated
+          return updated
+        })
+        return { ok: true }
+      }
+      const json = await res.json().catch(() => ({}))
+      return { ok: false, msg: json.error ?? 'Error al enviar' }
+    } catch (e) {
+      return { ok: false, msg: e.message ?? 'Error de red' }
     }
   }
 
@@ -333,6 +381,7 @@ export function DiarioScreen({ mobile }) {
                 recuperacion={recuperacionesPorAlumno[s.alumno.id] ?? null}
                 onGuardarRecuperacion={onGuardarRecuperacion}
                 fechaOriginal={fechaSel}
+                onAvisarFamilia={() => handleAvisarFamilia(s.id)}
               />
             ))}
           </div>

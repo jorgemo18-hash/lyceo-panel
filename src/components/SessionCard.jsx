@@ -2,11 +2,22 @@
 // Acordeón: tap para expandir, dentro tiene SubjectPicker + TopicInput + nota privada
 // Estados: pending | in-progress | done | absent
 
-function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryColor, recuperacion = null, onGuardarRecuperacion = null, fechaOriginal = '' }) {
+function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryColor, recuperacion = null, onGuardarRecuperacion = null, fechaOriginal = '', onAvisarFamilia = null }) {
   const { alumno, hora, duracion, historial, racha } = sesion;
   const completo = registro.asignatura && registro.tema && registro.tema.trim().length > 0;
   const ausente = registro.estado === "absent";
   const guardado = registro.lastSavedAt;
+
+  const [enviandoAviso, setEnviandoAviso] = React.useState(false);
+  const [errorAviso, setErrorAviso] = React.useState(null);
+
+  const handleAvisar = async () => {
+    setEnviandoAviso(true);
+    setErrorAviso(null);
+    const result = await onAvisarFamilia();
+    setEnviandoAviso(false);
+    if (!result?.ok) setErrorAviso(result?.msg ?? 'Error al enviar');
+  };
 
   const estado = ausente ? "absent" : completo ? "done" : (registro.asignatura || registro.tema) ? "progress" : "pending";
 
@@ -126,6 +137,25 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
               recuperacion={recuperacion}
               onGuardar={onGuardarRecuperacion}
             />
+          )}
+          {onAvisarFamilia && !registro.avisoEnviado && (
+            <button
+              className="scard__aviso-btn"
+              onClick={handleAvisar}
+              disabled={enviandoAviso}
+            >
+              {enviandoAviso
+                ? <><span className="btn-spinner" /> Enviando…</>
+                : <><Icon.mail /> Avisar a la familia</>}
+            </button>
+          )}
+          {registro.avisoEnviado && (
+            <div className="scard__aviso-sent">
+              <Icon.check /> Aviso enviado a la familia
+            </div>
+          )}
+          {errorAviso && (
+            <div className="scard__aviso-error">{errorAviso}</div>
           )}
         </div>
       )}

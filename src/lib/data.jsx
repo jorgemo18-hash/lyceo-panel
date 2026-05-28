@@ -98,7 +98,7 @@ export async function cargarSesionesFecha(fechaISO) {
 
   const { data: todasEseDia } = await supabase
     .from('sesiones')
-    .select('alumno_id, tipo, asignatura, tema, comentario, hora')
+    .select('alumno_id, tipo, asignatura, tema, comentario, hora, aviso_enviado')
     .eq('fecha', fechaISO)
   const guardadas = todasEseDia ?? []
 
@@ -180,6 +180,7 @@ export async function cargarSesionesFecha(fechaISO) {
         estado: g?.tipo === 'ausencia' ? 'absent' : null,
         lastSavedAt: null,
         _dirty: false,
+        avisoEnviado: g?.aviso_enviado ?? false,
       }]
     })
   )

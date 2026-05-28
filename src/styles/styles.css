@@ -4447,3 +4447,45 @@ body.printing .no-print { display: none !important; }
   gap: 8px;
   justify-content: flex-end;
 }
+
+/* ── Aviso a la familia ───────────────────────────────────────────── */
+.scard__aviso-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 7px 14px;
+  border: 1.5px solid #1d4ed8;
+  border-radius: 8px;
+  background: transparent;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.scard__aviso-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  color: #fff;
+}
+.scard__aviso-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.scard__aviso-sent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 13px;
+  font-weight: 500;
+}
+.scard__aviso-error {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #8B0000;
+}
