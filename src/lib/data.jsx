@@ -98,7 +98,7 @@ export async function cargarSesionesFecha(fechaISO) {
 
   const { data: todasEseDia } = await supabase
     .from('sesiones')
-    .select('alumno_id, tipo, asignatura, tema, comentario, hora, aviso_enviado')
+    .select('alumno_id, tipo, asignatura, tema, comentario, hora, aviso_enviado, motivo_ausencia')
     .eq('fecha', fechaISO)
   const guardadas = todasEseDia ?? []
 
@@ -181,6 +181,7 @@ export async function cargarSesionesFecha(fechaISO) {
         lastSavedAt: null,
         _dirty: false,
         avisoEnviado: g?.aviso_enviado ?? false,
+        motivoAusencia: g?.motivo_ausencia ?? '',
       }]
     })
   )
@@ -213,6 +214,7 @@ export async function guardarSesion(sesion, registro, fecha = new Date().toISOSt
     asignatura: esAusente ? null : (registro.asignatura || null),
     tema: esAusente ? null : (registro.tema?.trim() || null),
     comentario: esAusente ? null : (registro.comentario?.trim() || null),
+    motivo_ausencia: esAusente ? (registro.motivoAusencia?.trim() || null) : null,
   }
   if (sesion.hora) payload.hora = sesion.hora
   const { error } = await supabase.from('sesiones').upsert(

@@ -139,7 +139,7 @@ export function DiarioScreen({ mobile }) {
         const regsInicial = registrosIniciales ?? Object.fromEntries(
           s.map((ses) => [
             ses.id,
-            { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false, avisoEnviado: false },
+            { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false, avisoEnviado: false, motivoAusencia: '' },
           ])
         )
         registrosRef.current = regsInicial
@@ -183,7 +183,7 @@ export function DiarioScreen({ mobile }) {
     })
     setRegistros(prev => ({
       ...prev,
-      [id]: { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false },
+      [id]: { asignatura: '', tema: '', comentario: '', nota: '', estado: null, lastSavedAt: null, _dirty: false, avisoEnviado: false, motivoAusencia: '' },
     }))
     cerrarModal()
     await supabase.from('sesiones').upsert({
@@ -228,7 +228,7 @@ export function DiarioScreen({ mobile }) {
           nombreAlumno: sesion.alumno.nombre,
           hora: sesion.hora,
           fechaLabel: hoy,
-          motivo: registro?.comentario?.trim() || null,
+          motivo: registro?.motivoAusencia?.trim() || null,
         }),
       })
 
