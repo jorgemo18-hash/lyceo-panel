@@ -141,7 +141,7 @@ function ClausulaRGPD() {
       <p className="doc-rgpd__resp">
         <strong>Responsable:</strong> JORGE MORENO PARDO · NIF/CIF 18042793Y ·
         Dir. postal: C/ Jazmín 1 bajos, 22002 Huesca ·
-        Teléfono: 675 32 41 28 · Correo: info@lyceoacademia.com
+        Teléfono: 675 32 41 28 · Correo: info@lyceoacademia.es
       </p>
       <p>
         En nombre de la empresa tratamos la información que nos facilita con el fin de prestarles
@@ -331,7 +331,7 @@ function HojaNormas() {
         <span className="doc-foot__lbl">Contacto</span>
         <span>675 32 41 28</span>
         <span className="doc-foot__sep" />
-        <span>info@lyceoacademia.com</span>
+        <span>info@lyceoacademia.es</span>
         <span className="doc-foot__sep" />
         <span>C/ Jazmín 1 bajos · 22002 Huesca</span>
       </footer>
