@@ -36,9 +36,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
       { id: "envio",        label: "Envío familias",    icon: <Icon.mail /> },
     ],
     [
-      { id: "pagos",        label: "Ingresos",          icon: <Icon.euro /> },
-      { id: "gastos",       label: "Gastos",            icon: <Icon.receipt />, badge: gastosBadge || null },
-      { id: "fiscal",       label: "Fiscal",            icon: <Icon.archive /> },
+      { id: "finanzas",     label: "Finanzas",          icon: <Icon.euro />, badge: gastosBadge || null },
     ],
   ];
 
@@ -119,6 +117,7 @@ function BottomNav({ activo = "horario", onNavigate }) {
     { id: "envio",        label: "Envío familias",   icon: <Icon.mail /> },
     { id: "ficha",        label: "Tarifas",          icon: <Icon.tag /> },
     { id: "lista_espera", label: "Lista de espera",  icon: <Icon.clock /> },
+    { id: "finanzas",     label: "Finanzas",         icon: <Icon.euro /> },
     { id: "documentos",   label: "Documentos",       icon: <Icon.doc /> },
     { id: "ajustes",      label: "Ajustes",          icon: <Icon.settings /> },
   ]

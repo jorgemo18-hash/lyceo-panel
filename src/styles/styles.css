@@ -4931,3 +4931,680 @@ body.printing .no-print { display: none !important; }
   transition: background 0.12s, color 0.12s;
 }
 .otros-ing__del:hover { background: #fee2e2; color: #8B0000; }
+/* ============================================================
+   Lyceo · Gestión financiera — sistema visual unificado
+   ------------------------------------------------------------
+   Cubre Ingresos, Gastos y Fiscal. Prefijo .fin-* para todo.
+   Pensado para añadirse a styles.css sin chocar con clases
+   existentes (.hor-, .tar-, .scard-, etc).
+   ============================================================ */
+
+/* ─── Tokens locales (semánticos, sobrios) ─── */
+:root {
+  --fin-pos: oklch(0.48 0.08 155);          /* verde sobrio: cobrado/positivo */
+  --fin-pos-bg: oklch(0.965 0.018 155);
+  --fin-pos-line: oklch(0.88 0.04 155);
+
+  --fin-neg: var(--lyceo);                   /* rojo Lyceo: a pagar / saliente */
+  --fin-neg-bg: var(--lyceo-tint);
+  --fin-neg-line: oklch(0.83 0.05 25);
+
+  --fin-neu: oklch(0.55 0.015 60);           /* grafito: neutro/pendiente */
+  --fin-neu-bg: oklch(0.96 0.005 60);
+  --fin-neu-line: var(--line-2);
+
+  /* Categorías de gastos — paleta muy desaturada */
+  --fin-cat-1: oklch(0.55 0.08 25);    /* Extintores */
+  --fin-cat-2: oklch(0.58 0.07 220);   /* Agua */
+  --fin-cat-3: oklch(0.55 0.07 150);   /* Material */
+  --fin-cat-4: oklch(0.55 0.07 280);   /* Página web */
+  --fin-cat-5: oklch(0.55 0.05 60);    /* Otros */
+}
+
+/* ─── Sección financiera: contenedor ─── */
+.fin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* ─── Sub-navegación (Ingresos · Gastos · Fiscal) ─── */
+.fin-subnav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  align-self: flex-start;
+}
+.fin-subnav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-family: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.12s, color 0.12s;
+}
+.fin-subnav__link:hover { color: var(--ink); }
+.fin-subnav__link--on {
+  background: var(--bg-elev);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), inset 0 0 0 1px var(--line);
+}
+.fin-subnav__num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  font-weight: 500;
+}
+.fin-subnav__link--on .fin-subnav__num { color: var(--lyceo); }
+
+/* ─── Tira de KPIs ─── */
+.fin-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.fin-kpis--3 { grid-template-columns: repeat(3, 1fr); }
+.fin-kpis--2 { grid-template-columns: repeat(2, 1fr); }
+
+.fin-kpi {
+  padding: 18px 22px 20px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.fin-kpi:last-child { border-right: 0; }
+
+.fin-kpi__lbl {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  font-weight: 500;
+}
+.fin-kpi__val {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.fin-kpi__cur {
+  font-family: var(--serif);
+  font-size: 17px;
+  color: var(--ink-2);
+  font-weight: 500;
+  margin-left: 1px;
+}
+.fin-kpi__sub {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fin-kpi__delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 5px;
+  border-radius: 3px;
+  letter-spacing: 0;
+}
+.fin-kpi__delta--pos { color: var(--fin-pos); background: var(--fin-pos-bg); }
+.fin-kpi__delta--neg { color: var(--fin-neg); background: var(--fin-neg-bg); }
+.fin-kpi__delta--neu { color: var(--ink-3); background: var(--bg-soft); }
+
+.fin-kpi--accent .fin-kpi__val { color: var(--lyceo); }
+.fin-kpi--pos .fin-kpi__val { color: var(--fin-pos); }
+
+/* Sparkline dentro de KPI */
+.fin-spark {
+  width: 100%;
+  height: 28px;
+  display: block;
+  margin-top: 4px;
+}
+.fin-spark path { fill: none; stroke: var(--ink); stroke-width: 1.25; }
+.fin-spark .fin-spark__area { fill: var(--bg-soft); stroke: none; }
+
+/* ─── Card / panel ─── */
+.fin-card {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.fin-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.fin-card__title {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  margin: 0;
+}
+.fin-card__sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-4);
+}
+.fin-card__body { padding: 20px; }
+.fin-card__body--flush { padding: 0; }
+
+/* ─── Filtros (años / trimestres) refinados ─── */
+.fin-filters {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.fin-filters__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.fin-filters__lbl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-4);
+  font-weight: 500;
+}
+.fin-seg {
+  display: inline-flex;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+.fin-seg__btn {
+  border: 0;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 11px;
+  border-radius: 5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+  transition: background 0.12s, color 0.12s;
+}
+.fin-seg__btn:hover { color: var(--ink); }
+.fin-seg__btn--on {
+  background: var(--bg-elev);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* ─── Columnas (Ingresos por método) ─── */
+.fin-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.fin-col {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.fin-col__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 11px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.fin-col__name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.fin-col__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.fin-col__dot--bizum { background: oklch(0.58 0.07 220); }
+.fin-col__dot--transf { background: oklch(0.62 0.08 60); }
+.fin-col__dot--efectivo { background: oklch(0.55 0.07 150); }
+.fin-col__count {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-3);
+}
+.fin-col__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.fin-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+}
+.fin-row:last-child { border-bottom: 0; }
+.fin-row:hover { background: var(--bg-soft); }
+.fin-row__who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.fin-row__name {
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fin-row__sub {
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+.fin-row__amt {
+  font-family: var(--serif);
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
+}
+.fin-row__amt-cur {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-left: 1px;
+}
+.fin-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--fin-pos-line);
+  background: var(--fin-pos-bg);
+  color: var(--fin-pos);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.fin-check:hover { background: oklch(0.94 0.05 155); }
+.fin-check--pending {
+  border: 1px dashed var(--line-2);
+  background: transparent;
+  color: var(--ink-4);
+}
+.fin-check--pending:hover { border-color: var(--lyceo-soft); color: var(--lyceo); }
+
+/* ─── Tabla genérica (Gastos, Resumen) ─── */
+.fin-tab {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+.fin-tab thead th {
+  text-align: left;
+  padding: 12px 20px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.fin-tab thead th.fin-tab__num { text-align: right; }
+.fin-tab tbody td {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--ink);
+  vertical-align: top;
+}
+.fin-tab tbody tr:last-child td { border-bottom: 0; }
+.fin-tab tbody tr:hover { background: var(--bg-soft); }
+.fin-tab__date {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  padding-top: 16px !important;
+}
+.fin-tab__prov {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.fin-tab__prov-name {
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 380px;
+}
+.fin-tab__prov-desc {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.005em;
+}
+.fin-tab__cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+  font-weight: 500;
+}
+.fin-tab__cat-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.fin-tab__num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fin-tab__num-main {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.005em;
+}
+.fin-tab__num-sub {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-4);
+  font-family: var(--mono);
+  margin-top: 2px;
+  letter-spacing: 0.01em;
+}
+.fin-tab__num--strong .fin-tab__num-main { font-size: 17px; }
+
+/* Fila de totales */
+.fin-tab__total td {
+  background: var(--bg-soft);
+  border-top: 1.5px solid var(--ink) !important;
+  border-bottom: 0 !important;
+  padding: 14px 20px;
+  font-weight: 500;
+}
+.fin-tab__total .fin-tab__num-main {
+  font-size: 17px;
+}
+
+/* ─── Barra de categorías horizontal apilada (Gastos) ─── */
+.fin-stacked {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.fin-stacked__bar {
+  display: flex;
+  height: 10px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+}
+.fin-stacked__seg {
+  height: 100%;
+  transition: opacity 0.15s;
+}
+.fin-stacked__seg:hover { opacity: 0.78; }
+.fin-stacked__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12.5px;
+}
+.fin-stacked__item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--ink-2);
+}
+.fin-stacked__sw {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  align-self: center;
+}
+.fin-stacked__amt {
+  font-family: var(--serif);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.005em;
+}
+
+/* ─── Gráfico de barras Ingresos vs Gastos (Fiscal) ─── */
+.fin-chart {
+  padding: 20px 20px 16px;
+}
+.fin-chart__legend {
+  display: flex;
+  gap: 18px;
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-bottom: 18px;
+}
+.fin-chart__leg-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+.fin-chart__leg-sw {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+.fin-chart__leg-sw--ing { background: var(--ink); }
+.fin-chart__leg-sw--gas { background: var(--lyceo); }
+
+.fin-chart__svg {
+  width: 100%;
+  height: 220px;
+  display: block;
+}
+.fin-chart__bar-ing { fill: var(--ink); }
+.fin-chart__bar-gas { fill: var(--lyceo); }
+.fin-chart__bar-empty { fill: var(--line); }
+.fin-chart__axis {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  fill: var(--ink-4);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.fin-chart__grid { stroke: var(--line); stroke-width: 1; }
+
+/* ─── Banner de "próximo pago" ─── */
+.fin-due {
+  display: flex;
+  align-items: stretch;
+  background: var(--ink);
+  color: #fff;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.fin-due__body {
+  flex: 1;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.fin-due__lbl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+.fin-due__title {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.fin-due__when {
+  font-size: 12px;
+  opacity: 0.65;
+  margin-top: 2px;
+}
+.fin-due__amt {
+  padding: 18px 24px;
+  background: var(--lyceo);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+  min-width: 220px;
+}
+.fin-due__amt-num {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.fin-due__amt-lbl {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+  margin-top: 6px;
+}
+
+/* ─── Action button row (Gastos -> Añadir) ─── */
+.fin-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.fin-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid var(--line-2);
+  background: var(--bg-elev);
+  color: var(--ink-2);
+  transition: all 0.12s;
+}
+.fin-btn:hover { border-color: var(--lyceo-soft); color: var(--lyceo); }
+.fin-btn--primary {
+  background: var(--lyceo);
+  border-color: var(--lyceo);
+  color: #fff;
+}
+.fin-btn--primary:hover {
+  background: oklch(0.30 0.16 25);
+  border-color: oklch(0.30 0.16 25);
+  color: #fff;
+}
+
+/* ─── Mobile ─── */
+@media (max-width: 900px) {
+  .fin-kpis { grid-template-columns: repeat(2, 1fr); }
+  .fin-kpi { border-right: 0; border-bottom: 1px solid var(--line); }
+  .fin-kpi:nth-child(odd) { border-right: 1px solid var(--line); }
+  .fin-cols { grid-template-columns: 1fr; }
+  .fin-due { flex-direction: column; }
+  .fin-due__amt { align-items: flex-start; }
+}
+
+/* ─── Extras para implementación React ─── */
+.fin-col__dot--sepa { background: oklch(0.55 0.07 280); }
+
+.fin-col__ok {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--ink-4);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fin-fiscal-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 900px) {
+  .fin-fiscal-grid { grid-template-columns: 1fr; }
+}

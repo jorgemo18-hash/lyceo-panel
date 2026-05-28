@@ -11,14 +11,12 @@ import './screens/Tarifas.jsx';
 import './screens/Documentos.jsx';
 import { DiarioScreen } from './screens/Diario.jsx';
 import { Alumnos } from './screens/Alumnos.jsx';
-import { Cobros } from './screens/Cobros.jsx';
-import { Gastos } from './screens/Gastos.jsx';
+import { Finanzas } from './screens/Finanzas.jsx';
 import { CapturaScreen } from './screens/Captura.jsx';
 import { EnvioFamilias } from './screens/EnvioFamilias.jsx';
 import { Ajustes } from './screens/Ajustes.jsx';
 import { Login } from './screens/Login.jsx';
 import { ListaEspera } from './screens/ListaEspera.jsx';
-import { Fiscal } from './screens/Fiscal.jsx';
 
 function useMobile() {
   const [mobile, setMobile] = React.useState(
@@ -128,35 +126,13 @@ const PANTALLAS = {
       </>
     );
   },
-  pagos: ({ mobile }) => {
+  finanzas: ({ mobile }) => {
     const Topbar = window.Topbar;
     return (
       <>
-        <Topbar eyebrow="Gestión" title="Ingresos" showSearch={false} mobile={mobile} />
+        <Topbar eyebrow="Gestión" title="Finanzas" showSearch={false} mobile={mobile} />
         <div className="content content--wide">
-          <Cobros />
-        </div>
-      </>
-    );
-  },
-  gastos: ({ mobile }) => {
-    const Topbar = window.Topbar;
-    return (
-      <>
-        <Topbar eyebrow="Gestión" title="Gastos" showSearch={false} mobile={mobile} />
-        <div className="content content--wide">
-          <Gastos />
-        </div>
-      </>
-    );
-  },
-  fiscal: ({ mobile }) => {
-    const Topbar = window.Topbar;
-    return (
-      <>
-        <Topbar eyebrow="Gestión" title="Fiscal" showSearch={false} mobile={mobile} />
-        <div className="content">
-          <Fiscal />
+          <Finanzas />
         </div>
       </>
     );
