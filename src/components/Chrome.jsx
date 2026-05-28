@@ -23,17 +23,37 @@ function Sidebar({ activo = "horario", onNavigate }) {
     return () => window.removeEventListener('pendientes-actualizado', cargarBadges)
   }, [cargarBadges])
 
-  const items = [
-    { id: "horario",   label: "Horario",        icon: <Icon.grid /> },
-    { id: "diario",    label: "Diario",          icon: <Icon.calendar /> },
-    { id: "envio",     label: "Envío familias",  icon: <Icon.mail /> },
-    { id: "ficha",     label: "Tarifas",         icon: <Icon.tag /> },
-    { id: "alumnos",      label: "Alumnos",         icon: <Icon.users />, badge: alumnosBadge || null },
-    { id: "lista_espera", label: "Lista de espera", icon: <Icon.clock /> },
-    { id: "pagos",        label: "Ingresos",        icon: <Icon.euro /> },
-    { id: "gastos",    label: "Gastos",          icon: <Icon.receipt />, badge: gastosBadge || null },
-    { id: "documentos",label: "Documentos",      icon: <Icon.doc /> },
+  const grupos = [
+    [
+      { id: "horario",      label: "Horario",          icon: <Icon.grid /> },
+      { id: "diario",       label: "Diario",            icon: <Icon.calendar /> },
+      { id: "lista_espera", label: "Lista de espera",   icon: <Icon.clock /> },
+      { id: "alumnos",      label: "Alumnos",           icon: <Icon.users />, badge: alumnosBadge || null },
+      { id: "documentos",   label: "Documentos",        icon: <Icon.doc /> },
+      { id: "ficha",        label: "Tarifas",           icon: <Icon.tag /> },
+    ],
+    [
+      { id: "envio",        label: "Envío familias",    icon: <Icon.mail /> },
+    ],
+    [
+      { id: "pagos",        label: "Ingresos",          icon: <Icon.euro /> },
+      { id: "gastos",       label: "Gastos",            icon: <Icon.receipt />, badge: gastosBadge || null },
+    ],
   ];
+
+  const renderItems = (items) => items.map((it) => (
+    <a
+      key={it.id}
+      href="#"
+      className={`navitem ${activo === it.id ? "navitem--on" : ""}`}
+      onClick={(e) => { e.preventDefault(); onNavigate && onNavigate(it.id); }}
+    >
+      <span className="navitem__icon">{it.icon}</span>
+      <span className="navitem__label">{it.label}</span>
+      {it.badge ? <span className="navitem__badge">{it.badge}</span> : null}
+    </a>
+  ));
+
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
@@ -45,17 +65,11 @@ function Sidebar({ activo = "horario", onNavigate }) {
       </div>
 
       <nav className="sidebar__nav">
-        {items.map((it) => (
-          <a
-            key={it.id}
-            href="#"
-            className={`navitem ${activo === it.id ? "navitem--on" : ""}`}
-            onClick={(e) => { e.preventDefault(); onNavigate && onNavigate(it.id); }}
-          >
-            <span className="navitem__icon">{it.icon}</span>
-            <span className="navitem__label">{it.label}</span>
-            {it.badge ? <span className="navitem__badge">{it.badge}</span> : null}
-          </a>
+        {grupos.map((grupo, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <hr className="nav-sep" />}
+            {renderItems(grupo)}
+          </React.Fragment>
         ))}
       </nav>
 
