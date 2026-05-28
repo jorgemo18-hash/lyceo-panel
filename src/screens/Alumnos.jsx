@@ -1522,6 +1522,14 @@ export function Alumnos() {
   const alumnosFiltrados = alumnos
     .filter(a => filtro !== 'familias' || (a.familia_id && conteoFamilia[a.familia_id] > 1))
     .filter(a => !busqueda.trim() || a.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()))
+    .sort((a, b) => {
+      if (filtro === 'familias') {
+        const fa = a.familias?.nombre ?? ''
+        const fb = b.familias?.nombre ?? ''
+        if (fa !== fb) return fa.localeCompare(fb, 'es')
+      }
+      return a.nombre.localeCompare(b.nombre, 'es')
+    })
 
   return (
     <>
