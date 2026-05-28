@@ -1426,7 +1426,7 @@ export function Alumnos() {
 
   const cargar = React.useCallback(() => {
     setLoading(true)
-    const activo = filtro === 'activos'
+    const activo = filtro !== 'archivados'
     Promise.all([
       supabase
         .from('alumnos')
@@ -1513,9 +1513,9 @@ export function Alumnos() {
     else cargar()
   }
 
-  const alumnosFiltrados = busqueda.trim()
-    ? alumnos.filter(a => a.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()))
-    : alumnos
+  const alumnosFiltrados = alumnos
+    .filter(a => filtro !== 'familias' || a.familia_id !== null)
+    .filter(a => !busqueda.trim() || a.nombre.toLowerCase().includes(busqueda.trim().toLowerCase()))
 
   return (
     <>
@@ -1528,11 +1528,11 @@ export function Alumnos() {
 
       <div className="alumnos-bar">
         <div className="alumnos-toggle">
-          {['activos', 'archivados'].map(f => (
+          {[['activos', 'Activos'], ['familias', 'Con familia'], ['archivados', 'Archivados']].map(([f, label]) => (
             <button key={f}
               className={`alumnos-toggle__btn ${filtro === f ? 'alumnos-toggle__btn--on' : ''}`}
               onClick={() => setFiltro(f)}>
-              {f.charAt(0).toUpperCase() + f.slice(1)}
+              {label}
             </button>
           ))}
         </div>
