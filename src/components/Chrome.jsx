@@ -38,6 +38,7 @@ function Sidebar({ activo = "horario", onNavigate }) {
     [
       { id: "pagos",        label: "Ingresos",          icon: <Icon.euro /> },
       { id: "gastos",       label: "Gastos",            icon: <Icon.receipt />, badge: gastosBadge || null },
+      { id: "fiscal",       label: "Fiscal",            icon: <Icon.archive /> },
     ],
   ];
 
