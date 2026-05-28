@@ -4814,3 +4814,23 @@ body.printing .no-print { display: none !important; }
   background: var(--bg-elev);
   border-top: 2px solid var(--line-2);
 }
+
+.fiscal__value--dim {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.fiscal__guardar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.fiscal__guardado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #15803d;
+}
