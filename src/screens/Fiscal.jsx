@@ -14,44 +14,90 @@ function sumImporte(arr) {
   return (arr ?? []).reduce((s, r) => s + Number(r.importe ?? 0), 0)
 }
 
+// ── Helpers de casilla ────────────────────────────────────────────
+function CasillaAuto({ num, label, value, sep, dim }) {
+  const cn = String(num).padStart(2, '0')
+  return (
+    <div className={`fiscal__row${sep ? ' fiscal__row--sep' : ''}${dim ? ' fiscal__row--dim' : ''}`}>
+      <span className="fiscal__label"><span className="fiscal__cnum">[{cn}]</span> {label}</span>
+      <span className="fiscal__value">{eur(value)}</span>
+    </div>
+  )
+}
+
+function CasillaEdit({ num, label, value, onChange, onBlur }) {
+  const cn = String(num).padStart(2, '0')
+  return (
+    <div className="fiscal__row">
+      <span className="fiscal__label"><span className="fiscal__cnum">[{cn}]</span> {label}</span>
+      <input
+        className="fiscal__casilla-input"
+        type="number" step="0.01" min="0"
+        value={value}
+        placeholder="0,00"
+        onChange={e => onChange(e.target.value)}
+        onBlur={onBlur}
+      />
+    </div>
+  )
+}
+
 // ── Modelo 130 ────────────────────────────────────────────────────
 function Tab130({ anio, trimestre }) {
-  const [ingresos, setIngresos]   = React.useState(null)
-  const [gastos, setGastos]       = React.useState(null)
-  const [pagosAnt, setPagosAnt]   = React.useState(0)
+  const [ingresos, setIngresos]   = React.useState(0)
+  const [gastos, setGastos]       = React.useState(0)
   const [cargando, setCargando]   = React.useState(true)
   const [guardando, setGuardando] = React.useState(false)
   const [guardado, setGuardado]   = React.useState(false)
+  const [edit, setEdit] = React.useState({ c06:'', c13:'', c15:'', c16:'', c18:'' })
+
+  const setF = (k, v) => setEdit(prev => ({ ...prev, [k]: v }))
+  const num  = (k)    => parseFloat(edit[k]) || 0
 
   React.useEffect(() => {
     setCargando(true)
     setGuardado(false)
-    const prevKeys = [1,2,3,4]
-      .filter(q => q < trimestre)
-      .map(q => `m130_aingresar_${anio}_q${q}`)
+    const prevKeys = [1,2,3,4].filter(q => q < trimestre).map(q => `m130_aingresar_${anio}_q${q}`)
+    const editKeys = [6,13,15,16,18].map(n => `m130_${n}_${anio}_q${trimestre}`)
     Promise.all([
-      supabase.from('pagos').select('importe')
-        .eq('anio', anio).in('mes', MESES_T[trimestre]).eq('pagado', true),
-      supabase.from('gastos').select('importe')
-        .gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}${FIN_T[trimestre]}`),
+      supabase.from('pagos').select('importe').eq('anio', anio).in('mes', MESES_T[trimestre]).eq('pagado', true),
+      supabase.from('gastos').select('importe').gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}${FIN_T[trimestre]}`),
       prevKeys.length > 0
         ? supabase.from('configuracion').select('valor').in('clave', prevKeys)
         : Promise.resolve({ data: [] }),
-    ]).then(([p, g, c]) => {
+      supabase.from('configuracion').select('clave, valor').in('clave', editKeys),
+    ]).then(([p, g, prev, saved]) => {
       setIngresos(sumImporte(p.data))
       setGastos(sumImporte(g.data))
-      setPagosAnt((c.data ?? []).reduce((s, r) => s + Number(r.valor || 0), 0))
+      const pagosAntAuto = (prev.data ?? []).reduce((s, r) => s + Number(r.valor || 0), 0)
+      const m = Object.fromEntries((saved.data ?? []).map(r => [r.clave.split('_')[1], r.valor]))
+      setEdit({
+        c06: m['6']  ?? '',
+        c13: m['13'] ?? '',
+        c15: m['15'] ?? '',
+        c16: m['16'] ?? (pagosAntAuto > 0 ? String(pagosAntAuto) : ''),
+        c18: m['18'] ?? '',
+      })
       setCargando(false)
     })
   }, [anio, trimestre])
 
+  const saveCasilla = (casilla, value) =>
+    supabase.from('configuracion').upsert(
+      { clave: `m130_${casilla}_${anio}_q${trimestre}`, valor: String(parseFloat(value) || 0) },
+      { onConflict: 'clave' }
+    )
+
   const guardarCalculo = async () => {
-    const rendimiento = ingresos - gastos
-    const pago20      = Math.max(0, rendimiento * 0.2)
-    const aIngresar   = Math.max(0, pago20 - pagosAnt)
+    const c03 = ingresos - gastos
+    const c04 = Math.max(0, c03 * 0.2)
+    const c07 = c04 - num('c06')
+    const c14 = c07 - num('c13')
+    const c17 = c14 - num('c15') - num('c16')
+    const c19 = Math.max(0, c17 - num('c18'))
     setGuardando(true)
     await supabase.from('configuracion').upsert(
-      { clave: `m130_aingresar_${anio}_q${trimestre}`, valor: String(aIngresar) },
+      { clave: `m130_aingresar_${anio}_q${trimestre}`, valor: String(c19) },
       { onConflict: 'clave' }
     )
     setGuardando(false)
@@ -60,9 +106,14 @@ function Tab130({ anio, trimestre }) {
 
   if (cargando) return <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Calculando…</div>
 
-  const rendimiento = ingresos - gastos
-  const pago20      = Math.max(0, rendimiento * 0.2)
-  const aIngresar   = Math.max(0, pago20 - pagosAnt)
+  const c01 = ingresos
+  const c02 = gastos
+  const c03 = c01 - c02
+  const c04 = Math.max(0, c03 * 0.2)
+  const c07 = c04 - num('c06')
+  const c14 = c07 - num('c13')
+  const c17 = c14 - num('c15') - num('c16')
+  const c19 = Math.max(0, c17 - num('c18'))
 
   return (
     <div className="fiscal__content">
@@ -71,34 +122,37 @@ function Tab130({ anio, trimestre }) {
           <Icon.note /> Julio y agosto no computan — solo se incluye septiembre
         </div>
       )}
+
       <div className="fiscal__card">
-        <div className="fiscal__row">
-          <span className="fiscal__label">Ingresos acumulados (ene–{MES_FIN[trimestre]})</span>
-          <span className="fiscal__value">{eur(ingresos)}</span>
-        </div>
-        <div className="fiscal__row">
-          <span className="fiscal__label">Gastos acumulados</span>
-          <span className="fiscal__value">{eur(gastos)}</span>
-        </div>
-        <div className="fiscal__row fiscal__row--sep">
-          <span className="fiscal__label">Rendimiento neto</span>
-          <span className="fiscal__value">{eur(rendimiento)}</span>
-        </div>
-        <div className="fiscal__row">
-          <span className="fiscal__label">20% del rendimiento neto</span>
-          <span className="fiscal__value">{eur(pago20)}</span>
-        </div>
-        {pagosAnt > 0 && (
-          <div className="fiscal__row">
-            <span className="fiscal__label">Pagos anteriores este año (trimestres guardados)</span>
-            <span className="fiscal__value fiscal__value--dim">− {eur(pagosAnt)}</span>
-          </div>
-        )}
+        <div className="fiscal__card-title">Actividades en estimación directa</div>
+        <CasillaAuto num={1}  label={`Ingresos computables del período (ene–${MES_FIN[trimestre]})`} value={c01} />
+        <CasillaAuto num={2}  label="Gastos fiscalmente deducibles" value={c02} />
+        <CasillaAuto num={3}  label="Rendimiento neto (01 − 02)" value={c03} sep />
+        <CasillaAuto num={4}  label="20% de la casilla 03" value={c04} />
+        <CasillaAuto num={5}  label="Cuota módulos / actividades especiales" value={0} dim />
+        <CasillaEdit num={6}  label="Minoración del pago fraccionado"
+          value={edit.c06} onChange={v => setF('c06', v)} onBlur={() => saveCasilla(6, edit.c06)} />
+        <CasillaAuto num={7}  label="Resultado (04 + 05 − 06)" value={c07} sep />
+      </div>
+
+      <div className="fiscal__card">
+        <div className="fiscal__card-title">Liquidación</div>
+        <CasillaAuto num="08–12" label="Actividades agrícolas, ganaderas y forestales" value={0} dim />
+        <CasillaEdit num={13} label="A deducir por cuotas de períodos anteriores con resultado negativo"
+          value={edit.c13} onChange={v => setF('c13', v)} onBlur={() => saveCasilla(13, edit.c13)} />
+        <CasillaAuto num={14} label="Cuota del pago fraccionado (07 + 08–12 − 13)" value={c14} sep />
+        <CasillaEdit num={15} label="Retenciones e ingresos a cuenta soportados en el ejercicio"
+          value={edit.c15} onChange={v => setF('c15', v)} onBlur={() => saveCasilla(15, edit.c15)} />
+        <CasillaEdit num={16} label="Pagos fraccionados del ejercicio ya ingresados con anterioridad"
+          value={edit.c16} onChange={v => setF('c16', v)} onBlur={() => saveCasilla(16, edit.c16)} />
+        <CasillaAuto num={17} label="Resultado (14 − 15 − 16)" value={c17} sep />
+        <CasillaEdit num={18} label="A compensar por declaraciones anteriores con resultado negativo"
+          value={edit.c18} onChange={v => setF('c18', v)} onBlur={() => saveCasilla(18, edit.c18)} />
       </div>
 
       <div className="fiscal__resultado">
-        <span className="fiscal__resultado__label">A ingresar · M130 {trimestre}T {anio}</span>
-        <span className="fiscal__resultado__valor">{eur(aIngresar)}</span>
+        <span className="fiscal__resultado__label">[19] A ingresar · M130 {trimestre}T {anio}</span>
+        <span className="fiscal__resultado__valor">{eur(c19)}</span>
       </div>
 
       <div className="fiscal__guardar-row">
@@ -227,20 +281,18 @@ function Tab115({ anio, trimestre }) {
 
 // ── Resumen anual ─────────────────────────────────────────────────
 function TabResumen({ anio }) {
-  const [ingMes, setIngMes]     = React.useState(null)
-  const [gastMes, setGastMes]   = React.useState(null)
-  const [m130Total, setM130Total] = React.useState(0)
+  const [ingMes, setIngMes]             = React.useState(null)
+  const [gastMes, setGastMes]           = React.useState(null)
+  const [m130Total, setM130Total]       = React.useState(0)
   const [alquilerBase, setAlquilerBase] = React.useState(0)
-  const [cargando, setCargando] = React.useState(true)
+  const [cargando, setCargando]         = React.useState(true)
 
   React.useEffect(() => {
     setCargando(true)
     Promise.all([
       supabase.from('pagos').select('mes, importe').eq('anio', anio).eq('pagado', true),
-      supabase.from('gastos').select('fecha, importe')
-        .gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}-12-31`),
-      supabase.from('configuracion').select('clave, valor')
-        .like('clave', `m130_aingresar_${anio}_%`),
+      supabase.from('gastos').select('fecha, importe').gte('fecha', `${anio}-01-01`).lte('fecha', `${anio}-12-31`),
+      supabase.from('configuracion').select('clave, valor').like('clave', `m130_aingresar_${anio}_%`),
       supabase.from('configuracion').select('valor').eq('clave', 'alquiler_base').maybeSingle(),
     ]).then(([p, g, m130, alqRes]) => {
       const ing = Array(12).fill(0)
