@@ -373,7 +373,13 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
   const [borradorGuardado, setBorradorGuardado] = React.useState(false)
 
   const handleSave = async () => {
-    if (!valid) return
+    if (!valid) {
+      if (!form.importe) { setError('Falta el importe'); return }
+      if (!form.concepto.trim()) { setError('Falta el concepto'); return }
+      if (!form.fecha) { setError('Falta la fecha'); return }
+      if (form.categoria === 'otros' && !form.subcategoria.trim()) { setError('Especifica el tipo de gasto (campo "Especifica")'); return }
+      setError('Completa los campos obligatorios'); return
+    }
     setSaving(true)
     setError(null)
     try {
@@ -536,7 +542,7 @@ export function NuevoGastoPanel({ onClose, onSaved, pendiente = null }) {
             : <button className="btn btn--ghost" onClick={handleBorrador} disabled={saving || ocr.procesando}>
                 {ocr.procesando ? 'Procesando…' : 'Borrador'}
               </button>}
-          <button className="btn btn--primary" onClick={handleSave} disabled={saving || !valid}>
+          <button className="btn btn--primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Guardando…' : 'Guardar gasto'}
           </button>
         </div>
