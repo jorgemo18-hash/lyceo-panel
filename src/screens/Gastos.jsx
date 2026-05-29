@@ -851,7 +851,7 @@ function BorradoresTab({ onContinuar, refreshKey }) {
 }
 
 // ── Gastos ────────────────────────────────────────────────────────
-export function Gastos() {
+export function Gastos({ hideFilters = false }) {
   const [gastos, setGastos]       = React.useState([])
   const [loading, setLoading]     = React.useState(true)
   const [error, setError]         = React.useState(null)
@@ -929,7 +929,7 @@ export function Gastos() {
       />
 
       {/* Filtros */}
-      <div className="gastos-filtros">
+      {!hideFilters && <div className="gastos-filtros">
         <div className="gastos-filtros__anios">
           {ANIOS.map(a => (
             <button key={a}
@@ -950,7 +950,7 @@ export function Gastos() {
             >T{t}</button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Stats */}
       {stats.length > 0 && (

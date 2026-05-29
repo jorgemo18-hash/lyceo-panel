@@ -137,7 +137,7 @@ export function FinanzasGastos() {
         </div>
       )}
 
-      <Gastos />
+      <Gastos hideFilters />
     </>
   )
 }
