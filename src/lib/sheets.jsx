@@ -52,11 +52,11 @@ function filaInfo(item) {
     }
     if (extras.length > 0) {
       const bloques = [{ asignatura: sesion.asignatura ?? '', tema: sesion.tema ?? '' }, ...extras]
-      const combined = bloques
-        .filter(b => b.asignatura || b.tema)
-        .map(b => [b.asignatura, b.tema].filter(Boolean).join(' · '))
-        .join(' / ')
-      return { cls: '', combined }
+      return {
+        cls: '',
+        asig: bloques.map(b => b.asignatura).filter(Boolean).join(' / '),
+        tema: bloques.map(b => b.tema).filter(Boolean).join(' / '),
+      }
     }
     return { cls: '', asig: sesion.asignatura ?? '', tema: sesion.tema ?? '' }
   }
@@ -78,18 +78,12 @@ export function InformeSheet({ alumno, mes, anio, informe }) {
       </thead>
       <tbody>
         {dias.map(item => {
-          const { cls, asig, tema, combined } = filaInfo(item)
+          const { cls, asig, tema } = filaInfo(item)
           return (
             <tr key={item.d} className={`inf-tr ${cls}`}>
               <td className="inf-td inf-td--dia">{item.d}</td>
-              {combined != null ? (
-                <td className="inf-td" colSpan={2}>{combined}</td>
-              ) : (
-                <>
-                  <td className="inf-td">{asig}</td>
-                  <td className="inf-td">{tema}</td>
-                </>
-              )}
+              <td className="inf-td">{asig}</td>
+              <td className="inf-td">{tema}</td>
             </tr>
           )
         })}
