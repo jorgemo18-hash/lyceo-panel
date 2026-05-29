@@ -5608,3 +5608,23 @@ body.printing .no-print { display: none !important; }
 @media (max-width: 900px) {
   .fin-fiscal-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Notas examen ─────────────────────────────────────────────── */
+.nota-exam-form { display: flex; flex-direction: column; gap: 6px; padding: 10px 0 4px; }
+.nota-exam-badge {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--ink-2); padding: 6px 0 2px;
+}
+.nota-exam-badge__edit {
+  border: 0; background: none; color: var(--accent); font-size: 12px;
+  cursor: pointer; padding: 0; text-decoration: underline;
+}
+.nota-exam-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+}
+.nota-exam-row:last-child { border-bottom: 0; }
+.nota-exam-row__fecha { color: var(--ink-4); font-size: 12px; width: 90px; flex-shrink: 0; }
+.nota-exam-row__asig  { flex: 1; color: var(--ink); }
+.nota-exam-row__val   { font-variant-numeric: tabular-nums; font-size: 15px; }

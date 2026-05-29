@@ -149,6 +149,13 @@ const Icon = {
       <path d="M13 2.5v3h-3" />
     </svg>
   ),
+  grad: (p) => (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" {...p}>
+      <path d="M8 3L1.5 6.5 8 10l6.5-3.5L8 3z" />
+      <path d="M4.5 8.5V12c1 1.5 2 2 3.5 2s2.5-.5 3.5-2V8.5" />
+      <path d="M14.5 6.5v4" />
+    </svg>
+  ),
 };
 
 window.Icon = Icon;

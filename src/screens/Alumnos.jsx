@@ -1418,6 +1418,7 @@ export function Alumnos() {
   const [showPanel, setShowPanel] = React.useState(false)
   const [archivando, setArchivando] = React.useState(null)
   const [eliminando, setEliminando] = React.useState(null)
+  const [notasAlumno, setNotasAlumno] = React.useState(null)
   const [detalleId, setDetalleId] = React.useState(null)
   const [detalleTab, setDetalleTab] = React.useState(null)
   const [pendientes, setPendientes] = React.useState([])
@@ -1599,6 +1600,10 @@ export function Alumnos() {
                       onClick={() => { setDetalleId(a.id); setDetalleTab('facturas') }}>
                       <Icon.note />
                     </button>
+                    <button className="alumno-card__archive-btn" title="Ver notas de examen"
+                      onClick={() => setNotasAlumno(a)}>
+                      <Icon.grad />
+                    </button>
                     <button className="alumno-card__archive-btn" title="Archivar alumno"
                       onClick={() => setArchivando(a)}>
                       <Icon.archive />
@@ -1653,6 +1658,60 @@ export function Alumnos() {
           onCancel={() => setEliminando(null)}
         />
       )}
+
+      {notasAlumno && (
+        <NotasExamenPanel
+          alumno={notasAlumno}
+          onClose={() => setNotasAlumno(null)}
+        />
+      )}
     </>
+  )
+}
+
+// ── NotasExamenPanel ──────────────────────────────────────────────
+function NotasExamenPanel({ alumno, onClose }) {
+  const [notas, setNotas] = React.useState([])
+  const [cargando, setCargando] = React.useState(true)
+
+  React.useEffect(() => {
+    supabase.from('notas_examen').select('*')
+      .eq('alumno_id', alumno.id)
+      .order('fecha', { ascending: false })
+      .then(({ data }) => { setNotas(data ?? []); setCargando(false) })
+  }, [alumno.id])
+
+  const fmtFecha = (iso) =>
+    new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+
+  return (
+    <div className="panel-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <aside className="panel">
+        <div className="panel__head">
+          <h2 className="panel__title">Notas de examen · {alumno.nombre}</h2>
+          <button className="panel__close" onClick={onClose}>✕</button>
+        </div>
+        <div className="panel__body">
+          {cargando ? (
+            <div className="alumnos-estado"><div className="alumnos-estado__spinner" /> Cargando…</div>
+          ) : notas.length === 0 ? (
+            <div className="alumnos-estado">Sin notas registradas.</div>
+          ) : (
+            <section className="panel__section">
+              {notas.map(n => (
+                <div key={n.id} className="nota-exam-row">
+                  <span className="nota-exam-row__fecha">{fmtFecha(n.fecha)}</span>
+                  <span className="nota-exam-row__asig">{n.asignatura}</span>
+                  <span className="nota-exam-row__val"
+                    style={{ color: Number(n.nota) >= 5 ? '#16a34a' : '#dc2626', fontWeight: 600 }}>
+                    {n.nota}
+                  </span>
+                </div>
+              ))}
+            </section>
+          )}
+        </div>
+      </aside>
+    </div>
   )
 }

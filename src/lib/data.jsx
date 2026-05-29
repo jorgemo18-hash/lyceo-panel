@@ -186,7 +186,13 @@ export async function cargarSesionesFecha(fechaISO) {
     })
   )
 
-  return { sesiones: todasSesiones, hoy: label, registrosIniciales, recuperacionesPorAlumno }
+  const { data: notasDia } = await supabase
+    .from('notas_examen').select('*').eq('fecha', fechaISO)
+  const notasPorAlumno = Object.fromEntries(
+    (notasDia ?? []).map(n => [n.alumno_id, n])
+  )
+
+  return { sesiones: todasSesiones, hoy: label, registrosIniciales, recuperacionesPorAlumno, notasPorAlumno }
 }
 
 export async function cargarSesionesHoy() {
@@ -238,6 +244,24 @@ export async function guardarRecuperacion({ id, alumno_id, fecha_original, fecha
 export async function marcarRecuperacionCompletada(recuperacionId) {
   const { error } = await supabase.from('recuperaciones').update({ completada: true }).eq('id', recuperacionId)
   if (error) console.error('marcarRecuperacionCompletada error:', error)
+}
+
+// ── Notas de examen ───────────────────────────────────────────────
+export async function guardarNotaExamen({ id, alumno_id, fecha, asignatura, nota }) {
+  const payload = { alumno_id, fecha, asignatura, nota: Number(nota) }
+  const result = id
+    ? await supabase.from('notas_examen').update({ asignatura, nota: Number(nota) }).eq('id', id).select().single()
+    : await supabase.from('notas_examen').insert(payload).select().single()
+  if (result.error) console.error('guardarNotaExamen error:', result.error)
+  return result
+}
+
+export async function cargarNotasAlumno(alumno_id) {
+  const { data, error } = await supabase
+    .from('notas_examen').select('*')
+    .eq('alumno_id', alumno_id)
+    .order('fecha', { ascending: false })
+  return { data: data ?? [], error }
 }
 
 // ── Globales para componentes que usan window.X ───────────────────

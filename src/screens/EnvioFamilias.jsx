@@ -83,12 +83,16 @@ export function EnvioFamilias() {
     if (informesCache.current[key]) return informesCache.current[key]
 
     const { primero, ultimo } = rango(m, a)
-    const [{ data: sesiones }, festivos] = await Promise.all([
+    const [{ data: sesiones }, festivos, { data: notasMes }] = await Promise.all([
       supabase.from('sesiones').select('*')
         .eq('alumno_id', alumno.id)
         .gte('fecha', primero).lte('fecha', ultimo)
         .order('fecha'),
       cargarFestivos(m, a),
+      supabase.from('notas_examen').select('asignatura, nota')
+        .eq('alumno_id', alumno.id)
+        .gte('fecha', primero).lte('fecha', ultimo)
+        .order('fecha'),
     ])
 
     const { data: recupData } = await supabase
@@ -115,7 +119,13 @@ export function EnvioFamilias() {
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ alumno: alumno.nombre, curso: alumno.curso, sesiones, recuperaciones }),
+            body: JSON.stringify({
+          alumno: alumno.nombre, curso: alumno.curso, sesiones, recuperaciones,
+          ...(notasMes?.length > 0 ? {
+            notasExamen: 'Notas de exámenes este mes: ' + notasMes.map(n => `${n.asignatura} ${n.nota}`).join(', '),
+            instruccion: 'Ten en cuenta las notas de examen para el tono del comentario sin mencionarlas explícitamente.',
+          } : {}),
+        }),
           }
         )
         if (res.ok) comentario = (await res.json()).comentario ?? ''

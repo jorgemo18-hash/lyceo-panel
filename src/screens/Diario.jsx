@@ -1,6 +1,6 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
-import { cargarSesionesFecha, groupByHora, guardarSesion, guardarRecuperacion, marcarRecuperacionCompletada } from '../lib/data.jsx'
+import { cargarSesionesFecha, groupByHora, guardarSesion, guardarRecuperacion, marcarRecuperacionCompletada, guardarNotaExamen } from '../lib/data.jsx'
 
 const PRIMARY = '#8B0000'
 const HORAS_EXTRA = ['15:30', '16:30', '17:30', '18:30', '19:30']
@@ -38,6 +38,7 @@ export function DiarioScreen({ mobile }) {
   const [registros, setRegistros] = React.useState({})
   const [expandido, setExpandido] = React.useState(null)
   const [recuperacionesPorAlumno, setRecuperacionesPorAlumno] = React.useState({})
+  const [notasPorAlumno, setNotasPorAlumno] = React.useState({})
   const timers = React.useRef({})
 
   const [modalOpen, setModalOpen] = React.useState(false)
@@ -131,11 +132,12 @@ export function DiarioScreen({ mobile }) {
   React.useEffect(() => {
     setCargando(true)
     cargarSesionesFecha(fechaSel)
-      .then(({ sesiones: s, hoy: h, registrosIniciales, recuperacionesPorAlumno: recup }) => {
+      .then(({ sesiones: s, hoy: h, registrosIniciales, recuperacionesPorAlumno: recup, notasPorAlumno: notas }) => {
         sesionesRef.current = s
         setSesiones(s)
         setHoy(h)
         setRecuperacionesPorAlumno(recup ?? {})
+        setNotasPorAlumno(notas ?? {})
         const regsInicial = registrosIniciales ?? Object.fromEntries(
           s.map((ses) => [
             ses.id,
@@ -195,6 +197,11 @@ export function DiarioScreen({ mobile }) {
       tema: null,
       comentario: null,
     }, { onConflict: 'alumno_id,fecha', ignoreDuplicates: true })
+  }
+
+  const onGuardarNota = async (data) => {
+    const { data: saved } = await guardarNotaExamen(data)
+    if (saved) setNotasPorAlumno(prev => ({ ...prev, [data.alumno_id]: saved }))
   }
 
   const onGuardarRecuperacion = async (data) => {
@@ -382,6 +389,8 @@ export function DiarioScreen({ mobile }) {
                 onGuardarRecuperacion={onGuardarRecuperacion}
                 fechaOriginal={fechaSel}
                 onAvisarFamilia={() => handleAvisarFamilia(s.id)}
+                notaExamen={notasPorAlumno[s.alumno.id] ?? null}
+                onGuardarNota={onGuardarNota}
               />
             ))}
           </div>
