@@ -4,7 +4,7 @@ import { FinanzasGastos }   from './FinanzasGastos.jsx'
 import { FinanzasFiscal }   from './FinanzasFiscal.jsx'
 
 export function Finanzas() {
-  const [tab, setTab] = React.useState('ingresos')
+  const [tab, setTab] = React.useState('fiscal')
 
   const link = (id, label) => (
     <button

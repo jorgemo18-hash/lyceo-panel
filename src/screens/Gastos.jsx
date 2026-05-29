@@ -232,7 +232,7 @@ function CamposFiscales({ form, set }) {
 }
 
 // ── Pendientes de revisar ─────────────────────────────────────────
-function PendientesSection({ pendientes, show, onToggle, onRevisar }) {
+function PendientesSection({ pendientes, onVer }) {
   if (pendientes.length === 0) return null
   return (
     <div className="gastos-pendientes">
@@ -240,28 +240,10 @@ function PendientesSection({ pendientes, show, onToggle, onRevisar }) {
         <span>
           {pendientes.length} {pendientes.length === 1 ? 'factura pendiente' : 'facturas pendientes'} de revisar
         </span>
-        <button className="btn btn--ghost btn--sm" onClick={onToggle}>
-          {show ? 'Ocultar' : 'Ver'}
+        <button className="btn btn--ghost btn--sm" onClick={() => onVer(pendientes[0])}>
+          Ver
         </button>
       </div>
-      {show && (
-        <div className="gastos-pendientes__lista">
-          {pendientes.map(p => (
-            <div key={p.id} className="gastos-pendiente-item">
-              {p.foto_url && (
-                p.foto_url.toLowerCase().endsWith('.pdf') ? (
-                  <div className="gastos-pendiente-item__thumb gastos-pendiente-item__thumb--pdf">PDF</div>
-                ) : (
-                  <img src={p.foto_url} alt="" className="gastos-pendiente-item__thumb" />
-                )
-              )}
-              <button className="btn btn--primary btn--sm" onClick={() => onRevisar(p)}>
-                Revisar
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }
@@ -878,7 +860,6 @@ export function Gastos() {
   const [filtroAnio, setFiltroAnio] = React.useState(anioHoy)
   const [filtroTrimestre, setFiltroTrimestre] = React.useState(null)
   const [pendientes, setPendientes] = React.useState([])
-  const [showPendientes, setShowPendientes] = React.useState(false)
   const [pendienteRevisando, setPendienteRevisando] = React.useState(null)
 
   const filtroAnioRef = React.useRef(filtroAnio)
@@ -944,9 +925,7 @@ export function Gastos() {
     <>
       <PendientesSection
         pendientes={pendientes}
-        show={showPendientes}
-        onToggle={() => setShowPendientes(v => !v)}
-        onRevisar={(p) => { setPendienteRevisando(p); setShowPanel(true) }}
+        onVer={(p) => { setPendienteRevisando(p); setShowPanel(true) }}
       />
 
       {/* Filtros */}
