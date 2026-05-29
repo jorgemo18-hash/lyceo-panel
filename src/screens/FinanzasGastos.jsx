@@ -113,7 +113,7 @@ export function FinanzasGastos() {
         <div className="fin-card">
           <div className="fin-card__head">
             <h3 className="fin-card__title">Reparto por categoría</h3>
-            <span className="fin-card__sub">Total {eur(totalPeriodo)}</span>
+            <span className="fin-card__sub" style={{ color: 'var(--ink)' }}>Total {eur(totalPeriodo)}</span>
           </div>
           <div className="fin-card__body">
             <div className="fin-stacked">
@@ -137,7 +137,7 @@ export function FinanzasGastos() {
         </div>
       )}
 
-      <Gastos hideFilters />
+      <Gastos hideFilters hideStats />
     </>
   )
 }

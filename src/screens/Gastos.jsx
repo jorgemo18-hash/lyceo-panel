@@ -851,7 +851,7 @@ function BorradoresTab({ onContinuar, refreshKey }) {
 }
 
 // ── Gastos ────────────────────────────────────────────────────────
-export function Gastos({ hideFilters = false }) {
+export function Gastos({ hideFilters = false, hideStats = false }) {
   const [gastos, setGastos]       = React.useState([])
   const [loading, setLoading]     = React.useState(true)
   const [error, setError]         = React.useState(null)
@@ -953,7 +953,7 @@ export function Gastos({ hideFilters = false }) {
       </div>}
 
       {/* Stats */}
-      {stats.length > 0 && (
+      {!hideStats && stats.length > 0 && (
         <div className="gastos-stats">
           {stats.map(c => (
             <div key={c.value} className="gastos-stat">
