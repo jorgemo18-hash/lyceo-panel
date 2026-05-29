@@ -1,6 +1,6 @@
 import React from 'react'
 import { supabase } from '../lib/supabase.js'
-import { cargarSesionesFecha, groupByHora, guardarSesion, guardarRecuperacion, marcarRecuperacionCompletada, guardarNotaExamen } from '../lib/data.jsx'
+import { cargarSesionesFecha, groupByHora, guardarSesion, guardarRecuperacion, marcarRecuperacionCompletada, guardarNotaExamen, eliminarNotaExamen } from '../lib/data.jsx'
 
 const PRIMARY = '#8B0000'
 const HORAS_EXTRA = ['15:30', '16:30', '17:30', '18:30', '19:30']
@@ -201,7 +201,18 @@ export function DiarioScreen({ mobile }) {
 
   const onGuardarNota = async (data) => {
     const { data: saved } = await guardarNotaExamen(data)
-    if (saved) setNotasPorAlumno(prev => ({ ...prev, [data.alumno_id]: saved }))
+    if (saved) setNotasPorAlumno(prev => ({
+      ...prev,
+      [data.alumno_id]: [...(prev[data.alumno_id] ?? []), saved],
+    }))
+  }
+
+  const onEliminarNota = async (notaId, alumnoId) => {
+    await eliminarNotaExamen(notaId)
+    setNotasPorAlumno(prev => ({
+      ...prev,
+      [alumnoId]: (prev[alumnoId] ?? []).filter(n => n.id !== notaId),
+    }))
   }
 
   const onGuardarRecuperacion = async (data) => {
@@ -389,8 +400,9 @@ export function DiarioScreen({ mobile }) {
                 onGuardarRecuperacion={onGuardarRecuperacion}
                 fechaOriginal={fechaSel}
                 onAvisarFamilia={() => handleAvisarFamilia(s.id)}
-                notaExamen={notasPorAlumno[s.alumno.id] ?? null}
+                notasExamen={notasPorAlumno[s.alumno.id] ?? []}
                 onGuardarNota={onGuardarNota}
+                onEliminarNota={onEliminarNota}
               />
             ))}
           </div>

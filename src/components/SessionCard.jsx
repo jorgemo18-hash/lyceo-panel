@@ -2,7 +2,7 @@
 // Acordeón: tap para expandir, dentro tiene SubjectPicker + TopicInput + nota privada
 // Estados: pending | in-progress | done | absent
 
-function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryColor, recuperacion = null, onGuardarRecuperacion = null, fechaOriginal = '', onAvisarFamilia = null, notaExamen = null, onGuardarNota = null }) {
+function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryColor, recuperacion = null, onGuardarRecuperacion = null, fechaOriginal = '', onAvisarFamilia = null, notasExamen = [], onGuardarNota = null, onEliminarNota = null }) {
   const { alumno, hora, duracion, historial, racha } = sesion;
   const completo = registro.asignatura && registro.tema && registro.tema.trim().length > 0;
   const ausente = registro.estado === "absent";
@@ -89,12 +89,49 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
             value={registro.asignatura}
             onChange={(v) => onChange({ asignatura: v })}
           />
-
           <TopicInput
             value={registro.tema || ""}
             historial={historial}
             onChange={(v) => onChange({ tema: v })}
           />
+
+          {(registro.asignaturasExtra ?? []).map((bloque, i) => (
+            <div key={i} className="scard__asig-extra">
+              <button
+                className="scard__asig-remove"
+                onClick={() => {
+                  const next = [...(registro.asignaturasExtra ?? [])]
+                  next.splice(i, 1)
+                  onChange({ asignaturasExtra: next })
+                }}
+              >✕</button>
+              <SubjectPicker
+                nivel={alumno.nivel}
+                value={bloque.asignatura}
+                onChange={(v) => {
+                  const next = [...(registro.asignaturasExtra ?? [])]
+                  next[i] = { ...next[i], asignatura: v }
+                  onChange({ asignaturasExtra: next })
+                }}
+              />
+              <TopicInput
+                value={bloque.tema || ""}
+                historial={historial}
+                onChange={(v) => {
+                  const next = [...(registro.asignaturasExtra ?? [])]
+                  next[i] = { ...next[i], tema: v }
+                  onChange({ asignaturasExtra: next })
+                }}
+              />
+            </div>
+          ))}
+
+          <button
+            className="scard__add-asig"
+            onClick={() => onChange({ asignaturasExtra: [...(registro.asignaturasExtra ?? []), { asignatura: '', tema: '' }] })}
+          >
+            <Icon.plus /> Añadir otra asignatura
+          </button>
 
           <ComentarioInput
             value={registro.comentario || ""}
@@ -111,8 +148,9 @@ function SessionCard({ sesion, registro, onChange, onToggle, expandido, primaryC
               alumnoId={sesion.alumno.id}
               fecha={fechaOriginal}
               nivel={sesion.alumno.nivel}
-              nota={notaExamen}
+              notas={notasExamen}
               onGuardar={onGuardarNota}
+              onEliminar={onEliminarNota ? (id) => onEliminarNota(id, sesion.alumno.id) : null}
             />
           )}
 
@@ -439,62 +477,70 @@ function RecuperacionPanel({ alumnoId, fechaOriginal, recuperacion, onGuardar })
 }
 
 // ── NotaExamenInline ──────────────────────────────────────────────
-function NotaExamenInline({ alumnoId, fecha, nivel, nota, onGuardar }) {
-  const [open, setOpen]       = React.useState(false)
-  const [asig, setAsig]       = React.useState('')
-  const [valor, setValor]     = React.useState('')
+function NotaExamenInline({ alumnoId, fecha, nivel, notas = [], onGuardar, onEliminar }) {
+  const [addingNew, setAddingNew] = React.useState(false)
+  const [asig, setAsig]           = React.useState('')
+  const [valor, setValor]         = React.useState('')
   const [guardando, setGuardando] = React.useState(false)
+  const [eliminando, setEliminando] = React.useState(null)
   const lista = (window.ASIGNATURAS_POR_NIVEL?.[nivel] ?? window.ASIGNATURAS_POR_NIVEL?.eso ?? [])
-
-  const abrir = () => {
-    setAsig(nota?.asignatura ?? '')
-    setValor(nota?.nota != null ? String(nota.nota) : '')
-    setOpen(true)
-  }
 
   const guardar = async () => {
     if (!asig || valor === '') return
     setGuardando(true)
-    await onGuardar({ id: nota?.id ?? null, alumno_id: alumnoId, fecha, asignatura: asig, nota: valor })
+    await onGuardar({ alumno_id: alumnoId, fecha, asignatura: asig, nota: valor })
     setGuardando(false)
-    setOpen(false)
+    setAddingNew(false)
+    setAsig('')
+    setValor('')
   }
 
-  if (!open) {
-    return nota ? (
-      <div className="nota-exam-badge">
-        <Icon.grad />
-        <span>{nota.asignatura} <strong style={{ color: Number(nota.nota) >= 5 ? '#16a34a' : '#dc2626' }}>{nota.nota}</strong></span>
-        <button className="nota-exam-badge__edit" onClick={abrir}>Editar</button>
-      </div>
-    ) : (
-      <button className="nota-toggle" onClick={abrir}>
-        <Icon.grad /> Añadir nota de examen
-      </button>
-    )
+  const eliminar = async (id) => {
+    setEliminando(id)
+    await onEliminar?.(id)
+    setEliminando(null)
   }
 
   return (
-    <div className="nota-exam-form">
-      <div className="chips" style={{ marginBottom: 6 }}>
-        {lista.map(a => (
-          <button key={a} className={`chip${asig === a ? ' chip--on' : ''}`} onClick={() => setAsig(a)}>{a}</button>
-        ))}
-      </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input
-          className="topic__input"
-          type="number" min="0" max="10" step="0.5"
-          value={valor}
-          onChange={e => setValor(e.target.value)}
-          placeholder="Nota (0–10)"
-          style={{ width: 110 }}
-        />
-        <button className="btn btn--primary btn--sm" onClick={guardar} disabled={!asig || valor === '' || guardando}>
-          {guardando ? 'Guardando…' : 'Guardar'}
+    <div className="nota-exam-section">
+      {notas.map(n => (
+        <div key={n.id} className="nota-exam-badge">
+          <Icon.grad />
+          <span>{n.asignatura} <strong style={{ color: Number(n.nota) >= 5 ? '#16a34a' : '#dc2626' }}>{n.nota}</strong></span>
+          <button
+            className="nota-exam-badge__delete"
+            onClick={() => eliminar(n.id)}
+            disabled={eliminando === n.id}
+          >✕</button>
+        </div>
+      ))}
+      {addingNew ? (
+        <div className="nota-exam-form">
+          <div className="chips" style={{ marginBottom: 6 }}>
+            {lista.map(a => (
+              <button key={a} className={`chip${asig === a ? ' chip--on' : ''}`} onClick={() => setAsig(a)}>{a}</button>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <input
+              className="topic__input"
+              type="number" min="0" max="10" step="0.5"
+              value={valor}
+              onChange={e => setValor(e.target.value)}
+              placeholder="Nota (0–10)"
+              style={{ width: 110 }}
+            />
+            <button className="btn btn--primary btn--sm" onClick={guardar} disabled={!asig || valor === '' || guardando}>
+              {guardando ? 'Guardando…' : 'Guardar'}
+            </button>
+            <button className="btn btn--ghost btn--sm" onClick={() => { setAddingNew(false); setAsig(''); setValor('') }}>Cancelar</button>
+          </div>
+        </div>
+      ) : (
+        <button className="nota-toggle" onClick={() => setAddingNew(true)}>
+          <Icon.grad /> {notas.length > 0 ? 'Añadir otra nota' : 'Añadir nota de examen'}
         </button>
-        <button className="btn btn--ghost btn--sm" onClick={() => setOpen(false)}>Cancelar</button>
-      </div>
+      )}
     </div>
   )
 }

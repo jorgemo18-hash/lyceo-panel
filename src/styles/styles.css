@@ -5619,6 +5619,29 @@ body.printing .no-print { display: none !important; }
   border: 0; background: none; color: var(--accent); font-size: 12px;
   cursor: pointer; padding: 0; text-decoration: underline;
 }
+.nota-exam-badge__delete {
+  border: 0; background: none; color: var(--ink-4); font-size: 12px;
+  cursor: pointer; padding: 0 2px; margin-left: auto; line-height: 1;
+}
+.nota-exam-badge__delete:disabled { opacity: 0.4; cursor: default; }
+.nota-exam-section { display: flex; flex-direction: column; gap: 2px; }
+.scard__asig-extra {
+  position: relative;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.scard__asig-remove {
+  position: absolute; top: 8px; right: 0;
+  border: 0; background: none; color: var(--ink-4);
+  font-size: 14px; cursor: pointer; padding: 2px 4px; line-height: 1;
+}
+.scard__asig-remove:hover { color: var(--ink); }
+.scard__add-asig {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 0; background: none; color: var(--accent);
+  font-size: 13px; cursor: pointer; padding: 4px 0 8px;
+}
 .nota-exam-row {
   display: flex; align-items: center; gap: 12px;
   padding: 8px 0; border-bottom: 1px solid var(--line);

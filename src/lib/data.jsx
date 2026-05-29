@@ -98,7 +98,7 @@ export async function cargarSesionesFecha(fechaISO) {
 
   const { data: todasEseDia } = await supabase
     .from('sesiones')
-    .select('alumno_id, tipo, asignatura, tema, comentario, hora, aviso_enviado, motivo_ausencia')
+    .select('alumno_id, tipo, asignatura, tema, comentario, hora, aviso_enviado, motivo_ausencia, asignaturas_extra')
     .eq('fecha', fechaISO)
   const guardadas = todasEseDia ?? []
 
@@ -172,9 +172,14 @@ export async function cargarSesionesFecha(fechaISO) {
   const registrosIniciales = Object.fromEntries(
     todasSesiones.map(s => {
       const g = guardadas.find(r => r.alumno_id === s.alumno.id)
+      let asignaturasExtra = []
+      if (g?.asignaturas_extra) {
+        try { asignaturasExtra = JSON.parse(g.asignaturas_extra) } catch {}
+      }
       return [s.id, {
         asignatura: g?.asignatura ?? '',
         tema: g?.tema ?? '',
+        asignaturasExtra,
         comentario: g?.comentario ?? '',
         nota: '',
         estado: g?.tipo === 'ausencia' ? 'absent' : null,
@@ -188,9 +193,11 @@ export async function cargarSesionesFecha(fechaISO) {
 
   const { data: notasDia } = await supabase
     .from('notas_examen').select('*').eq('fecha', fechaISO)
-  const notasPorAlumno = Object.fromEntries(
-    (notasDia ?? []).map(n => [n.alumno_id, n])
-  )
+  const notasPorAlumno = {}
+  for (const n of (notasDia ?? [])) {
+    if (!notasPorAlumno[n.alumno_id]) notasPorAlumno[n.alumno_id] = []
+    notasPorAlumno[n.alumno_id].push(n)
+  }
 
   return { sesiones: todasSesiones, hoy: label, registrosIniciales, recuperacionesPorAlumno, notasPorAlumno }
 }
@@ -213,6 +220,9 @@ export async function guardarSesion(sesion, registro, fecha = new Date().toISOSt
     return new Error('alumno_id undefined')
   }
   const esAusente = registro.estado === 'absent'
+  const extrasValidos = !esAusente && registro.asignaturasExtra?.length > 0
+    ? registro.asignaturasExtra.filter(b => b.asignatura || b.tema)
+    : []
   const payload = {
     alumno_id,
     fecha,
@@ -221,6 +231,7 @@ export async function guardarSesion(sesion, registro, fecha = new Date().toISOSt
     tema: esAusente ? null : (registro.tema?.trim() || null),
     comentario: esAusente ? null : (registro.comentario?.trim() || null),
     motivo_ausencia: esAusente ? (registro.motivoAusencia?.trim() || null) : null,
+    asignaturas_extra: extrasValidos.length > 0 ? JSON.stringify(extrasValidos) : null,
   }
   if (sesion.hora) payload.hora = sesion.hora
   const { error } = await supabase.from('sesiones').upsert(
@@ -262,6 +273,12 @@ export async function cargarNotasAlumno(alumno_id) {
     .eq('alumno_id', alumno_id)
     .order('fecha', { ascending: false })
   return { data: data ?? [], error }
+}
+
+export async function eliminarNotaExamen(id) {
+  const { error } = await supabase.from('notas_examen').delete().eq('id', id)
+  if (error) console.error('eliminarNotaExamen error:', error)
+  return error ?? null
 }
 
 // ── Globales para componentes que usan window.X ───────────────────
