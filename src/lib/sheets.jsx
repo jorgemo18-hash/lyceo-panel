@@ -45,7 +45,21 @@ function filaInfo(item) {
   if (dow === 0) return { cls: 'inf-tr--weekend', asig: 'Domingo', tema: '' }
   if (festivo)   return { cls: 'inf-tr--festivo', asig: festivo.descripcion ?? festivo.nombre ?? 'Festivo', tema: '' }
   if (sesion?.tipo === 'ausencia') return { cls: 'inf-tr--ausencia', asig: 'NO', tema: 'NO' }
-  if (sesion)    return { cls: '', asig: sesion.asignatura ?? '', tema: sesion.tema ?? '' }
+  if (sesion) {
+    let extras = []
+    if (sesion.asignaturas_extra) {
+      try { extras = JSON.parse(sesion.asignaturas_extra) } catch {}
+    }
+    if (extras.length > 0) {
+      const bloques = [{ asignatura: sesion.asignatura ?? '', tema: sesion.tema ?? '' }, ...extras]
+      const combined = bloques
+        .filter(b => b.asignatura || b.tema)
+        .map(b => [b.asignatura, b.tema].filter(Boolean).join(' · '))
+        .join(' / ')
+      return { cls: '', combined }
+    }
+    return { cls: '', asig: sesion.asignatura ?? '', tema: sesion.tema ?? '' }
+  }
   return { cls: 'inf-tr--empty', asig: '', tema: '' }
 }
 
@@ -64,12 +78,18 @@ export function InformeSheet({ alumno, mes, anio, informe }) {
       </thead>
       <tbody>
         {dias.map(item => {
-          const { cls, asig, tema } = filaInfo(item)
+          const { cls, asig, tema, combined } = filaInfo(item)
           return (
             <tr key={item.d} className={`inf-tr ${cls}`}>
               <td className="inf-td inf-td--dia">{item.d}</td>
-              <td className="inf-td">{asig}</td>
-              <td className="inf-td">{tema}</td>
+              {combined != null ? (
+                <td className="inf-td" colSpan={2}>{combined}</td>
+              ) : (
+                <>
+                  <td className="inf-td">{asig}</td>
+                  <td className="inf-td">{tema}</td>
+                </>
+              )}
             </tr>
           )
         })}
