@@ -5651,3 +5651,51 @@ body.printing .no-print { display: none !important; }
 .nota-exam-row__fecha { color: var(--ink-4); font-size: 12px; width: 90px; flex-shrink: 0; }
 .nota-exam-row__asig  { flex: 1; color: var(--ink); }
 .nota-exam-row__val   { font-variant-numeric: tabular-nums; font-size: 15px; }
+
+/* ══════════════════════════════════════════════════════════════════
+   MOBILE OPTIMIZATION  (≤ 768 px — clase .app--mobile via JS)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Panel lateral: ancho completo en móvil */
+.app--mobile .panel { width: 100vw; }
+
+/* Topbar: permitir que rightExtra se baje si no cabe */
+.app--mobile .topbar__right { flex-wrap: wrap; }
+.app--mobile .diario-topbar-right { flex-wrap: wrap; gap: 6px; }
+
+/* Inputs y áreas: ≥ 16 px evita el zoom automático de iOS al enfocar */
+.app--mobile .topic__input,
+.app--mobile .nota__area,
+.app--mobile .panel__input,
+.app--mobile .panel__select,
+.app--mobile .panel__textarea,
+.app--mobile .modal__input,
+.app--mobile .modal__select { font-size: 16px; }
+
+/* Chips: área de toque más grande */
+.app--mobile .chip { padding: 9px 14px; font-size: 13px; }
+
+/* Botones pequeños: mínimo ~40 px de alto para el dedo */
+.app--mobile .btn--sm { padding: 8px 14px; font-size: 13px; }
+
+/* Botones tipo toggle/añadir */
+.app--mobile .nota-toggle { padding: 10px 14px; font-size: 13px; }
+.app--mobile .scard__add-asig { padding: 10px 0; font-size: 14px; }
+.app--mobile .scard__recup-btn { padding: 10px 14px; }
+
+/* Alumnos: barra de filtro que no desborde en pantallas estrechas */
+.app--mobile .alumnos-bar { flex-wrap: wrap; }
+
+/* Finanzas subnav: ocupa todo el ancho y reparte espacio igual */
+.app--mobile .fin-subnav { width: 100%; }
+.app--mobile .fin-subnav__link { flex: 1; justify-content: center; padding: 10px 10px; font-size: 13px; }
+
+/* Finanzas filtros año/trimestre: botones más cómodos */
+.app--mobile .fin-seg__btn { padding: 8px 12px; font-size: 13px; }
+
+/* KPIs: 1 columna en pantallas muy pequeñas */
+@media (max-width: 480px) {
+  .fin-kpis { grid-template-columns: 1fr; }
+  .fin-kpi  { border-right: 0; border-bottom: 1px solid var(--line); }
+  .fin-kpi:nth-child(odd) { border-right: 0; }
+}
