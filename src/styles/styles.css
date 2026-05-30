@@ -5699,3 +5699,26 @@ body.printing .no-print { display: none !important; }
   .fin-kpi  { border-right: 0; border-bottom: 1px solid var(--line); }
   .fin-kpi:nth-child(odd) { border-right: 0; }
 }
+
+/* Horario: scroll horizontal para ver los 5 días */
+.app--mobile .hor-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+.app--mobile .hc-cards { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; -webkit-overflow-scrolling: touch; }
+.app--mobile .hc-card { flex: 0 0 200px; min-width: 0; }
+
+/* Alumnos: ocultar email y nombre de familia en lista */
+.app--mobile .alumno-card__familia-nombre,
+.app--mobile .alumno-card__email { display: none; }
+
+/* Envío familias: layout vertical, aside arriba, informe debajo */
+.app--mobile .inf-layout { flex-direction: column; }
+.app--mobile .inf-aside { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--line); padding-bottom: 16px; }
+.app--mobile .inf-main { width: 100%; min-width: 0; }
+.app--mobile .inf-alumno-sel-mobile {
+  width: 100%;
+  font-size: 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}

@@ -40,6 +40,14 @@ export function EnvioFamilias() {
   const [editandoImporte, setEditandoImporte]   = React.useState(false)
   const [importeEditVal, setImporteEditVal]     = React.useState('')
   const [descuentoEditVal, setDescuentoEditVal] = React.useState('')
+  const [mobile, setMobile] = React.useState(() => window.matchMedia('(max-width: 768px)').matches)
+
+  React.useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const h = e => setMobile(e.matches)
+    mq.addEventListener('change', h)
+    return () => mq.removeEventListener('change', h)
+  }, [])
 
   const informesCache = React.useRef({})
   const festivosCache = React.useRef({})
@@ -487,6 +495,18 @@ export function EnvioFamilias() {
           <div className="alumnos-estado">
             <div className="alumnos-estado__spinner" /> Cargando…
           </div>
+        ) : mobile ? (
+          <select
+            className="inf-alumno-sel-mobile"
+            value={alumnoSel?.id ?? ''}
+            onChange={e => setAlumnoSel(alumnos.find(a => a.id === e.target.value) ?? null)}
+            disabled={enviandoTodos}
+          >
+            <option value="">— Selecciona un alumno —</option>
+            {alumnos.map(a => (
+              <option key={a.id} value={a.id}>{a.nombre} ({a.curso})</option>
+            ))}
+          </select>
         ) : (
           <ul className="inf-list">
             {alumnos.map(a => (
